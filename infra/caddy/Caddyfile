@@ -1,0 +1,125 @@
+# ============================================================
+# FinTrackr — Caddyfile
+#
+# Environment variables (set in docker-compose or .env):
+#   DOMAIN          — your domain, e.g. fintrackr.example.com
+#                     defaults to "localhost" (no TLS)
+#   CADDY_EMAIL     — ACME / Let's Encrypt email (production)
+#
+# Production usage:
+#   DOMAIN=fintrackr.example.com CADDY_EMAIL=you@example.com \
+#   docker compose up -d
+# ============================================================
+
+{
+    # Let's Encrypt contact email for TLS certificates
+    email {$CADDY_EMAIL:admin@localhost}
+
+    # Expose admin / metrics endpoint on internal port
+    admin 0.0.0.0:2019
+}
+
+# ── Main application ────────────────────────────────────────
+{$DOMAIN:localhost} {
+
+    # ── Web frontend (nginx serving Expo static export) ──
+    handle / {
+        reverse_proxy web:80
+    }
+
+    # Catch-all for frontend routes (SPA deep-links)
+    handle /* {
+        reverse_proxy web:80
+    }
+
+    # ── REST API ─────────────────────────────────────────
+    handle /api/* {
+        reverse_proxy api:4000
+    }
+
+    # ── Socket.io WebSocket ───────────────────────────────
+    handle /socket.io/* {
+        reverse_proxy api:4000 {
+            # Keep WebSocket connections alive
+            transport http {
+                versions h1
+            }
+        }
+    }
+
+    # ── MinIO S3 API ──────────────────────────────────────
+    handle /s3/* {
+        uri strip_prefix /s3
+        reverse_proxy minio:9000
+    }
+
+    # ── MinIO web console (admin only) ───────────────────
+    handle /minio-console/* {
+        uri strip_prefix /minio-console
+        reverse_proxy minio:9001
+    }
+
+    # ── Compression ───────────────────────────────────────
+    encode gzip
+
+    # ── Access logs (structured JSON → picked up by Promtail) ──
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size     100mb
+            roll_keep     5
+            roll_keep_for 720h
+        }
+        format json
+    }
+
+    # ── Security headers ──────────────────────────────────
+    header {
+        # Remove server fingerprint
+        -Server
+        # HSTS — only set in production (localhost won't use HTTPS)
+        # Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options        "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy        "strict-origin-when-cross-origin"
+    }
+}
+
+# ── Grafana ─────────────────────────────────────────────────
+grafana.{$DOMAIN:localhost} {
+    reverse_proxy grafana:3000
+
+    log {
+        output file /var/log/caddy/grafana.log
+        format json
+    }
+}
+
+# ── Uptime Kuma ─────────────────────────────────────────────
+uptime.{$DOMAIN:localhost} {
+    reverse_proxy uptime-kuma:3001
+
+    log {
+        output file /var/log/caddy/uptime.log
+        format json
+    }
+}
+
+# ── GlitchTip (error tracking) ──────────────────────────────
+errors.{$DOMAIN:localhost} {
+    reverse_proxy glitchtip:8000
+
+    log {
+        output file /var/log/caddy/glitchtip.log
+        format json
+    }
+}
+
+# ── Plausible (analytics) ────────────────────────────────────
+analytics.{$DOMAIN:localhost} {
+    reverse_proxy plausible:8000
+
+    log {
+        output file /var/log/caddy/plausible.log
+        format json
+    }
+}

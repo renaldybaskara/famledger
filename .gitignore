@@ -1,0 +1,31 @@
+node_modules/
+dist/
+.next/
+build/
+.turbo/
+*.env
+.env.local
+.env.*.local
+!.env.example
+
+# Expo
+.expo/
+ios/
+android/
+web-build/
+
+# Docker
+infra/volumes/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
