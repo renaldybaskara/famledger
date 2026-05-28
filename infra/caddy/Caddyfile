@@ -6,9 +6,8 @@
 #                     defaults to "localhost" (no TLS)
 #   CADDY_EMAIL     — ACME / Let's Encrypt email (production)
 #
-# Production usage:
-#   DOMAIN=fintrackr.example.com CADDY_EMAIL=you@example.com \
-#   docker compose up -d
+# Local development: runs on HTTP port 80 (no TLS)
+# Production: change DOMAIN to real domain for auto TLS
 # ============================================================
 
 {
@@ -19,8 +18,8 @@
     admin 0.0.0.0:2019
 }
 
-# ── Main application ────────────────────────────────────────
-{$DOMAIN:localhost} {
+# ── Main application — HTTP only for local dev ───────────────
+http://{$DOMAIN:localhost} {
 
     # ── Web frontend (nginx serving Expo static export) ──
     handle / {
@@ -39,12 +38,7 @@
 
     # ── Socket.io WebSocket ───────────────────────────────
     handle /socket.io/* {
-        reverse_proxy api:4000 {
-            # Keep WebSocket connections alive
-            transport http {
-                versions h1
-            }
-        }
+        reverse_proxy api:4000
     }
 
     # ── MinIO S3 API ──────────────────────────────────────
@@ -62,22 +56,15 @@
     # ── Compression ───────────────────────────────────────
     encode gzip
 
-    # ── Access logs (structured JSON → picked up by Promtail) ──
+    # ── Access logs — stdout ─────────────────────────────
     log {
-        output file /var/log/caddy/access.log {
-            roll_size     100mb
-            roll_keep     5
-            roll_keep_for 720h
-        }
+        output stdout
         format json
     }
 
     # ── Security headers ──────────────────────────────────
     header {
-        # Remove server fingerprint
         -Server
-        # HSTS — only set in production (localhost won't use HTTPS)
-        # Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Frame-Options        "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
         Referrer-Policy        "strict-origin-when-cross-origin"
@@ -85,41 +72,37 @@
 }
 
 # ── Grafana ─────────────────────────────────────────────────
-grafana.{$DOMAIN:localhost} {
+http://grafana.{$DOMAIN:localhost} {
     reverse_proxy grafana:3000
-
     log {
-        output file /var/log/caddy/grafana.log
+        output stdout
         format json
     }
 }
 
 # ── Uptime Kuma ─────────────────────────────────────────────
-uptime.{$DOMAIN:localhost} {
+http://uptime.{$DOMAIN:localhost} {
     reverse_proxy uptime-kuma:3001
-
     log {
-        output file /var/log/caddy/uptime.log
+        output stdout
         format json
     }
 }
 
 # ── GlitchTip (error tracking) ──────────────────────────────
-errors.{$DOMAIN:localhost} {
+http://errors.{$DOMAIN:localhost} {
     reverse_proxy glitchtip:8000
-
     log {
-        output file /var/log/caddy/glitchtip.log
+        output stdout
         format json
     }
 }
 
 # ── Plausible (analytics) ────────────────────────────────────
-analytics.{$DOMAIN:localhost} {
+http://analytics.{$DOMAIN:localhost} {
     reverse_proxy plausible:8000
-
     log {
-        output file /var/log/caddy/plausible.log
+        output stdout
         format json
     }
 }

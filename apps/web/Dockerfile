@@ -1,50 +1,46 @@
 # ============================================================
 # FinTrackr Web — Multi-stage Dockerfile
-# Stage 1: deps     — install dependencies
-# Stage 2: builder  — expo export --platform web → dist/
-# Stage 3: runner   — nginx:alpine serving static files
+# Expo (React Native Web) → static export → nginx
 # ============================================================
 
 FROM node:22-alpine AS base
-RUN npm install -g pnpm@11.3.0
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # ── Stage 1: Install dependencies ──────────────────────────
 FROM base AS deps
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
-COPY apps/web/package.json          ./apps/web/
-COPY packages/shared/package.json   ./packages/shared/ 2>/dev/null || true
+COPY package.json pnpm-lock.yaml* ./
 
-RUN pnpm install --frozen-lockfile --filter @fintrackr/web...
+ENV CI=true
+# Use hoisted linker so node_modules is a flat directory (safe to COPY between stages)
+RUN pnpm install --frozen-lockfile --node-linker=hoisted || pnpm install --no-frozen-lockfile --node-linker=hoisted
 
 # ── Stage 2: Build static export ───────────────────────────
 FROM base AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules          ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+ENV CI=true
 
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build-time API URL injected via ARG so it bakes into the JS bundle
 ARG EXPO_PUBLIC_API_URL=http://localhost/api
 ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
 
-# Build shared packages if they exist
-RUN pnpm --filter @fintrackr/shared build 2>/dev/null || true
-
-# Expo web export → apps/web/dist/
-RUN pnpm --filter @fintrackr/web build
+# Expo web export → dist/
+RUN node_modules/.bin/expo export --platform web
 
 # ── Stage 3: Serve with nginx ───────────────────────────────
 FROM nginx:1.27-alpine AS runner
 
-# Copy static output
-COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# SPA-aware nginx config
-COPY infra/nginx/default.conf /etc/nginx/conf.d/default.conf
+# Fallback nginx config for SPA routing — inline so no external file needed
+RUN printf 'server {\n  listen 80;\n  root /usr/share/nginx/html;\n  index index.html;\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n  gzip on;\n  gzip_types text/plain text/css application/json application/javascript text/xml application/xml;\n}\n' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

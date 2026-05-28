@@ -1,6 +1,6 @@
 import { Tabs, Redirect } from 'expo-router'
 import { View, Platform } from 'react-native'
-import { Home, List, PieChart, Settings } from 'lucide-react'
+import { Home, List, PieChart, Mail, Settings } from 'lucide-react'
 import { useAuthStore } from '../../src/store/auth.store'
 
 function TabBarIcon({ Icon, color, focused }: { Icon: any; color: string; focused: boolean }) {
@@ -73,6 +73,15 @@ export default function TabsLayout() {
           title: 'Anggaran',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon Icon={PieChart} color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="email-integration"
+        options={{
+          title: 'Email',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon Icon={Mail} color={color} focused={focused} />
           ),
         }}
       />
