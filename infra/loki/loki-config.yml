@@ -1,7 +1,6 @@
 # ============================================================
-# Loki Configuration — FinTrackr
-# Single-process mode (suitable for self-hosted / single VPS)
-# Retention: 30 days
+# Loki Configuration — FinTrackr (single-node, monolithic)
+# Compatible with Loki v3.x
 # ============================================================
 
 auth_enabled: false
@@ -11,19 +10,43 @@ server:
   grpc_listen_port: 9096
   log_level: warn
 
-common:
-  instance_addr: 127.0.0.1
-  path_prefix: /loki
-  storage:
-    filesystem:
-      chunks_directory: /loki/chunks
-      rules_directory:  /loki/rules
-  replication_factor: 1
+# ── Ingester ring — single node, no distributed coordination
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 1h
+  chunk_retain_period: 30s
+  wal:
+    dir: /loki/wal
+
+# ── Distributor ring
+distributor:
   ring:
+    instance_addr: 127.0.0.1
     kvstore:
       store: inmemory
 
-# ── Schema ───────────────────────────────────────────────────
+# ── Compactor
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  retention_delete_delay: 2h
+  delete_request_store: filesystem
+
+# ── Query scheduler
+query_scheduler:
+  max_outstanding_requests_per_tenant: 32768
+
+# ── Frontend
+frontend:
+  max_outstanding_per_tenant: 32768
+
+# ── Schema ────────────────────────────────────────────────────
 schema_config:
   configs:
     - from:         2024-01-01
@@ -38,44 +61,38 @@ schema_config:
 storage_config:
   tsdb_shipper:
     active_index_directory: /loki/index
-    cache_location:          /loki/index-cache
+    cache_location:         /loki/index-cache
   filesystem:
     directory: /loki/chunks
 
-# ── Retention ─────────────────────────────────────────────────
+# ── Limits ────────────────────────────────────────────────────
 limits_config:
-  retention_period:          720h   # 30 days
+  retention_period:          720h
   ingestion_rate_mb:         16
   ingestion_burst_size_mb:   32
   max_query_series:          10000
   max_query_parallelism:     8
   max_streams_per_user:      10000
   reject_old_samples:        true
-  reject_old_samples_max_age: 168h  # 7 days
+  reject_old_samples_max_age: 168h
 
-compactor:
-  working_directory:        /loki/compactor
-  retention_enabled:        true
-  retention_delete_delay:   2h
-  delete_request_store:     filesystem
-
-# ── Query tuning ──────────────────────────────────────────────
+# ── Query cache ───────────────────────────────────────────────
 query_range:
   results_cache:
     cache:
       embedded_cache:
-        enabled:   true
+        enabled:     true
         max_size_mb: 100
 
-# ── Ruler (optional alerting rules) ──────────────────────────
+# ── Ruler ─────────────────────────────────────────────────────
 ruler:
-  alertmanager_url: http://localhost:9093
   storage:
     type: local
     local:
       directory: /loki/rules
   rule_path: /loki/rules-temp
   ring:
+    instance_addr: 127.0.0.1
     kvstore:
       store: inmemory
   enable_api: true
