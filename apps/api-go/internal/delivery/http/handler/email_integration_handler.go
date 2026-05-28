@@ -92,9 +92,10 @@ func (h *EmailIntegrationHandler) GmailAuthURL(c *gin.Context) {
 func (h *EmailIntegrationHandler) GmailCallback(c *gin.Context) {
 	appURL := c.GetString("appURL")
 	if appURL == "" {
-		appURL = "/"
+		appURL = "http://localhost"
 	}
-	tabURL := fmt.Sprintf("%s/(tabs)/email-integration", appURL)
+	// Redirect to root — the SPA will read query params and navigate to email tab
+	tabURL := appURL
 
 	errRedirect := func(reason string) {
 		c.Redirect(http.StatusTemporaryRedirect,

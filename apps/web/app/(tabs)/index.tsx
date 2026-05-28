@@ -245,11 +245,16 @@ export default function DashboardScreen() {
   const hasEmailIntegration = (integrations?.data?.length ?? 0) > 0
   const showGmailBanner = !hasEmailIntegration && !bannerDismissed
 
-  const handleConnectGmail = () => {
-    if (typeof window !== 'undefined') {
-      window.location.href = `${API_URL}/email-integrations/gmail/auth`
-    } else {
-      Linking.openURL(`${API_URL}/email-integrations/gmail/auth`)
+  const handleConnectGmail = async () => {
+    try {
+      const { data } = await api.get<{ url: string }>('/email-integrations/gmail/auth')
+      if (typeof window !== 'undefined') {
+        window.location.href = data.url
+      } else {
+        Linking.openURL(data.url)
+      }
+    } catch {
+      // silently ignore — user can try from Email tab
     }
   }
 

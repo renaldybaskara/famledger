@@ -11,9 +11,10 @@ type Config struct {
 	JWTRefreshSecret    string
 	JWTExpiresIn        string
 	JWTRefreshExpiresIn string
-	GoogleClientID      string
-	GoogleClientSecret  string
-	GoogleCallbackURL   string
+	GoogleClientID             string
+	GoogleClientSecret         string
+	GoogleCallbackURL          string
+	GoogleGmailCallbackURL     string
 	AppURL              string
 	Port                string
 	AppEnv              string
@@ -37,9 +38,10 @@ func Load() *Config {
 		JWTRefreshSecret:    mustGetEnv("JWT_REFRESH_SECRET"),
 		JWTExpiresIn:        getEnv("JWT_EXPIRES_IN", "15m"),
 		JWTRefreshExpiresIn: getEnv("JWT_REFRESH_EXPIRES_IN", "30d"),
-		GoogleClientID:      getEnv("GOOGLE_CLIENT_ID", ""),
-		GoogleClientSecret:  getEnv("GOOGLE_CLIENT_SECRET", ""),
-		GoogleCallbackURL:   getEnv("GOOGLE_CALLBACK_URL", ""),
+		GoogleClientID:         getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret:     getEnv("GOOGLE_CLIENT_SECRET", ""),
+		GoogleCallbackURL:      getEnv("GOOGLE_CALLBACK_URL", ""),
+		GoogleGmailCallbackURL: getEnv("GOOGLE_GMAIL_CALLBACK_URL", ""),
 		AppURL:              getEnv("APP_URL", "http://localhost"),
 		Port:                getEnv("PORT", "4000"),
 		AppEnv:              getEnv("NODE_ENV", "production"),

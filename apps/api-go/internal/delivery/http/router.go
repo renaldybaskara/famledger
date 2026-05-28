@@ -174,15 +174,18 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		settings.DELETE("/parser-rules/:id", deps.BankParserRuleHandler.Delete)
 	}
 
-	// Gmail OAuth callback — PUBLIC (no JWT, user identified via state param)
+	// Email Integrations — public routes (no JWT)
+	// Must be registered on `api` group BEFORE protected group to avoid /:id matching
 	api.GET("/email-integrations/gmail/callback", deps.EmailIntegrationHandler.GmailCallback)
 
-	// Email Integrations (protected)
+	// Email Integrations — protected routes
 	emailIntegrations := protected.Group("/email-integrations")
 	{
 		emailIntegrations.GET("", deps.EmailIntegrationHandler.List)
 		emailIntegrations.POST("/imap", deps.EmailIntegrationHandler.ConnectIMAP)
+		// /gmail/auth and /gmail/callback are static routes — must come before /:id
 		emailIntegrations.GET("/gmail/auth", deps.EmailIntegrationHandler.GmailAuthURL)
+		// /:id routes — these are dynamic and must come AFTER all static sub-paths
 		emailIntegrations.DELETE("/:id", deps.EmailIntegrationHandler.Disconnect)
 		emailIntegrations.PATCH("/:id/toggle", deps.EmailIntegrationHandler.Toggle)
 		emailIntegrations.POST("/:id/sync", deps.EmailIntegrationHandler.Sync)

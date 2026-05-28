@@ -83,9 +83,15 @@ func main() {
 	budgetUC            := usecase.NewBudgetUseCase(budgetRepo)
 	workspaceUC         := usecase.NewWorkspaceUseCase(workspaceRepo, userRepo, emailService)
 	settingsUC          := usecase.NewSettingsUseCase(settingRepo, emailService, cfg)
+	// Gmail integration uses a dedicated callback URL separate from auth login
+	gmailCallbackURL := cfg.GoogleGmailCallbackURL
+	if gmailCallbackURL == "" {
+		// Derive from AppURL if not explicitly set
+		gmailCallbackURL = cfg.AppURL + "/api/email-integrations/gmail/callback"
+	}
 	emailIntegrationUC  := usecase.NewEmailIntegrationUseCase(
 		emailIntegrationRepo,
-		cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleCallbackURL,
+		cfg.GoogleClientID, cfg.GoogleClientSecret, gmailCallbackURL,
 	)
 
 	// Email import pipeline — shared by both background workers and reprocess endpoint.

@@ -348,18 +348,15 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
     setError('')
     try {
       const { data } = await emailApi.getGmailAuthUrl()
-      // Open OAuth URL in browser
-      await Linking.openURL(data.url)
-      // After user completes OAuth in browser, they'll be redirected back.
-      // For now show instructions.
-      Alert.alert(
-        'Browser Terbuka',
-        'Selesaikan login Google di browser. Setelah selesai, kembali ke app ini dan tap "Selesai".',
-        [{ text: 'Selesai', onPress: onSuccess }]
-      )
+      // On web: redirect browser to Google OAuth URL
+      if (typeof window !== 'undefined') {
+        window.location.href = data.url
+      } else {
+        await Linking.openURL(data.url)
+      }
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Gagal mendapatkan URL login Google. Pastikan Google OAuth sudah dikonfigurasi.')
-    } finally {
+      const msg = e.response?.data?.message || e.message || 'Gagal mendapatkan URL login Google.'
+      setError(msg)
       setLoading(false)
     }
   }
