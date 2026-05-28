@@ -1,912 +1,865 @@
 # FinTrackr — Self-Hosted Financial Tracker
 
-Aplikasi manajemen keuangan personal dengan arsitektur full-stack self-hosted:
-- **Frontend**: Expo (React Native Web) → nginx static
+Aplikasi manajemen keuangan personal yang **otomatis mencatat transaksi** dari email notifikasi bank & e-wallet.
+
 - **Backend**: Go + Gin + GORM (Clean Architecture)
+- **Frontend**: Expo (React Native Web) → nginx static
 - **Database**: PostgreSQL 16 + pgvector
-- **Proxy**: Caddy (HTTP untuk local dev, auto-HTTPS untuk production)
+- **Proxy**: Caddy (auto-HTTPS di production)
 - **Monitoring**: Grafana, Prometheus, Loki, Uptime Kuma
 
 ---
 
-## 🚀 Cara Menjalankan (Local Development)
+## Daftar Isi
+
+1. [Quick Start](#-quick-start)
+2. [Cara Kerja Secara Keseluruhan](#-cara-kerja-secara-keseluruhan)
+3. [Setup Google OAuth](#-setup-google-oauth-wajib-untuk-login-google--email-integration)
+4. [Flow Login & Register](#-flow-login--register)
+5. [Flow Email Auto-Import](#-flow-email-auto-import-transaksi)
+6. [Fitur Aplikasi](#-fitur-aplikasi)
+7. [Konfigurasi .env](#-konfigurasi-env)
+8. [Perintah Docker Berguna](#-perintah-docker-berguna)
+9. [API Reference](#-api-reference-lengkap)
+10. [Troubleshooting](#-troubleshooting)
+
+---
+
+## 🚀 Quick Start
 
 ### Prasyarat
-- Docker Desktop for Windows
+- Docker Desktop (Windows/Mac/Linux)
 - Git
 
 ### Langkah
 
 ```powershell
-# 1. Buka folder project
-cd D:\Project\FinTracker
+# 1. Clone & masuk folder
+git clone <repo-url>
+cd FinTracker
 
-# 2. Jalankan semua service
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# 2. Buat file .env dari template
+cp .env.example .env
 
-# 3. Cek status service
+# 3. (Opsional) Isi Google OAuth di .env — lihat panduan di bawah
+#    GOOGLE_CLIENT_ID=...
+#    GOOGLE_CLIENT_SECRET=...
+
+# 4. Jalankan semua service
+docker compose up -d
+
+# 5. Tunggu semua healthy (~1-2 menit)
 docker compose ps
+
+# 6. Buka browser
+#    http://localhost
 ```
 
-Tunggu semua service status `healthy` (sekitar 1-2 menit pertama kali).
-
----
-
-## 🌐 Akses Aplikasi
+### URL Akses
 
 | Service | URL | Keterangan |
 |---------|-----|-----------|
-| **Web App** | http://localhost | Frontend utama FinTrackr |
-| **API** | http://localhost/api | REST API via Caddy |
-| **API Direct** | http://localhost:4000/api | REST API langsung (dev) |
-| **MinIO Console** | http://localhost:9001 | Object storage admin |
+| **Web App** | http://localhost | Aplikasi utama |
+| **API** | http://localhost/api | REST API |
+| **API Health** | http://localhost/api/health | Cek status API |
+| **Grafana** | http://localhost:3100 | Monitoring dashboard |
 | **Prometheus** | http://localhost:9090 | Metrics |
-| **Grafana** | http://localhost:3100 | Dashboard monitoring |
+| **MinIO Console** | http://localhost:9001 | Object storage |
 | **Uptime Kuma** | http://localhost:3001 | Status page |
-| **GlitchTip** | http://localhost:8000 | Error tracking |
+
+> Untuk akses dev tools (Grafana, MinIO, dll) jalankan dengan override:
+> ```powershell
+> docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+> ```
 
 ---
 
-## 👤 Akun Demo (Siap Pakai)
+## 🗺️ Cara Kerja Secara Keseluruhan
 
-| Field | Value |
-|-------|-------|
-| **Email** | `renaldybaskara6@gmail.com` |
-| **Password** | `Admin1234!` |
+```mermaid
+graph TD
+    User(["👤 User"])
 
-> 💡 **Daftar akun baru**: Kunjungi http://localhost/register
+    subgraph Frontend["🖥️ Web App (http://localhost)"]
+        Login["Halaman Login"]
+        Dashboard["Dashboard"]
+        EmailTab["Tab Email Integration"]
+        Settings["Tab Pengaturan"]
+    end
 
----
+    subgraph API["⚡ Go API (port 4000)"]
+        Auth["Auth Handler\n/api/auth/*"]
+        EmailInt["Email Integration Handler\n/api/email-integrations/*"]
+        TxHandler["Transaction Handler\n/api/transactions/*"]
+        Workers["Background Workers\nIMAP + Gmail Poller"]
+    end
 
-## 🔐 Kredensial Layanan Internal
+    subgraph Storage["🗄️ Storage"]
+        DB[("PostgreSQL\nUsers, Transactions\nEmail Messages")]
+        Redis[("Redis\nCache / Session")]
+    end
 
-### PostgreSQL
-- **Host**: `localhost:5432`
-- **User**: `fintrackr`
-- **Password**: lihat `.env` → `POSTGRES_PASSWORD`
-- **Database**: `fintrackr`
+    subgraph External["🌐 External"]
+        Google["Google OAuth\naccounts.google.com"]
+        GmailAPI["Gmail API\ngmail.googleapis.com"]
+        BankEmail["📧 Email Bank\n@bca.co.id, @gopay.co.id\ndll"]
+    end
 
-### MinIO (Object Storage)
-- **URL**: http://localhost:9001
-- **User**: `minioadmin`
-- **Password**: lihat `.env` → `MINIO_SECRET_KEY`
+    User -->|"1. Buka app"| Login
+    Login -->|"2. Klik Login Google"| Google
+    Google -->|"3. Redirect + token"| Auth
+    Auth -->|"4. Simpan user + JWT"| DB
+    Auth -->|"5. Redirect ke dashboard"| Dashboard
 
-### Grafana
-- **URL**: http://localhost:3100
-- **User**: `admin`
-- **Password**: `admin123`
+    Dashboard -->|"6. Banner: Hubungkan Gmail"| EmailTab
+    EmailTab -->|"7. OAuth Gmail"| Google
+    Google -->|"8. Token OAuth"| EmailInt
+    EmailInt -->|"9. Simpan token terenkripsi"| DB
 
-### Redis
-- **Host**: `localhost:6379`
-- **Password**: lihat `.env` → `REDIS_PASSWORD`
+    BankEmail -->|"email notifikasi"| GmailAPI
+    Workers -->|"10. Poll tiap 5 menit"| GmailAPI
+    Workers -->|"11. Parse email"| DB
+    Workers -->|"12. Buat transaksi otomatis"| TxHandler
+    TxHandler --> DB
 
----
-
-## 📦 Struktur Project
-
-```
-FinTracker/
-├── apps/
-│   ├── api-go/                    # Go backend (Gin + GORM + Clean Architecture)
-│   │   ├── cmd/server/main.go     # Entrypoint — wiring semua dependencies
-│   │   └── internal/
-│   │       ├── domain/
-│   │       │   ├── entity/        # Struct GORM (15 tabel)
-│   │       │   ├── repository/    # Interface repository (port)
-│   │       │   └── usecase/       # Interface use case (port)
-│   │       ├── repository/        # GORM implementation
-│   │       ├── usecase/           # Business logic
-│   │       │   └── email_import_service.go  # Konversi email → transaksi
-│   │       ├── delivery/
-│   │       │   └── http/
-│   │       │       ├── handler/   # Gin handlers
-│   │       │       ├── middleware/ # JWT auth, CORS
-│   │       │       └── router.go  # Semua route terdaftar di sini
-│   │       └── infrastructure/
-│   │           ├── config/        # Config loader (.env)
-│   │           ├── database/      # Connect + AutoMigrate + Seed
-│   │           ├── email/         # SMTP service (dynamic, DB-backed)
-│   │           ├── emailparser/   # Parser email bank/ewallet Indonesia
-│   │           └── worker/        # Background workers (IMAP + Gmail)
-│   └── web/                       # Expo (React Native Web) frontend
-├── infra/
-│   ├── caddy/                     # Caddyfile (reverse proxy)
-│   ├── grafana/                   # Dashboard provisioning
-│   ├── loki/                      # Log aggregation config
-│   ├── postgres/                  # DB init SQL
-│   └── prometheus/                # Metrics scraping config
-├── docker-compose.yml             # Base compose (semua services)
-├── docker-compose.dev.yml         # Dev overrides (expose ports ke host)
-└── .env                           # Environment variables & secrets
+    Dashboard -->|"13. Tampilkan transaksi"| User
 ```
 
 ---
 
-## 🔄 Perintah Berguna
+## 🔑 Setup Google OAuth (Wajib untuk Login Google & Email Integration)
+
+> **Kenapa perlu ini?**
+> Google OAuth adalah cara aman agar user bisa login pakai akun Google mereka sendiri
+> dan menghubungkan inbox Gmail ke FinTrackr — tanpa perlu share password email ke siapapun.
+>
+> **Kamu sebagai admin setup sekali → semua user bisa pakai akun Google masing-masing.**
+
+### Konsep Penting
+
+```mermaid
+graph LR
+    subgraph "Yang kamu setup SEKALI"
+        CID["Client ID\n= identitas APLIKASI FinTrackr"]
+        CS["Client Secret\n= password APLIKASI FinTrackr"]
+    end
+
+    subgraph "Yang tiap USER lakukan sendiri"
+        UA["User A login\npakai budi@gmail.com"]
+        UB["User B login\npakai sari@gmail.com"]
+        UC["User C login\npakai renaldy@gmail.com"]
+    end
+
+    CID --> UA
+    CID --> UB
+    CID --> UC
+    CS --> UA
+    CS --> UB
+    CS --> UC
+```
+
+Client ID & Secret **bukan** akun Gmail kamu — mereka adalah "tanda pengenal" bahwa ini aplikasi FinTrackr yang sudah terdaftar di Google. Tiap user tetap login & konek Gmail dengan akun mereka sendiri.
+
+---
+
+### Langkah 1 — Buka Google Cloud Console
+
+Buka: **https://console.cloud.google.com**
+
+Login dengan akun Google yang akan menjadi pemilik aplikasi.
+
+---
+
+### Langkah 2 — Buat Project Baru
+
+```
+Klik dropdown project di pojok kiri atas
+→ Klik "NEW PROJECT"
+→ Project name: FinTrackr
+→ Klik CREATE
+→ Tunggu loading, pastikan "FinTrackr" terpilih di dropdown
+```
+
+---
+
+### Langkah 3 — Aktifkan Gmail API
+
+```
+Menu ☰ → APIs & Services → Library
+→ Ketik "Gmail API" di search
+→ Klik hasil pertama
+→ Klik tombol ENABLE
+```
+
+---
+
+### Langkah 4 — Buat OAuth Consent Screen
+
+```
+Menu ☰ → APIs & Services → OAuth consent screen
+→ Pilih "External"
+→ Klik CREATE
+```
+
+Isi form:
+| Field | Isi |
+|-------|-----|
+| App name | `FinTrackr` |
+| User support email | email kamu |
+| Developer contact email | email kamu |
+
+```
+→ Klik SAVE AND CONTINUE (lewati Scopes, langsung ke Test users)
+→ Di "Test users" → klik + ADD USERS
+→ Tambahkan email kamu sendiri
+→ Klik SAVE AND CONTINUE
+→ Klik BACK TO DASHBOARD
+```
+
+> **Note**: Selama masih "Testing", hanya email yang ada di Test Users yang bisa login.
+> Untuk buka ke publik, klik "PUBLISH APP" → status berubah ke "In production".
+
+---
+
+### Langkah 5 — Buat OAuth Client ID
+
+```
+Menu ☰ → APIs & Services → Credentials
+→ Klik "+ CREATE CREDENTIALS"
+→ Pilih "OAuth client ID"
+→ Application type: Web application
+→ Name: FinTrackr
+```
+
+Di bagian **Authorized redirect URIs**, tambahkan **dua** URI berikut:
+
+```
+http://localhost/api/auth/google/callback
+http://localhost/api/email-integrations/gmail/callback
+```
+
+> Jika deploy ke domain asli (misal `fintrackr.example.com`), tambahkan juga:
+> ```
+> https://fintrackr.example.com/api/auth/google/callback
+> https://fintrackr.example.com/api/email-integrations/gmail/callback
+> ```
+
+```
+→ Klik CREATE
+```
+
+Popup akan muncul berisi **Client ID** dan **Client Secret** — salin keduanya.
+
+---
+
+### Langkah 6 — Isi ke .env dan Restart
+
+Buka file `.env` di folder project, isi bagian Google OAuth:
+
+```env
+GOOGLE_CLIENT_ID=123456789-xxxxxxxxxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxxxx
+GOOGLE_CALLBACK_URL=http://localhost/api/auth/google/callback
+```
+
+Restart API agar perubahan aktif:
 
 ```powershell
-# ▶️ Start semua service
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose up -d api
+```
 
-# ⏹️ Stop semua service
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+Verifikasi berhasil — buka browser:
+```
+http://localhost/api/auth/google/configured
+```
+Harus return: `{"configured": true}`
 
-# 📋 Lihat status semua container
-docker compose ps
+---
 
-# 📝 Lihat logs API (live)
-docker logs fintrackr-api-1 -f
+### Langkah 7 — Publish App (Opsional, untuk user selain kamu)
 
-# 📝 Lihat logs semua service (live)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
+Selama status "Testing", hanya email di Test Users yang bisa login. Untuk membuka ke semua user:
 
-# 🔨 Rebuild & restart API (setelah perubahan Go code)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml build api
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate api
+```
+Google Cloud Console
+→ APIs & Services → OAuth consent screen
+→ Klik "PUBLISH APP"
+→ Konfirmasi
+```
 
-# 🔨 Rebuild & restart Web (setelah perubahan frontend)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml build web
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate web
+> Jika aplikasi belum melalui Google Verification, user akan melihat warning
+> "This app isn't verified" — mereka masih bisa lanjut dengan klik "Advanced → Go to FinTrackr".
+> Untuk menghilangkan warning, submit verification ke Google (opsional).
 
-# 🗄️ Masuk ke PostgreSQL shell
-docker exec -it fintrackr-postgres-1 psql -U fintrackr -d fintrackr
+---
 
-# 🗑️ Reset semua data (HATI-HATI: hapus seluruh database!)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+## 👤 Flow Login & Register
+
+### Flow Lengkap
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant W as 🖥️ Web App
+    participant API as ⚡ API
+    participant G as 🔵 Google
+    participant DB as 🗄️ Database
+
+    U->>W: Buka http://localhost
+    W->>U: Tampilkan halaman login
+
+    alt Login dengan Google (Direkomendasikan)
+        U->>W: Klik "Lanjutkan dengan Google"
+        W->>G: Redirect ke accounts.google.com
+        G->>U: Tampilkan pilihan akun Google
+        U->>G: Pilih akun & klik Allow
+        G->>API: Redirect ke /api/auth/google/callback?code=xxx
+        API->>G: Tukar code → access token
+        API->>G: Ambil profil user (email, nama, foto)
+        
+        alt User belum pernah daftar
+            API->>DB: INSERT user baru (via Google)
+            Note over API,DB: Auto-register, tidak perlu isi form
+        else User sudah ada
+            API->>DB: UPDATE last_login_at
+        end
+        
+        API->>DB: Buat refresh token
+        API->>W: Redirect ke /?access_token=...&refresh_token=...
+        W->>W: Simpan token di AsyncStorage, bersihkan URL
+        W->>U: Masuk ke Dashboard ✅
+
+    else Login dengan Email/Password
+        U->>W: Klik "Tampilkan form email"
+        U->>W: Isi email + password
+        W->>API: POST /api/auth/login
+        API->>DB: Cek email + bcrypt verify password
+        API->>W: Return access token + refresh token
+        W->>U: Masuk ke Dashboard ✅
+    end
+
+    Note over W,U: Setelah login pertama...
+    W->>U: Tampilkan banner "Hubungkan Gmail"
+```
+
+### Apa yang Terjadi Setelah Login Pertama
+
+```mermaid
+graph TD
+    Login["✅ Login Berhasil"] --> Dashboard["Masuk Dashboard"]
+    Dashboard --> Check{{"Sudah ada\nemail integration?"}}
+    
+    Check -->|"Belum"| Banner["Tampilkan Banner Ungu\n⚡ Aktifkan Auto-Import Transaksi"]
+    Check -->|"Sudah"| Normal["Dashboard Normal\nTanpa Banner"]
+    
+    Banner --> Pilih{{"User memilih"}}
+    Pilih -->|"Klik Hubungkan Gmail"| OAuth["Flow Gmail OAuth\n→ Lihat section bawah"]
+    Pilih -->|"Klik Ingatkan Nanti"| Normal
+    
+    OAuth --> Connected["Gmail Terhubung ✅\nBanner Hilang Otomatis"]
+    Connected --> AutoImport["Transaksi mulai\nmasuk otomatis"]
 ```
 
 ---
 
-## 🛠️ Fitur Aplikasi
+## 📧 Flow Email Auto-Import Transaksi
 
-### 📊 Dashboard
-- Ringkasan pendapatan, pengeluaran, dan saldo bersih bulan ini
-- **Perbandingan periode sebelumnya** — angka % naik/turun income, expense, net otomatis dihitung
-- Breakdown pengeluaran per kategori (pie chart)
-- Tren 6 bulan terakhir (bar chart)
-- 5 transaksi terbaru
+### Cara Menghubungkan Gmail
 
-### 💸 Transaksi
-- Tambah transaksi **income / expense / transfer**
-- Filter berdasarkan tanggal, kategori, tipe, akun
-- Pencarian berdasarkan deskripsi/merchant
-- `source` field: `manual` | `email` | `import` — tanda dari mana transaksi berasal
-- `idempotency_key` — mencegah double-entry jika dikirim dua kali
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant W as 🖥️ Web App
+    participant API as ⚡ API
+    participant G as 🔵 Google OAuth
+    participant DB as 🗄️ Database
+    participant WK as ⚙️ Background Worker
 
-### 🏦 Akun
-- Kelola multiple rekening: **bank · e-wallet · cash · credit card · investasi**
-- Track saldo per akun
-- `bank_code` digunakan untuk auto-matching email notifikasi bank
+    U->>W: Klik "Hubungkan Gmail Sekarang"
+    W->>API: GET /api/email-integrations/gmail/auth
+    API->>W: Return URL OAuth Google
+    W->>G: Redirect ke OAuth (scope: gmail.readonly)
+    G->>U: Tampilkan konfirmasi izin akses Gmail
+    
+    Note over G,U: "FinTrackr ingin membaca email kamu\nuntuk mendeteksi transaksi bank"
+    
+    U->>G: Klik Allow / Izinkan
+    G->>API: Redirect ke /api/email-integrations/gmail/callback?code=xxx
+    API->>G: Tukar code → OAuth tokens
+    API->>DB: Simpan integrasi + token (terenkripsi)
+    API->>W: Redirect ke /(tabs)/email-integration
+    W->>U: Tampilkan "Gmail berhasil dihubungkan ✅"
+    
+    Note over WK: Worker otomatis aktif saat startup
+    WK->>G: Poll Gmail API tiap 5 menit
+    G->>WK: Return email baru sejak last_sync
+    WK->>DB: Proses & simpan sebagai transaksi
+    W->>U: Transaksi muncul di Dashboard otomatis
+```
 
-### 🏷️ Kategori
-- 21 kategori default (income, expense, transfer) — auto-seed saat startup
-- Icon dan warna per kategori
+### Pipeline Email → Transaksi
 
-### 📉 Budget
-- Buat budget bulanan/mingguan/tahunan per kategori
-- Monitor progress pengeluaran vs budget
-- Status: **ok** → **warning** (80%) → **over** (100%) → **critical** (120%)
+```mermaid
+flowchart TD
+    Start(["📧 Email masuk\ndi Gmail/IMAP"]) --> Poll
+
+    subgraph Worker["⚙️ Background Worker (setiap 5 menit)"]
+        Poll["Ambil email baru\nsejak last_sync_at"]
+        Poll --> Dedup{{"Sudah ada\ndi database?"}}
+        Dedup -->|"Ya"| Skip1["Lewati"]
+        Dedup -->|"Belum"| Store
+        Store["Simpan ke email_messages\nstatus = pending"]
+    end
+
+    Store --> Parser
+
+    subgraph Parser["🔍 Email Parser"]
+        P1{{"Cocok dengan\nparser bank mana?"}}
+        P1 -->|"BCA, Mandiri,\nBRI, BNI, dll"| Extract
+        P1 -->|"Tidak ada\nyang cocok"| Skipped(["status = skipped\nlewati"])
+        
+        Extract["Ekstrak dari email:
+        ✓ Nominal (Rp 150.000)
+        ✓ Jenis (debet/kredit)
+        ✓ Merchant/toko
+        ✓ Nomor rekening
+        ✓ Tanggal transaksi"]
+    end
+
+    Extract --> Match
+
+    subgraph Match["🎯 Account Matching"]
+        M1{{"Cocokkan ke\nrekening user"}}
+        M1 -->|"Nomor rek cocok"| Found1["Rekening ditemukan ✅"]
+        M1 -->|"Kode bank cocok"| Found1
+        M1 -->|"Pakai default"| Found2["Rekening default"]
+        M1 -->|"Tidak ada"| Found3["account_id = null\n(isi manual nanti)"]
+    end
+
+    Found1 --> Categorize
+    Found2 --> Categorize
+    Found3 --> Categorize
+
+    subgraph Categorize["🏷️ Auto-Kategorisasi"]
+        C1{{"Merchant cocok\ndengan kategori?"}}
+        C1 -->|"Indomaret → Belanja\nGrab → Transport"| CatFound["Kategori otomatis ✅"]
+        C1 -->|"Tidak cocok"| CatNull["category_id = null\n(isi manual nanti)"]
+    end
+
+    CatFound --> Create
+    CatNull --> Create
+
+    subgraph Create["💾 Simpan Transaksi"]
+        Create2["INSERT transactions
+        • type: expense/income/transfer
+        • amount: 150000
+        • source: 'email'
+        • idempotency_key: 'email:userID:msgID'
+        ← Mencegah double-import 100%"]
+    end
+
+    Create --> Done(["✅ Transaksi muncul\ndi Dashboard"])
+    Create --> UpdateMsg["Update email_messages\nstatus = imported\ntransaction_id = UUID"]
+```
+
+### Status Email Messages
+
+| Status | Artinya | Aksi |
+|--------|---------|------|
+| `pending` | Baru masuk, belum diproses | Otomatis diproses |
+| `imported` | Berhasil jadi transaksi ✅ | — |
+| `skipped` | Bukan email bank/tidak dikenali | Bisa reprocess jika parser diupdate |
+| `failed` | Parser cocok tapi error saat import | Coba reprocess |
 
 ---
 
-## 🔐 Autentikasi & Keamanan
+## 🏦 Bank & E-Wallet yang Didukung
 
-### Alur Register & Verifikasi Email
+### Built-in (Selalu Aktif)
 
-```
-User daftar
-    │
-    ▼
-POST /api/auth/register
-    │  • Simpan user ke DB (is_email_verified = false)
-    │  • Generate token 64-hex (crypto/rand)
-    │  • Kirim email verifikasi (via SMTP atau log ke Docker)
-    ▼
-User klik link di email
-    │
-    ▼
-POST /api/auth/verify-email { token }
-    │  • Cari user by email_verification_token
-    │  • Set is_email_verified = true
-    │  • Hapus token dari DB
-    ▼
-Akun terverifikasi ✅
-```
-
-### Alur Reset Password
-
-```
-POST /api/auth/forgot-password { email }
-    │  • Selalu return success (tidak bocorkan apakah email terdaftar)
-    │  • Generate token 64-hex + waktu expired (1 jam)
-    │  • Kirim email link reset
-    ▼
-POST /api/auth/reset-password { token, newPassword }
-    │  • Cari user by token + cek expiry (password_reset_expires > NOW())
-    │  • Bcrypt hash password baru
-    │  • Hapus token dari DB
-    ▼
-Password baru aktif ✅
-```
-
-### JWT + Refresh Token Rotation
-
-```
-Login → Access Token (15 menit) + Refresh Token (7 hari)
-    │
-    ▼ Access token expired
-POST /api/auth/refresh { refreshToken }
-    │  • Verifikasi tanda tangan + cek di DB
-    │  • Revoke token lama
-    │  • Buat token baru (access + refresh)
-    ▼
-Token baru diberikan (rotation) ✅
-```
-
-| Endpoint | Keterangan |
-|----------|-----------|
-| `POST /api/auth/register` | Daftar + kirim verifikasi email |
-| `POST /api/auth/login` | Login email/password |
-| `POST /api/auth/refresh` | Refresh access token (rotation) |
-| `GET /api/auth/google` | Mulai Google OAuth |
-| `GET /api/auth/google/callback` | Callback Google OAuth |
-| `POST /api/auth/verify-email` | Verifikasi email via token |
-| `POST /api/auth/send-verification` | Kirim ulang email verifikasi |
-| `POST /api/auth/forgot-password` | Request reset password |
-| `POST /api/auth/reset-password` | Atur password baru |
-| `POST /api/auth/change-password` | Ganti password (harus tahu password lama) |
-| `GET /api/auth/me` | Info akun saya |
-| `POST /api/auth/logout` | Logout (revoke refresh token) |
-
----
-
-## 🏢 Workspace (Multi-User / Keluarga / Bisnis)
-
-Workspace memungkinkan beberapa user berbagi data keuangan bersama.
-
-### Tier Workspace
-| Tier | Keterangan |
-|------|-----------|
-| `personal` | Hanya untuk diri sendiri |
-| `family` | Keuangan keluarga bersama |
-| `business` | Keuangan usaha/bisnis |
-
-### Role Hierarki
-```
-owner (4) > admin (3) > contributor (2) > viewer (1)
-```
-- **owner** — bisa hapus workspace, ubah semua member, tidak bisa meninggalkan workspace
-- **admin** — undang member, ubah role (maksimal setara dengan dirinya sendiri)
-- **contributor** — tambah/edit transaksi
-- **viewer** — hanya bisa melihat
-
-### Alur Undangan Member
-
-Email yang diundang **tidak harus terdaftar dulu** di FinTrackr. Sistem menyimpan undangan, dan saat orang tersebut register, otomatis langsung bergabung.
-
-```
-Skenario A — Email sudah terdaftar:
-
-Admin/Owner → POST /api/workspaces/:id/invites { email, role }
-    │  • Generate token undangan (24 jam expired)
-    │  • Kirim email undangan
-    ▼
-User menerima email → klik link → sudah login → redirect ke frontend
-    │
-    ▼
-POST /api/workspaces/invites/accept { token }
-    │  • Verifikasi token + cek expiry
-    │  • Buat WorkspaceMember record
-    │  • Catat di activity log
-    ▼
-User bergabung ke workspace ✅
-
-
-Skenario B — Email BELUM terdaftar (baru):
-
-Admin undang "budi@gmail.com" (belum punya akun)
-    │  • Undangan tersimpan di DB (status = pending)
-    │  • Email dikirim dengan link registrasi + info workspace
-    ▼
-Budi register dengan email "budi@gmail.com"
-    │
-    ▼
-Sistem Register otomatis:
-    │  • Cek: SELECT * FROM workspace_invites
-    │          WHERE email = 'budi@gmail.com'
-    │          AND status = 'pending'
-    │          AND expires_at > NOW()
-    │  • Ada 1 undangan ditemukan!
-    │  • Buat WorkspaceMember record
-    │  • Update invite status = 'accepted'
-    │  • Log activity 'member_joined'
-    ▼
-Budi langsung masuk workspace begitu selesai register ✅
-(Tanpa perlu klik accept lagi)
-```
-
-### Activity Log
-Setiap aksi penting otomatis dicatat: undang member, terima undangan, ubah role, tambah transaksi (dalam konteks workspace), dsb.
-
-| Endpoint | Keterangan |
-|----------|-----------|
-| `GET /api/workspaces` | List semua workspace saya |
-| `POST /api/workspaces` | Buat workspace baru |
-| `GET /api/workspaces/:id` | Detail workspace |
-| `PATCH /api/workspaces/:id` | Update nama/deskripsi/currency |
-| `DELETE /api/workspaces/:id` | Hapus workspace (owner only) |
-| `GET /api/workspaces/:id/members` | Daftar anggota |
-| `PATCH /api/workspaces/:id/members/:userId` | Ubah role anggota |
-| `DELETE /api/workspaces/:id/members/:userId` | Keluarkan anggota |
-| `DELETE /api/workspaces/:id/leave` | Keluar dari workspace |
-| `POST /api/workspaces/:id/invites` | Undang via email |
-| `GET /api/workspaces/:id/invites` | List undangan aktif |
-| `DELETE /api/workspaces/:id/invites/:inviteId` | Batalkan undangan |
-| `POST /api/workspaces/invites/accept` | Terima undangan (via token) |
-| `POST /api/workspaces/invites/decline` | Tolak undangan |
-| `GET /api/workspaces/:id/activity` | Activity log |
-
----
-
-## 📧 Email Integration & Auto-Import Transaksi
-
-Fitur unggulan FinTrackr: **email notifikasi bank/e-wallet otomatis diubah menjadi transaksi**, tanpa perlu input manual.
-
-### Bank & E-Wallet yang Didukung
-
-Ada **2 jenis parser** — hardcoded (built-in) dan DB rules (bisa ditambah dari UI):
-
-#### Built-in (Hardcoded — selalu aktif)
-
-| Lembaga | Domain Pengirim | Tipe Notifikasi |
-|---------|----------------|----------------|
-| **BCA** | @klikbca.com / @bca.co.id | Debit, Kredit, Transfer |
-| **Bank Mandiri** | @bankmandiri.co.id | Debit, Kredit |
+| Lembaga | Pengirim Email | Deteksi |
+|---------|---------------|---------|
+| **BCA** | @klikbca.com, @bca.co.id | Debit, Kredit, Transfer |
+| **Mandiri** | @bankmandiri.co.id | Debit, Kredit |
 | **BRI** | @bri.co.id | Debit, Kredit, Transfer |
 | **BNI** | @bni.co.id | Debit, Kredit |
-| **GoPay** | @gojek.com / @gopay.co.id | Bayar, Terima, Top-up |
+| **GoPay** | @gojek.com, @gopay.co.id | Bayar, Terima, Top-up |
 | **OVO** | @ovo.id | Bayar, Terima, Cashback |
 | **DANA** | @dana.id | Bayar, Terima |
 | **ShopeePay** | @shopee.co.id | Pembayaran, Transfer |
-| **Jenius** | @jenius.com / @btpn.com | Bayar, Kirim |
-| **Livin' by Mandiri** | livin (via Mandiri) | Semua transaksi |
+| **Jenius** | @jenius.com, @btpn.com | Bayar, Kirim |
+| **Livin' Mandiri** | via Mandiri | Semua transaksi |
 | **BSI Mobile** | @bankbsi.co.id | Debit, Kredit |
 | **CIMB Niaga** | @cimbniaga.co.id | Debit, Kredit |
-| **Bank Permata** | @permatabank.com | Debit, Kredit |
+| **Permata** | @permatabank.com | Debit, Kredit |
 | **Flip** | @flip.id | Transfer |
 | **LinkAja** | @linkaja.id | Bayar, Terima |
-| **Bank Danamon** | @danamon.co.id | Debit, Kredit |
-| **Bank BTN** | @btn.co.id | Debit, Kredit |
-| **Generic** | *(catch-all)* | Deteksi otomatis pola Rp dari .co.id |
+| **Danamon** | @danamon.co.id | Debit, Kredit |
+| **BTN** | @btn.co.id | Debit, Kredit |
 
-#### DB Rules (Bisa Ditambah dari UI — berlaku Global)
+### Tambah Bank Baru (Tanpa Edit Kode)
 
-Selain parser built-in, admin bisa menambah bank/ewallet baru **langsung dari Settings** tanpa perlu edit kode atau rebuild Docker:
+Pergi ke **Settings → Parser Rules → Tambah Rule Baru** di aplikasi.
 
+```mermaid
+flowchart LR
+    UI["⚙️ Settings\nParser Rules"] -->|"Tambah rule"| DB[("Database\nbank_parser_rules")]
+    DB -->|"Priority lebih tinggi\ndari built-in"| Parser["Email Parser"]
+    Parser --> Result["✅ Bank baru\nlangsung aktif"]
 ```
-Settings → Parser Rules → Tambah Rule Baru
-```
-
-Field yang perlu diisi:
-
-| Field | Contoh | Keterangan |
-|-------|--------|-----------|
-| **Nama** | `Bank XYZ` | Nama tampil di transaksi |
-| **From Patterns** | `@bankxyz.co.id,noreply@xyz` | Domain pengirim (pisah koma) |
-| **Subject Patterns** | `transaksi xyz,notifikasi xyz` | Keyword di subject email |
-| **Expense Keywords** | `debet,pembayaran,keluar` | Kata penanda pengeluaran |
-| **Income Keywords** | `kredit,masuk,diterima` | Kata penanda pemasukan |
-| **Body Confirm Keywords** | `bank xyz,pt xyz` | Keyword body opsional (konfirmasi) |
-| **Amount Regex** | *(kosong = pakai default Rp)* | Regex custom jika format beda |
-| **Priority** | `0` | Lebih kecil = dicek lebih dulu |
-
-**DB rules dievaluasi SEBELUM built-in rules** — bisa digunakan untuk override/perbaiki parser yang ada.
-
-> Format angka Indonesia didukung penuh: `1.500.000,50` → `1500000.50`
-
-### Cara Menghubungkan Email
-
-#### Opsi 1 — Gmail (OAuth2, Direkomendasikan)
-
-```
-1. Settings → Email Integration → Tambah Gmail
-2. Klik tombol → diarahkan ke Google login
-3. Izinkan akses "read-only Gmail"
-4. Callback otomatis menyimpan token OAuth ke database
-5. Worker mulai polling inbox tiap 5 menit
-```
-
-> OAuth token disimpan terenkripsi di DB, **tidak pernah tampil di response API**.
-
-#### Opsi 2 — IMAP (Outlook, Yahoo, Mail lainnya)
-
-```
-POST /api/email-integrations/imap
-Body:
-{
-  "email": "kamu@outlook.com",
-  "imapHost": "outlook.office365.com",
-  "imapPort": 993,
-  "imapUser": "kamu@outlook.com",
-  "imapPassword": "app-password-kamu"
-}
-```
-
-Sistem akan **test koneksi TCP** dulu sebelum menyimpan — jika IMAP server tidak bisa dihubungi, request ditolak dengan error yang jelas.
-
-**Pengaturan IMAP umum:**
-| Provider | Host | Port | SSL |
-|----------|------|------|-----|
-| Gmail | `imap.gmail.com` | `993` | ✅ TLS |
-| Outlook/Hotmail | `outlook.office365.com` | `993` | ✅ TLS |
-| Yahoo | `imap.mail.yahoo.com` | `993` | ✅ TLS |
 
 ---
 
-### 🔄 Alur Lengkap Email Auto-Import
+## ⚙️ Konfigurasi .env
 
-Berikut adalah perjalanan sebuah email notifikasi bank dari inbox hingga menjadi transaksi di FinTrackr:
+File `.env` di root project mengatur semua konfigurasi. Buat dari template:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  SERVER STARTUP                                                  │
-│                                                                  │
-│  main.go membaca semua active email integrations dari DB         │
-│  → Spawn 1 goroutine per integrasi IMAP                         │
-│  → Spawn 1 goroutine per integrasi Gmail                        │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │ setiap 5 menit
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  POLLING (IMAP Worker / Gmail Worker)                            │
-│                                                                  │
-│  IMAP:                                                          │
-│    • Dial IMAP server (TLS port 993, atau STARTTLS port 143)    │
-│    • Login dengan kredensial tersimpan                           │
-│    • SELECT INBOX                                               │
-│    • SEARCH UNSEEN SINCE <last_sync_at>                         │
-│    • FETCH envelope + body (max 50 email per siklus)            │
-│                                                                  │
-│  Gmail:                                                         │
-│    • Build OAuth2 client dari access_token + refresh_token       │
-│    • Call Gmail API: messages.list?q=after:<epoch> is:unread    │
-│    • Fetch full message per ID (format=full)                    │
-│    • Decode base64 body parts (text/plain + text/html)          │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  DEDUPLICATION                                                   │
-│                                                                  │
-│  Cek message_id yang sudah ada di DB (FindMessageIDsSince)      │
-│  → Email yang sudah pernah diproses dilewati                    │
-│  → Sisanya di-INSERT dengan ON CONFLICT DO NOTHING              │
-│     (proteksi ganda jika ada race condition)                    │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  STORE: email_messages (parse_status = "pending")               │
-│                                                                  │
-│  Setiap email disimpan dengan:                                  │
-│  • message_id  — ID unik dari IMAP UID atau Gmail message ID    │
-│  • from        — alamat pengirim                                │
-│  • subject     — subjek email                                   │
-│  • body_text   — plain text body                                │
-│  • body_html   — HTML body (fallback)                           │
-│  • received_at — waktu email diterima                           │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  EMAIL PARSER (emailparser.Parse)                                │
-│                                                                  │
-│  Coba setiap parser secara berurutan:                           │
-│  1. Cek Matches(from, subject, body) — apakah email ini dari   │
-│     bank/ewallet yang dikenal?                                  │
-│     • Cek domain pengirim: "bca.co.id", "gopay.co.id", dsb     │
-│     • Cek keyword di subject: "transaksi", "debit", "notif"    │
-│  2. Parser pertama yang cocok → jalankan Parse()               │
-│     • Ekstrak amount dengan regex (format Indonesia: 1.500.000) │
-│     • Ekstrak merchant/toko dari body                           │
-│     • Ekstrak nomor rekening (last 4 digit biasanya)           │
-│     • Tentukan type: income | expense | transfer                │
-│     • Ekstrak tanggal transaksi                                 │
-│  3. Jika tidak ada yang cocok → status = "skipped"             │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │ ParseResult.Matched = true
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  ACCOUNT MATCHING                                                │
-│                                                                  │
-│  Cari akun user yang paling cocok (prioritas):                 │
-│  1. Exact match nomor rekening (last 4 digit)                  │
-│     "xxxx-1234" cocok dengan account.account_number "1234"     │
-│  2. Bank code match                                             │
-│     parsed.Bank = "BCA" cocok dengan account.bank_code = "BCA" │
-│  3. Akun default user (is_default = true)                      │
-│  4. Tidak ada → account_id = NULL (bisa di-assign manual)      │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  AUTO-KATEGORISASI                                               │
-│                                                                  │
-│  Hanya untuk transaksi expense:                                 │
-│  • Cocokkan merchant/description dengan nama kategori           │
-│  • Contoh: "Indomaret" → kategori "Belanja"                    │
-│  • Jika tidak cocok → category_id = NULL (isi manual nanti)    │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  CREATE TRANSACTION                                              │
-│                                                                  │
-│  INSERT INTO transactions:                                      │
-│  • type         — income | expense | transfer                   │
-│  • amount       — nilai transaksi                               │
-│  • date         — dari parser, fallback ke received_at          │
-│  • account_id   — hasil account matching                        │
-│  • category_id  — hasil auto-kategorisasi                      │
-│  • source       = "email"  ← tanda otomatis dari email         │
-│  • external_id  = message_id (untuk referensi)                 │
-│  • idempotency_key = "email:{userID}:{messageID}"              │
-│    → Unique constraint → double import IMPOSSIBLE               │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  UPDATE email_messages                                           │
-│                                                                  │
-│  parse_status   = "imported"                                    │
-│  transaction_id = UUID transaksi yang baru dibuat              │
-│  imported_at    = NOW()                                         │
-│  parsed_bank    = "BCA"                                         │
-│  parsed_type    = "expense"                                     │
-│  parsed_amount  = 150000                                        │
-│  parsed_merchant = "Indomaret Cipete"                          │
-└─────────────────────────────────────────────────────────────────┘
-
-Status akhir email_message:
-  "pending"  → belum diproses
-  "imported" → berhasil jadi transaksi ✅
-  "skipped"  → tidak cocok parser manapun (skip_reason tersimpan)
-  "failed"   → parser cocok tapi error saat parse/insert
-```
-
-### 🔁 Manual Sync & Reprocess
-
-**Sync manual** — picu polling langsung tanpa menunggu 5 menit:
-```
-POST /api/email-integrations/:id/sync
-```
-
-**Reprocess** — coba ulang email yang gagal/skip:
-```
-POST /api/email-messages/:id/reprocess
-```
-Berguna jika: parser diperbarui, atau akun bank baru ditambahkan (sehingga account matching bisa berhasil).
-
-### Endpoint Email Messages
-
-| Endpoint | Keterangan |
-|----------|-----------|
-| `GET /api/email-messages` | List semua email yang diproses |
-| `GET /api/email-messages?status=failed` | Filter by status |
-| `GET /api/email-messages?integrationId=uuid` | Filter by integrasi |
-| `GET /api/email-messages/:id` | Detail satu email |
-| `POST /api/email-messages/:id/reprocess` | Coba ulang parse + import |
-| `DELETE /api/email-messages/:id` | Hapus record (transaksi tidak ikut terhapus) |
-
-### Endpoint Email Integration
-
-| Endpoint | Keterangan |
-|----------|-----------|
-| `GET /api/email-integrations` | List semua integrasi |
-| `POST /api/email-integrations/imap` | Hubungkan via IMAP |
-| `GET /api/email-integrations/gmail/auth` | Mulai OAuth Gmail |
-| `GET /api/email-integrations/gmail/callback` | Callback OAuth Gmail |
-| `DELETE /api/email-integrations/:id` | Putuskan integrasi |
-| `PATCH /api/email-integrations/:id/toggle` | Aktif / nonaktif |
-| `POST /api/email-integrations/:id/sync` | Paksa sync sekarang |
-
----
-
-## ⚙️ Pengaturan Sistem (dari UI — tanpa edit .env!)
-
-Semua konfigurasi SMTP bisa diubah langsung dari halaman **Settings** di frontend tanpa perlu restart server.
-
-### Bagaimana Dynamic SMTP Bekerja
-
-```
-Request kirim email masuk
-    │
-    ▼
-DynamicSMTPService.resolve()
-    │
-    ├─ Baca system_settings dari DB
-    │   smtp.host, smtp.port, smtp.user, smtp.pass, smtp.from, smtp.enabled
-    │
-    ├─ Fallback ke environment variable jika key tidak ada di DB
-    │   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
-    │
-    └─ Jika enabled = false atau semua kosong → cetak ke log (dev mode)
-         "📧 [DEV] Email to: xxx Subject: yyy"
-```
-
-Konfigurasi SMTP disimpan di tabel `system_settings` (key-value store) dengan UPSERT — aman dijalankan berulang kali.
-
-### Langkah Setup Gmail SMTP dari UI:
-
-1. Buka http://localhost → login
-2. Tab **Pengaturan** → **Konfigurasi Email (SMTP)**
-3. Isi form:
-   - **Host**: `smtp.gmail.com`
-   - **Port**: `587`
-   - **Email / Username**: email Gmail kamu
-   - **Password**: Gmail **App Password** (bukan password biasa!)
-   - **Nama Pengirim**: `FinTrackr`
-4. Klik **Simpan Pengaturan**
-5. Test dengan klik **Tes Kirim Email**
-
-**Cara buat Gmail App Password:**
-1. https://myaccount.google.com → Security → 2-Step Verification → aktifkan
-2. Security → App Passwords → buat baru ("FinTrackr Mail")
-3. Salin 16-karakter → paste ke kolom Password di Settings
-
-| Endpoint | Keterangan |
-|----------|-----------|
-| `GET /api/settings/smtp` | Lihat config (password ditampilkan sebagai `hasPass: true`) |
-| `PUT /api/settings/smtp` | Simpan config baru |
-| `POST /api/settings/smtp/test` | Kirim email tes ke alamat tertentu |
-
----
-
-## 🏗️ Arsitektur Backend (Clean Architecture)
-
-```
-┌──────────────────────────────────────────────────────┐
-│   Delivery Layer (HTTP / Gin)                         │
-│   handler/, middleware/, router.go                    │
-│   ↕ hanya kenal interface usecase                    │
-├──────────────────────────────────────────────────────┤
-│   Use Case Layer (Business Logic)                     │
-│   auth, account, transaction, workspace,              │
-│   email_import_service, email_integration             │
-│   ↕ hanya kenal interface repository                 │
-├──────────────────────────────────────────────────────┤
-│   Domain Layer (Entities + Ports)                     │
-│   entity/, domain/repository/, domain/usecase/        │
-│   zero framework dependencies                         │
-├──────────────────────────────────────────────────────┤
-│   Infrastructure Layer                                │
-│   repository/ (GORM) · email/ (SMTP) ·               │
-│   emailparser/ (regex) · worker/ (goroutines)         │
-└──────────────────────────────────────────────────────┘
-```
-
-### Database Tables (16 Tabel)
-
-| Tabel | Keterangan | Terkait |
-|-------|-----------|---------|
-| `users` | Akun pengguna, token verifikasi, reset password | — |
-| `refresh_tokens` | JWT refresh token store (rotasi) | users |
-| `accounts` | Rekening user (bank_code untuk email matching) | users |
-| `categories` | 21 default + custom, icon + warna | users |
-| `category_rules` | Rules auto-kategorisasi | categories |
-| `transactions` | Semua transaksi, source field, idempotency_key | accounts, categories |
-| `transaction_audit_logs` | Riwayat perubahan transaksi | transactions |
-| `budgets` | Budget per kategori, progress tracking | categories |
-| `subscriptions` | Langganan/recurring expenses | — |
-| `workspaces` | Workspace multi-user | users |
-| `workspace_members` | Keanggotaan + role | workspaces, users |
-| `workspace_invites` | Token undangan + expiry | workspaces |
-| `workspace_activity_logs` | Audit trail semua aksi workspace | workspaces |
-| `system_settings` | Key-value store config (SMTP, dsb) | — |
-| `email_integrations` | Koneksi Gmail/IMAP + OAuth tokens + LastSyncAt | users |
-| `email_messages` | Pipeline email: pending→parsed→imported | email_integrations |
-| `bank_parser_rules` | Parser rules dari UI (global, berlaku semua user) | — |
-
-### Background Workers
-
-Saat server startup, **2 worker** diluncurkan sebagai goroutine terpisah:
-
-```
-main.go
-├── IMAPWorker.Start()
-│   └── Untuk setiap IMAP integration aktif di DB:
-│       └── goroutine pollLoop() → poll tiap 5 menit
-│
-└── GmailWorker.Start()
-    └── Untuk setiap Gmail integration aktif di DB:
-        └── goroutine pollLoop() → poll tiap 5 menit
-```
-
-Ketika integration baru ditambahkan via API, worker bisa di-trigger manual via `/sync` endpoint. Saat server restart, worker otomatis membaca ulang semua integrasi aktif dari DB.
-
----
-
-## ⚠️ Troubleshooting
-
-### Service tidak healthy
 ```powershell
-docker compose ps                        # cek status semua
-docker logs fintrackr-api-1              # cek log API
-docker logs fintrackr-caddy-1            # cek log proxy
+cp .env.example .env
 ```
 
-### Port sudah dipakai
-Edit `docker-compose.dev.yml` → ubah port di bagian `ports:`.
+### Variabel Penting
 
-### Login gagal dari browser
-Pastikan API berjalan: `docker compose ps` → `fintrackr-api-1` harus `(healthy)`.
+```env
+# ── App ─────────────────────────────────────────────
+NODE_ENV=development         # production untuk deploy VPS
+APP_URL=http://localhost      # URL web app (ganti ke domain asli di production)
 
-### Email verifikasi tidak sampai
-1. Cek SMTP sudah dikonfigurasi: Settings → Konfigurasi Email
-2. Jika belum, cek log untuk token verifikasi:
-   ```powershell
-   docker logs fintrackr-api-1 | Select-String "EMAIL"
-   ```
-3. Atau gunakan endpoint langsung:
-   ```
-   POST /api/auth/verify-email
-   Body: { "token": "<token dari log>" }
-   ```
+# ── Database ────────────────────────────────────────
+POSTGRES_PASSWORD=ganti_ini  # Password PostgreSQL
+DATABASE_URL=postgresql://fintrackr:<POSTGRES_PASSWORD>@postgres:5432/fintrackr
 
-### Email bank tidak ter-import otomatis
-1. Pastikan integrasi aktif: `GET /api/email-integrations` → `is_active: true`
-2. Cek email messages: `GET /api/email-messages?status=skipped` — lihat `skip_reason`
-3. Cek log worker: `docker logs fintrackr-api-1 | Select-String "Worker"`
-4. Coba manual sync: `POST /api/email-integrations/:id/sync`
-5. Jika ada failed messages, coba reprocess: `POST /api/email-messages/:id/reprocess`
+# ── JWT (generate random string 64 karakter) ────────
+JWT_SECRET=random_64_karakter_disini
+JWT_REFRESH_SECRET=random_64_karakter_lain_disini
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=30d
 
-### Gmail OAuth gagal
-1. Pastikan `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` sudah diset di `.env`
-2. Pastikan `GOOGLE_CALLBACK_URL` sesuai dengan yang terdaftar di Google Console
-3. Untuk local dev, callback URL: `http://localhost:4000/api/email-integrations/gmail/callback`
+# ── Google OAuth ← ISI INI UNTUK AKTIFKAN LOGIN GOOGLE
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxx
+GOOGLE_CALLBACK_URL=http://localhost/api/auth/google/callback
 
-### Reset semua data
+# ── Email SMTP (untuk verifikasi email, undangan, dll)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=email@gmail.com
+SMTP_PASS=app-password-16-karakter  # bukan password biasa! lihat di bawah
+
+# ── Self-Hosted Mode ─────────────────────────────────
+SELF_HOSTED_MODE=true
+DISABLE_TIER_LIMITS=true     # true = semua fitur premium gratis untuk semua user
+```
+
+### Cara Generate Secrets
+
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+# JWT Secret (Windows PowerShell)
+[System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
+
+# Atau pakai openssl (Git Bash / WSL)
+openssl rand -hex 64
+```
+
+### Setup Gmail App Password (untuk SMTP)
+
+Gmail tidak izinkan password biasa untuk SMTP — harus pakai App Password:
+
+```
+1. Buka https://myaccount.google.com
+2. Security → 2-Step Verification → Pastikan aktif
+3. Security → App Passwords
+4. Select app: Mail | Select device: Other → ketik "FinTrackr"
+5. Klik Generate → salin 16 karakter
+6. Paste ke SMTP_PASS di .env
+```
+
+---
+
+## 🔄 Perintah Docker Berguna
+
+```powershell
+# ▶️ Start semua service
+docker compose up -d
+
+# ▶️ Start + expose dev ports (Grafana, MinIO, dll)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# ⏹️ Stop semua service
+docker compose down
+
+# ⏹️ Stop + hapus semua data (HATI-HATI!)
+docker compose down -v
+
+# 📋 Status semua container
+docker compose ps
+
+# 📝 Log API live
+docker logs fintrackr-api-1 -f
+
+# 📝 Log semua service live
+docker compose logs -f
+
+# 🔨 Rebuild API setelah perubahan kode Go
+docker compose build api && docker compose up -d api
+
+# 🔨 Rebuild Web setelah perubahan frontend
+docker compose build web && docker compose up -d web
+
+# 🔨 Rebuild semua
+docker compose build && docker compose up -d
+
+# 🗄️ Masuk PostgreSQL shell
+docker exec -it fintrackr-postgres-1 psql -U fintrackr -d fintrackr
+
+# 🔍 Cek email yang sudah diproses
+docker exec -it fintrackr-postgres-1 psql -U fintrackr -d fintrackr \
+  -c "SELECT subject, from, parse_status, parsed_amount FROM email_messages ORDER BY created_at DESC LIMIT 10;"
 ```
-Database dan default categories dibuat ulang otomatis.
 
 ---
 
-## 🔑 API Health Check
+## 🏗️ Arsitektur
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client"]
+        Browser["Browser\nhttp://localhost"]
+    end
+
+    subgraph Proxy["🔀 Caddy Reverse Proxy :80/:443"]
+        Caddy["Route /api/* → API\nRoute /* → Web"]
+    end
+
+    subgraph App["📦 Application"]
+        Web["Web App\nExpo + nginx :80"]
+        API["Go API\nGin + GORM :4000"]
+    end
+
+    subgraph Workers["⚙️ Background (dalam API)"]
+        IMAP["IMAP Worker\ngoroutine"]
+        Gmail["Gmail Worker\ngoroutine"]
+    end
+
+    subgraph Data["🗄️ Data Layer"]
+        PG[("PostgreSQL :5432\n16 tabel")]
+        Redis[("Redis :6379\nCache")]
+        MinIO[("MinIO :9000\nObject Storage")]
+    end
+
+    subgraph Observability["📊 Observability"]
+        Prometheus["Prometheus :9090"]
+        Grafana["Grafana :3000"]
+        Loki["Loki :3100"]
+        UptimeKuma["Uptime Kuma :3001"]
+    end
+
+    Browser --> Proxy
+    Caddy --> Web
+    Caddy --> API
+    API --> PG
+    API --> Redis
+    API --> MinIO
+    IMAP --> PG
+    Gmail --> PG
+    API --> Prometheus
+    Prometheus --> Grafana
+    Loki --> Grafana
+```
+
+### Clean Architecture Go API
 
 ```
-GET http://localhost/api/health
-GET http://localhost:4000/api/health  (langsung, dev only)
-```
-
-Response:
-```json
-{
-  "status": "ok",
-  "version": "1.0.0",
-  "environment": "development"
-}
+apps/api-go/
+├── cmd/server/main.go          ← Entry point, wiring semua dependencies
+└── internal/
+    ├── domain/                 ← Core domain (zero framework dependency)
+    │   ├── entity/             ← Struct database (User, Transaction, dll)
+    │   ├── repository/         ← Interface repository (port)
+    │   └── usecase/            ← Interface use case (port)
+    ├── usecase/                ← Business logic implementation
+    │   └── email_import_service.go  ← Email → Transaction pipeline
+    ├── repository/             ← GORM implementation
+    ├── delivery/http/
+    │   ├── handler/            ← Gin request handlers
+    │   ├── middleware/         ← JWT auth, CORS
+    │   └── router.go           ← Semua route
+    └── infrastructure/
+        ├── config/             ← Load .env
+        ├── database/           ← Connect, AutoMigrate, Seed
+        ├── email/              ← Dynamic SMTP service
+        ├── emailparser/        ← Regex parser bank/ewallet
+        └── worker/             ← IMAP + Gmail background pollers
 ```
 
 ---
 
-## 🗺️ API Route Reference (Lengkap)
+## 📖 API Reference Lengkap
 
 ### Authentication
+
 ```
 POST   /api/auth/register                  Daftar + kirim verifikasi email
 POST   /api/auth/login                     Login email/password
 POST   /api/auth/refresh                   Refresh access token (rotation)
-GET    /api/auth/google                    Mulai Google OAuth
+GET    /api/auth/google                    Mulai Google OAuth (redirect)
 GET    /api/auth/google/callback           Callback Google OAuth
+GET    /api/auth/google/configured         Cek apakah Google OAuth aktif di server
 POST   /api/auth/verify-email              Verifikasi email via token
 POST   /api/auth/forgot-password           Request link reset password
 POST   /api/auth/reset-password            Set password baru via token
---- Protected (perlu Bearer token) ---
-GET    /api/auth/me                        Info akun saya
+--- Protected (Bearer token) ---
+GET    /api/auth/me                        Profil user saya
 POST   /api/auth/logout                    Logout (revoke refresh token)
 POST   /api/auth/send-verification         Kirim ulang email verifikasi
-POST   /api/auth/change-password           Ganti password (perlu password lama)
+POST   /api/auth/change-password           Ganti password
 ```
 
-### Transaksi
-```
-GET    /api/transactions                   List transaksi (filter: type/date/category/account/search)
-POST   /api/transactions                   Tambah transaksi manual
-GET    /api/transactions/:id               Detail transaksi
-PATCH  /api/transactions/:id               Edit transaksi
-DELETE /api/transactions/:id               Hapus (soft delete)
-```
+### Transaksi, Akun, Kategori, Budget
 
-### Akun
 ```
-GET    /api/accounts                       List rekening aktif
-POST   /api/accounts                       Tambah rekening
-PATCH  /api/accounts/:id                   Edit rekening
-DELETE /api/accounts/:id                   Nonaktifkan rekening
-```
-
-### Kategori
-```
-GET    /api/categories                     List semua kategori
-POST   /api/categories                     Buat kategori baru
-PATCH  /api/categories/:id                 Edit kategori
-DELETE /api/categories/:id                 Hapus kategori
-```
-
-### Budget
-```
-GET    /api/budgets                        List budget
-POST   /api/budgets                        Buat budget baru
-GET    /api/budgets/subscriptions          List langganan/recurring
-PATCH  /api/budgets/:id                    Edit budget
-DELETE /api/budgets/:id                    Hapus budget
+GET|POST              /api/transactions
+GET|PATCH|DELETE      /api/transactions/:id
+GET|POST              /api/accounts
+PATCH|DELETE          /api/accounts/:id
+GET|POST              /api/categories
+PATCH|DELETE          /api/categories/:id
+GET|POST              /api/budgets
+PATCH|DELETE          /api/budgets/:id
+GET                   /api/budgets/subscriptions
 ```
 
 ### Dashboard
-```
-GET    /api/dashboard/summary              Ringkasan + perbandingan periode sebelumnya
-GET    /api/dashboard/category-breakdown   Breakdown per kategori (pie chart data)
-GET    /api/dashboard/monthly-trend        Tren 6 bulan (bar chart data)
-```
 
-### Workspace
 ```
-GET    /api/workspaces                     List workspace saya
-POST   /api/workspaces                     Buat workspace baru
-GET    /api/workspaces/:id                 Detail workspace
-PATCH  /api/workspaces/:id                 Edit workspace
-DELETE /api/workspaces/:id                 Hapus workspace (owner only)
-GET    /api/workspaces/:id/members         Daftar anggota
-PATCH  /api/workspaces/:id/members/:uid    Ubah role anggota
-DELETE /api/workspaces/:id/members/:uid    Keluarkan anggota
-DELETE /api/workspaces/:id/leave           Keluar dari workspace
-POST   /api/workspaces/:id/invites         Undang anggota via email
-GET    /api/workspaces/:id/invites         List undangan aktif
-DELETE /api/workspaces/:id/invites/:iid    Batalkan undangan
-POST   /api/workspaces/invites/accept      Terima undangan (via token)
-POST   /api/workspaces/invites/decline     Tolak undangan
-GET    /api/workspaces/:id/activity        Activity log workspace
+GET /api/dashboard/summary              Ringkasan bulan ini
+GET /api/dashboard/category-breakdown   Data pie chart pengeluaran
+GET /api/dashboard/monthly-trend        Tren 6 bulan (bar chart)
 ```
 
 ### Email Integration
+
 ```
-GET    /api/email-integrations             List semua integrasi
-POST   /api/email-integrations/imap        Hubungkan via IMAP
-GET    /api/email-integrations/gmail/auth  Mulai OAuth Gmail
-GET    /api/email-integrations/gmail/callback  Callback OAuth Gmail
-DELETE /api/email-integrations/:id         Putuskan integrasi
-PATCH  /api/email-integrations/:id/toggle  Aktif / nonaktif
-POST   /api/email-integrations/:id/sync    Paksa sync sekarang
+GET    /api/email-integrations                  List semua integrasi
+POST   /api/email-integrations/imap             Hubungkan via IMAP
+GET    /api/email-integrations/gmail/auth       Mulai OAuth Gmail
+GET    /api/email-integrations/gmail/callback   Callback OAuth Gmail
+DELETE /api/email-integrations/:id             Putuskan integrasi
+PATCH  /api/email-integrations/:id/toggle      Aktif / nonaktif
+POST   /api/email-integrations/:id/sync        Paksa sync sekarang
 ```
 
-### Email Messages (Inbox Pipeline)
+### Email Messages (Pipeline Inbox)
+
 ```
-GET    /api/email-messages                 List semua email diproses
-                                           ?status=pending|parsed|imported|skipped|failed
-                                           ?integrationId=<uuid>
-                                           ?page=1&limit=20
-GET    /api/email-messages/:id             Detail satu email + hasil parse
-POST   /api/email-messages/:id/reprocess   Coba ulang parse + import
-DELETE /api/email-messages/:id             Hapus record (transaksi tidak terhapus)
+GET    /api/email-messages                      List semua email diproses
+                                                ?status=pending|imported|skipped|failed
+                                                ?integrationId=<uuid>
+GET    /api/email-messages/:id                  Detail + hasil parse
+POST   /api/email-messages/:id/reprocess        Coba ulang parse + import
+DELETE /api/email-messages/:id                  Hapus record
 ```
 
-### Settings
-```
-GET    /api/settings/smtp                  Lihat konfigurasi SMTP
-PUT    /api/settings/smtp                  Simpan konfigurasi SMTP baru
-POST   /api/settings/smtp/test             Kirim email tes
+### Settings & Parser Rules
 
-GET    /api/settings/parser-rules          List semua parser rules (termasuk nonaktif)
-GET    /api/settings/parser-rules/active   List rules yang aktif saja
-POST   /api/settings/parser-rules          Tambah parser rule baru
-PATCH  /api/settings/parser-rules/:id      Edit parser rule
-PATCH  /api/settings/parser-rules/:id/toggle  Aktif / nonaktif
-DELETE /api/settings/parser-rules/:id      Hapus parser rule
 ```
+GET|PUT               /api/settings/smtp                  Konfigurasi SMTP
+POST                  /api/settings/smtp/test             Kirim email tes
+GET                   /api/settings/parser-rules          Semua parser rules
+GET                   /api/settings/parser-rules/active   Rules aktif saja
+POST                  /api/settings/parser-rules          Tambah rule baru
+PATCH                 /api/settings/parser-rules/:id      Edit rule
+PATCH                 /api/settings/parser-rules/:id/toggle  Toggle aktif
+DELETE                /api/settings/parser-rules/:id      Hapus rule
+```
+
+### Workspace
+
+```
+GET|POST              /api/workspaces
+GET|PATCH|DELETE      /api/workspaces/:id
+GET                   /api/workspaces/:id/members
+PATCH|DELETE          /api/workspaces/:id/members/:userId
+DELETE                /api/workspaces/:id/leave
+POST                  /api/workspaces/:id/invites         Undang via email
+GET                   /api/workspaces/:id/invites
+DELETE                /api/workspaces/:id/invites/:id
+POST                  /api/workspaces/invites/accept
+POST                  /api/workspaces/invites/decline
+GET                   /api/workspaces/:id/activity
+```
+
+---
+
+## ❗ Troubleshooting
+
+### Google OAuth — "This app isn't verified"
+
+Normal untuk app baru. Klik **Advanced → Go to FinTrackr (unsafe)** untuk lanjut.
+Hilang setelah submit Google Verification (opsional untuk app internal).
+
+### Google OAuth — Redirect URI mismatch
+
+Pastikan URI di Google Console **persis sama** dengan di `.env`:
+```
+Google Console:   http://localhost/api/auth/google/callback
+.env:             GOOGLE_CALLBACK_URL=http://localhost/api/auth/google/callback
+```
+
+### Email bank tidak ter-import
+
+```powershell
+# 1. Cek integrasi aktif
+curl http://localhost/api/email-integrations -H "Authorization: Bearer <token>"
+
+# 2. Lihat email yang di-skip
+curl "http://localhost/api/email-messages?status=skipped" -H "Authorization: Bearer <token>"
+
+# 3. Cek log worker
+docker logs fintrackr-api-1 | grep -i "worker\|imap\|gmail"
+
+# 4. Paksa sync manual
+curl -X POST http://localhost/api/email-integrations/<id>/sync -H "Authorization: Bearer <token>"
+```
+
+### Email verifikasi tidak sampai
+
+```powershell
+# Lihat token verifikasi di log (mode dev)
+docker logs fintrackr-api-1 | grep -i "EMAIL\|verify"
+
+# Atau verifikasi langsung via API
+curl -X POST http://localhost/api/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{"token": "<token dari log>"}'
+```
+
+### Service unhealthy
+
+```powershell
+# Cek status semua container
+docker compose ps
+
+# Lihat log service yang bermasalah
+docker compose logs <nama-service> --tail=50
+
+# Restart service tertentu
+docker compose restart <nama-service>
+```
+
+### Reset semua data (mulai dari awal)
+
+```powershell
+# HATI-HATI: hapus semua data!
+docker compose down -v
+docker compose up -d
+```
+
+---
+
+## 📄 Lisensi
+
+Self-hosted, open-source. Lihat file `LICENSE`.
 
 ---
 
