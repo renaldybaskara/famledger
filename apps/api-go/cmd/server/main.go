@@ -134,6 +134,7 @@ func main() {
 		EmailMessageHandler:     emailMessageHandler,
 		BankParserRuleHandler:   bankParserRuleHandler,
 		JWTSecret:               cfg.JWTSecret,
+		AppURL:                  cfg.AppURL,
 		UserRepo:                userRepo,
 	})
 

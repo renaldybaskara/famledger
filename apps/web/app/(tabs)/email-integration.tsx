@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
@@ -68,9 +68,51 @@ const emailApi = {
 export default function EmailIntegrationScreen() {
   const [view, setView] = useState<'list' | 'add-gmail' | 'add-imap' | 'messages'>('list')
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const qc = useQueryClient()
+
+  // Handle redirect back from Gmail OAuth callback
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const connected = params.get('gmail_connected')
+    const gmailError = params.get('gmail_error')
+
+    if (connected) {
+      window.history.replaceState({}, '', window.location.pathname)
+      setToast({ type: 'success', msg: `Gmail ${connected} berhasil dihubungkan!` })
+      qc.invalidateQueries({ queryKey: ['email-integrations'] })
+    } else if (gmailError) {
+      window.history.replaceState({}, '', window.location.pathname)
+      const msgs: Record<string, string> = {
+        missing_code: 'OAuth gagal — tidak ada kode dari Google.',
+        invalid_state: 'OAuth gagal — state tidak valid.',
+        oauth_failed: 'Gagal menghubungkan Gmail. Coba lagi.',
+        not_configured: 'Google OAuth belum dikonfigurasi di server.',
+      }
+      setToast({ type: 'error', msg: msgs[gmailError] ?? 'Gagal menghubungkan Gmail.' })
+    }
+  }, [])
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['top']}>
+      {/* Toast notification */}
+      {toast && (
+        <TouchableOpacity
+          onPress={() => setToast(null)}
+          className={`mx-4 mt-3 p-3 rounded-xl flex-row items-center ${
+            toast.type === 'success' ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'
+          }`}
+        >
+          {toast.type === 'success'
+            ? <CheckCircle size={16} color="#10b981" />
+            : <XCircle size={16} color="#ef4444" />}
+          <Text className={`ml-2 text-sm font-medium flex-1 ${
+            toast.type === 'success' ? 'text-emerald-700' : 'text-red-600'
+          }`}>{toast.msg}</Text>
+        </TouchableOpacity>
+      )}
+
       {view === 'list' && (
         <IntegrationList
           onAddGmail={() => setView('add-gmail')}

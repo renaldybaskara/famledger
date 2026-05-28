@@ -16,7 +16,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Response interceptor: auto refresh on 401
+// Response interceptor: auto refresh on 401, redirect to login on failure
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -24,22 +24,24 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       const { refreshToken, setAccessToken, logout } = useAuthStore.getState()
-      if (!refreshToken) {
-        logout()
-        return Promise.reject(error)
+
+      if (refreshToken) {
+        try {
+          const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken })
+          setAccessToken(data.accessToken)
+          original.headers.Authorization = `Bearer ${data.accessToken}`
+          return api(original)
+        } catch {
+          // refresh failed — fall through to logout
+        }
       }
 
-      try {
-        const { data } = await axios.post(`${API_URL}/auth/refresh`, {
-          refreshToken,
-        })
-        setAccessToken(data.accessToken)
-        original.headers.Authorization = `Bearer ${data.accessToken}`
-        return api(original)
-      } catch {
-        logout()
-        return Promise.reject(error)
+      // Clear session and redirect to login
+      logout()
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
       }
+      return Promise.reject(error)
     }
     return Promise.reject(error)
   }

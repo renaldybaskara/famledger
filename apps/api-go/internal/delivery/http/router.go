@@ -23,10 +23,21 @@ type Dependencies struct {
 	BankParserRuleHandler   *handler.BankParserRuleHandler
 
 	JWTSecret  string
+	AppURL     string
 	UserRepo   repository.UserRepository
 }
 
 func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
+	// Inject appURL into every request context for redirect handlers
+	appURL := deps.AppURL
+	if appURL == "" {
+		appURL = "http://localhost"
+	}
+	r.Use(func(c *gin.Context) {
+		c.Set("appURL", appURL)
+		c.Next()
+	})
+
 	// Global prefix
 	api := r.Group("/api")
 
@@ -163,13 +174,15 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		settings.DELETE("/parser-rules/:id", deps.BankParserRuleHandler.Delete)
 	}
 
-	// Email Integrations
+	// Gmail OAuth callback — PUBLIC (no JWT, user identified via state param)
+	api.GET("/email-integrations/gmail/callback", deps.EmailIntegrationHandler.GmailCallback)
+
+	// Email Integrations (protected)
 	emailIntegrations := protected.Group("/email-integrations")
 	{
 		emailIntegrations.GET("", deps.EmailIntegrationHandler.List)
 		emailIntegrations.POST("/imap", deps.EmailIntegrationHandler.ConnectIMAP)
 		emailIntegrations.GET("/gmail/auth", deps.EmailIntegrationHandler.GmailAuthURL)
-		emailIntegrations.GET("/gmail/callback", deps.EmailIntegrationHandler.GmailCallback)
 		emailIntegrations.DELETE("/:id", deps.EmailIntegrationHandler.Disconnect)
 		emailIntegrations.PATCH("/:id/toggle", deps.EmailIntegrationHandler.Toggle)
 		emailIntegrations.POST("/:id/sync", deps.EmailIntegrationHandler.Sync)

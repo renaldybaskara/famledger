@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"strings"
 
 	httputil "github.com/fintrackr/api/internal/delivery/http/httputil"
 	domainuc "github.com/fintrackr/api/internal/domain/usecase"
@@ -83,26 +86,54 @@ func (h *EmailIntegrationHandler) GmailAuthURL(c *gin.Context) {
 	httputil.OK(c, gin.H{"url": url})
 }
 
-// GET /api/email-integrations/gmail/callback
+// GET /api/email-integrations/gmail/callback  (PUBLIC — no JWT required)
+// Google redirects here after user grants Gmail access.
+// The state parameter carries the userID so we know which account to link.
 func (h *EmailIntegrationHandler) GmailCallback(c *gin.Context) {
-	userID := c.MustGet("currentUserID").(uuid.UUID)
+	appURL := c.GetString("appURL")
+	if appURL == "" {
+		appURL = "/"
+	}
+	tabURL := fmt.Sprintf("%s/(tabs)/email-integration", appURL)
+
+	errRedirect := func(reason string) {
+		c.Redirect(http.StatusTemporaryRedirect,
+			tabURL+"?gmail_error="+reason)
+	}
 
 	code := c.Query("code")
 	if code == "" {
-		httputil.BadRequest(c, "Missing OAuth code")
+		errRedirect("missing_code")
+		return
+	}
+
+	// state = "gmail_connect_<userUUID>" — set by GetGmailAuthURL
+	state := c.Query("state")
+	if !strings.HasPrefix(state, "gmail_connect_") {
+		errRedirect("invalid_state")
+		return
+	}
+	userIDStr := strings.TrimPrefix(state, "gmail_connect_")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		errRedirect("invalid_user")
 		return
 	}
 
 	integration, err := h.uc.CompleteGmailOAuth(c.Request.Context(), userID, code)
 	if err != nil {
+		log.Printf("[GmailCallback] CompleteGmailOAuth error for user %s: %v", userID, err)
 		if err == usecase.ErrGmailNotConfigured {
-			httputil.BadRequest(c, "Google OAuth is not configured")
+			errRedirect("not_configured")
 			return
 		}
-		httputil.InternalError(c, err)
+		errRedirect("oauth_failed")
 		return
 	}
-	httputil.OK(c, gin.H{"data": integration, "message": "Gmail connected successfully"})
+
+	log.Printf("[GmailCallback] Gmail connected: %s for user %s", integration.Email, userID)
+	c.Redirect(http.StatusTemporaryRedirect,
+		tabURL+"?gmail_connected="+integration.Email)
 }
 
 // DELETE /api/email-integrations/:id
