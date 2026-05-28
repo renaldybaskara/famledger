@@ -5,16 +5,18 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Linking,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useQueryClient } from '@tanstack/react-query'
-import { Bell, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
+import { Bell, TrendingUp, TrendingDown, ChevronRight, Mail, X, Zap } from 'lucide-react'
 import { router } from 'expo-router'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend } from '../../src/hooks/useDashboard'
 import { useTransactions } from '../../src/hooks/useTransactions'
 import { useAuthStore } from '../../src/store/auth.store'
+import { api } from '../../src/lib/api'
 import { getCurrentMonthRange, formatCurrency } from '../../src/lib/format'
 import { SummaryCard } from '../../components/dashboard/SummaryCard'
 import { CategoryPieChart } from '../../components/dashboard/CategoryPieChart'
@@ -23,11 +25,31 @@ import { TransactionItem } from '../../components/transactions/TransactionItem'
 import { Card } from '../../components/ui/Card'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost/api'
+
 export default function DashboardScreen() {
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const range = getCurrentMonthRange()
+
+  // Check whether user has any active email integration
+  const { data: integrations } = useQuery({
+    queryKey: ['email-integrations'],
+    queryFn: () => api.get<{ id: string; isActive: boolean }[]>('/email-integrations'),
+    staleTime: 5 * 60 * 1000,
+  })
+  const hasEmailIntegration = (integrations?.data?.length ?? 0) > 0
+  const showGmailBanner = !hasEmailIntegration && !bannerDismissed
+
+  const handleConnectGmail = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = `${API_URL}/email-integrations/gmail/auth`
+    } else {
+      Linking.openURL(`${API_URL}/email-integrations/gmail/auth`)
+    }
+  }
 
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary(range)
   const { data: categoryData, isLoading: categoryLoading } = useCategoryBreakdown({
@@ -80,8 +102,60 @@ export default function DashboardScreen() {
           <Text className="text-white/60 text-xs mt-1">{currentMonth}</Text>
         </View>
 
+        {/* Gmail integration banner */}
+        {showGmailBanner && (
+          <View className="mx-4 mt-4 rounded-2xl overflow-hidden"
+            style={{ backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
+          >
+            <View className="p-4">
+              <View className="flex-row items-start justify-between">
+                <View className="flex-row items-center flex-1 mr-3">
+                  <View className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                    style={{ backgroundColor: '#6366F1' }}
+                  >
+                    <Zap size={20} color="white" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-bold text-sm" style={{ color: '#3730A3' }}>
+                      Aktifkan Auto-Import Transaksi
+                    </Text>
+                    <Text className="text-xs mt-0.5 leading-4" style={{ color: '#6366F1' }}>
+                      Hubungkan Gmail agar transaksi bank & e-wallet masuk otomatis
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setBannerDismissed(true)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <X size={16} color="#6366F1" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                onPress={handleConnectGmail}
+                activeOpacity={0.85}
+                className="mt-3 rounded-xl py-2.5 items-center flex-row justify-center"
+                style={{ backgroundColor: '#6366F1' }}
+              >
+                <Mail size={15} color="white" />
+                <Text className="text-white font-bold text-sm ml-2">
+                  Hubungkan Gmail Sekarang
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setBannerDismissed(true)}
+                className="mt-2 items-center py-1"
+              >
+                <Text className="text-xs" style={{ color: '#818CF8' }}>
+                  Ingatkan saya nanti
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Summary cards — overlapping header */}
-        <View className="mx-4 -mt-4">
+        <View className={`mx-4 ${showGmailBanner ? 'mt-4' : '-mt-4'}`}>
           <Card variant="elevated" padding="md">
             {summaryLoading ? (
               <LoadingSpinner />

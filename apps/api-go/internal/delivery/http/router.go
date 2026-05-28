@@ -41,6 +41,7 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		auth.POST("/refresh", deps.AuthHandler.Refresh)
 		auth.GET("/google", deps.AuthHandler.GoogleLogin)
 		auth.GET("/google/callback", deps.AuthHandler.GoogleCallback)
+		auth.GET("/google/configured", deps.AuthHandler.GoogleConfigured)
 
 		// Email verification (public — token-based)
 		auth.POST("/verify-email", deps.AuthHandler.VerifyEmail)

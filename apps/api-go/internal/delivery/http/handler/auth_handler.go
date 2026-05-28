@@ -171,26 +171,26 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 // GET /api/auth/google/callback
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	if h.oauth2Config == nil {
-		httputil.BadRequest(c, "Google OAuth not configured")
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=google_not_configured")
 		return
 	}
 
 	code := c.Query("code")
 	if code == "" {
-		httputil.BadRequest(c, "Missing code parameter")
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=missing_code")
 		return
 	}
 
 	token, err := h.oauth2Config.Exchange(context.Background(), code)
 	if err != nil {
-		httputil.InternalError(c, err)
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=oauth_exchange_failed")
 		return
 	}
 
 	client := h.oauth2Config.Client(context.Background(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
-		httputil.InternalError(c, err)
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=userinfo_failed")
 		return
 	}
 	defer resp.Body.Close()
@@ -203,7 +203,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		Picture string `json:"picture"`
 	}
 	if err := json.Unmarshal(body, &googleUser); err != nil {
-		httputil.InternalError(c, err)
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=userinfo_parse_failed")
 		return
 	}
 
@@ -214,10 +214,20 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		Picture: googleUser.Picture,
 	})
 	if err != nil {
-		httputil.InternalError(c, err)
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=login_failed")
 		return
 	}
-	httputil.OK(c, out)
+
+	// Redirect browser back to the web app with tokens as query params.
+	// The SPA reads them once on mount, stores in AsyncStorage, then cleans the URL.
+	redirectURL := fmt.Sprintf("/?access_token=%s&refresh_token=%s",
+		out.AccessToken, out.RefreshToken)
+	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+}
+
+// GET /api/auth/google/configured — returns whether Google OAuth is set up on this server
+func (h *AuthHandler) GoogleConfigured(c *gin.Context) {
+	httputil.OK(c, gin.H{"configured": h.oauth2Config != nil})
 }
 
 // POST /api/auth/send-verification (protected)
