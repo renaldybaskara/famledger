@@ -65,20 +65,47 @@ func NewGmailWorker(
 	}
 }
 
-// Start launches polling goroutines for all active Gmail integrations.
+// Start launches polling goroutines and keeps checking for new integrations every minute.
 func (w *GmailWorker) Start(ctx context.Context) {
+	w.syncIntegrations(ctx)
+
+	// Re-check DB every minute to pick up newly connected Gmail accounts
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			w.syncIntegrations(ctx)
+		}
+	}
+}
+
+// syncIntegrations loads all active Gmail integrations and starts workers for any new ones.
+func (w *GmailWorker) syncIntegrations(ctx context.Context) {
 	integrations, err := w.integrationRepo.FindAllActive(ctx)
 	if err != nil {
 		log.Printf("[GmailWorker] failed to load integrations: %v", err)
 		return
 	}
+
+	newCount := 0
 	for _, integ := range integrations {
 		if integ.Provider != "gmail" {
 			continue
 		}
-		w.StartIntegration(ctx, integ)
+		w.mu.Lock()
+		_, running := w.cancels[integ.ID]
+		w.mu.Unlock()
+		if !running {
+			w.StartIntegration(ctx, integ)
+			newCount++
+		}
 	}
-	log.Printf("[GmailWorker] started %d Gmail integration(s)", len(w.cancels))
+	if newCount > 0 {
+		log.Printf("[GmailWorker] started %d new Gmail integration(s) (total: %d)", newCount, len(w.cancels))
+	}
 }
 
 // StartIntegration launches or restarts a polling goroutine for one integration.

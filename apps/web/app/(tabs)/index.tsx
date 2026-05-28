@@ -237,10 +237,13 @@ export default function DashboardScreen() {
   }
 
   // Check whether user has any active email integration
+  // staleTime=0 so it always re-checks when dashboard mounts (e.g. after Gmail connect redirect)
   const { data: integrations } = useQuery({
     queryKey: ['email-integrations'],
     queryFn: () => api.get<{ id: string; isActive: boolean }[]>('/email-integrations'),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
   const hasEmailIntegration = (integrations?.data?.length ?? 0) > 0
   const showGmailBanner = !hasEmailIntegration && !bannerDismissed

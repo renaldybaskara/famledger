@@ -91,10 +91,7 @@ func (uc *emailIntegrationUseCase) GetGmailAuthURL(ctx context.Context, userID u
 
 	cfg := uc.gmailOAuthConfig()
 	state := fmt.Sprintf("gmail_connect_%s", userID.String())
-	url := cfg.AuthCodeURL(state,
-		oauth2.AccessTypeOffline,
-		oauth2.SetAuthURLParam("prompt", "consent"),
-	)
+	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	return url, nil
 }
 

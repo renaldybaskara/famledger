@@ -51,22 +51,45 @@ func NewIMAPWorker(
 	}
 }
 
-// Start launches polling goroutines for all currently active IMAP integrations.
-// Call this once on server startup.
+// Start launches polling goroutines and keeps checking for new integrations every minute.
 func (w *IMAPWorker) Start(ctx context.Context) {
+	w.syncIntegrations(ctx)
+
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			w.syncIntegrations(ctx)
+		}
+	}
+}
+
+// syncIntegrations loads active IMAP integrations and starts workers for new ones.
+func (w *IMAPWorker) syncIntegrations(ctx context.Context) {
 	integrations, err := w.integrationRepo.FindAllActive(ctx)
 	if err != nil {
 		log.Printf("[IMAPWorker] failed to load integrations: %v", err)
 		return
 	}
-
+	newCount := 0
 	for _, integ := range integrations {
 		if integ.Provider != "imap" {
 			continue
 		}
-		w.StartIntegration(ctx, integ)
+		w.mu.Lock()
+		_, running := w.cancels[integ.ID]
+		w.mu.Unlock()
+		if !running {
+			w.StartIntegration(ctx, integ)
+			newCount++
+		}
 	}
-	log.Printf("[IMAPWorker] started %d IMAP integration(s)", len(w.cancels))
+	if newCount > 0 {
+		log.Printf("[IMAPWorker] started %d new IMAP integration(s) (total: %d)", newCount, len(w.cancels))
+	}
 }
 
 // StartIntegration launches a dedicated poller for one integration.
