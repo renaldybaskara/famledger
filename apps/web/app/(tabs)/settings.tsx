@@ -11,7 +11,8 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Mail, Lock, Server, Send, ChevronRight, Eye, EyeOff, CheckCircle, XCircle, User, LogOut } from 'lucide-react'
+import { Mail, Server, Send, ChevronRight, Eye, EyeOff, CheckCircle, XCircle, LogOut } from 'lucide-react'
+
 import { useAuthStore } from '../../src/store/auth.store'
 import { api, authApi } from '../../src/lib/api'
 
@@ -32,17 +33,13 @@ const settingsApi = {
     api.put('/settings/smtp', data),
   testSMTP: (email: string) =>
     api.post('/settings/smtp/test', { email }),
-  sendVerification: () =>
-    api.post('/auth/send-verification'),
-  changePassword: (currentPassword: string, newPassword: string) =>
-    api.post('/auth/change-password', { currentPassword, newPassword }),
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function SettingsScreen() {
   const { user, logout, refreshToken } = useAuthStore()
   const qc = useQueryClient()
-  const [section, setSection] = useState<'main' | 'smtp' | 'password' | 'account'>('main')
+  const [section, setSection] = useState<'main' | 'smtp' | 'account'>('main')
 
   const handleLogout = async () => {
     try {
@@ -59,9 +56,6 @@ export default function SettingsScreen() {
       {section === 'smtp' && (
         <SMTPSection onBack={() => setSection('main')} />
       )}
-      {section === 'password' && (
-        <ChangePasswordSection onBack={() => setSection('main')} />
-      )}
       {section === 'account' && (
         <AccountSection user={user} onBack={() => setSection('main')} />
       )}
@@ -73,7 +67,7 @@ export default function SettingsScreen() {
 function MainSettings({ user, onLogout, onNavigate }: {
   user: any
   onLogout: () => void
-  onNavigate: (s: 'smtp' | 'password' | 'account') => void
+  onNavigate: (s: 'smtp' | 'account') => void
 }) {
   return (
     <ScrollView className="flex-1">
@@ -93,34 +87,9 @@ function MainSettings({ user, onLogout, onNavigate }: {
           <View className="flex-1">
             <Text className="text-base font-semibold text-slate-900">{user?.name ?? 'User'}</Text>
             <Text className="text-sm text-slate-500">{user?.email ?? ''}</Text>
-            {user?.isEmailVerified === false && (
-              <View className="flex-row items-center mt-1">
-                <XCircle size={12} color="#ef4444" />
-                <Text className="text-xs text-red-500 ml-1">Email belum diverifikasi</Text>
-              </View>
-            )}
-          </View>
+            </View>
           <ChevronRight size={18} color="#94a3b8" />
         </TouchableOpacity>
-
-        {/* Security */}
-        <View className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden">
-          <View className="px-4 pt-4 pb-2">
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Keamanan</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => onNavigate('password')}
-            className="px-4 py-3.5 flex-row justify-between items-center border-t border-slate-50"
-          >
-            <View className="flex-row items-center">
-              <View className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center mr-3">
-                <Lock size={16} color="#3b82f6" />
-              </View>
-              <Text className="text-base text-slate-800">Ganti Password</Text>
-            </View>
-            <ChevronRight size={16} color="#94a3b8" />
-          </TouchableOpacity>
-        </View>
 
         {/* System / Email */}
         <View className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden">
@@ -161,78 +130,23 @@ function MainSettings({ user, onLogout, onNavigate }: {
 
 // ─── Account Section ─────────────────────────────────────────────────────────
 function AccountSection({ user, onBack }: { user: any; onBack: () => void }) {
-  const [sent, setSent] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
-
-  const handleSendVerification = async () => {
-    setLoading(true)
-    try {
-      await settingsApi.sendVerification()
-      setSent(true)
-      setMsg('Email verifikasi terkirim! Cek inbox kamu.')
-    } catch (e: any) {
-      setMsg(e.response?.data?.message || 'Gagal mengirim email verifikasi')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <ScrollView className="flex-1">
       <View className="p-5">
         <SectionHeader title="Akun" onBack={onBack} />
-
-        <View className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <View className="items-center mb-5">
+        <View className="bg-white rounded-2xl p-5 shadow-sm">
+          <View className="items-center">
             <View className="w-20 h-20 rounded-full bg-primary items-center justify-center mb-3">
               <Text className="text-white text-3xl font-bold">
                 {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
               </Text>
             </View>
             <Text className="text-lg font-bold text-slate-900">{user?.name}</Text>
-            <Text className="text-sm text-slate-500">{user?.email}</Text>
-          </View>
-
-          {/* Email verification status */}
-          <View className="border border-slate-100 rounded-xl p-4">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-sm font-medium text-slate-700">Status Verifikasi Email</Text>
-              {user?.isEmailVerified ? (
-                <View className="flex-row items-center">
-                  <CheckCircle size={14} color="#10b981" />
-                  <Text className="text-xs text-emerald-600 ml-1 font-medium">Terverifikasi</Text>
-                </View>
-              ) : (
-                <View className="flex-row items-center">
-                  <XCircle size={14} color="#ef4444" />
-                  <Text className="text-xs text-red-500 ml-1 font-medium">Belum diverifikasi</Text>
-                </View>
-              )}
+            <Text className="text-sm text-slate-500 mt-1">{user?.email}</Text>
+            <View className="flex-row items-center mt-2">
+              <CheckCircle size={13} color="#10b981" />
+              <Text className="text-xs text-emerald-600 ml-1">Masuk via Google</Text>
             </View>
-
-            {!user?.isEmailVerified && (
-              <>
-                {msg ? (
-                  <View className={`rounded-lg p-3 mb-3 ${sent ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                    <Text className={`text-xs ${sent ? 'text-emerald-700' : 'text-red-600'}`}>{msg}</Text>
-                  </View>
-                ) : null}
-                <TouchableOpacity
-                  onPress={handleSendVerification}
-                  disabled={loading || sent}
-                  className={`rounded-xl py-3 items-center ${sent ? 'bg-emerald-100' : 'bg-primary'}`}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="white" size="small" />
-                  ) : (
-                    <Text className={`font-semibold text-sm ${sent ? 'text-emerald-700' : 'text-white'}`}>
-                      {sent ? '✓ Email Terkirim' : 'Kirim Email Verifikasi'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
           </View>
         </View>
       </View>
@@ -469,127 +383,6 @@ function SMTPSection({ onBack }: { onBack: () => void }) {
             4. Salin 16-karakter password, paste di kolom Password di atas{'\n'}
             5. Host: smtp.gmail.com · Port: 587
           </Text>
-        </View>
-      </View>
-    </ScrollView>
-  )
-}
-
-// ─── Change Password Section ──────────────────────────────────────────────────
-function ChangePasswordSection({ onBack }: { onBack: () => void }) {
-  const [form, setForm] = useState({ current: '', new: '', confirm: '' })
-  const [showCurrent, setShowCurrent] = useState(false)
-  const [showNew, setShowNew] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
-
-  const mutation = useMutation({
-    mutationFn: () => settingsApi.changePassword(form.current, form.new),
-    onSuccess: () => {
-      setFeedback({ type: 'success', msg: 'Password berhasil diubah!' })
-      setForm({ current: '', new: '', confirm: '' })
-    },
-    onError: (e: any) => {
-      setFeedback({ type: 'error', msg: e.response?.data?.message || 'Gagal mengubah password' })
-    },
-  })
-
-  const handleSubmit = () => {
-    setFeedback(null)
-    if (form.new.length < 8) {
-      setFeedback({ type: 'error', msg: 'Password baru minimal 8 karakter' })
-      return
-    }
-    if (form.new !== form.confirm) {
-      setFeedback({ type: 'error', msg: 'Konfirmasi password tidak cocok' })
-      return
-    }
-    mutation.mutate()
-  }
-
-  return (
-    <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-      <View className="p-5">
-        <SectionHeader title="Ganti Password" onBack={onBack} />
-
-        <View className="bg-white rounded-2xl p-5 shadow-sm">
-          {/* Current password */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-1.5">Password Saat Ini</Text>
-            <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4">
-              <Lock size={15} color="#94a3b8" />
-              <TextInput
-                className="flex-1 ml-3 py-3.5 text-slate-900 text-sm"
-                placeholder="Password lama"
-                placeholderTextColor="#94a3b8"
-                secureTextEntry={!showCurrent}
-                value={form.current}
-                onChangeText={(v) => setForm(p => ({ ...p, current: v }))}
-              />
-              <TouchableOpacity onPress={() => setShowCurrent(v => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                {showCurrent ? <EyeOff size={15} color="#94a3b8" /> : <Eye size={15} color="#94a3b8" />}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* New password */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-1.5">Password Baru</Text>
-            <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4">
-              <Lock size={15} color="#94a3b8" />
-              <TextInput
-                className="flex-1 ml-3 py-3.5 text-slate-900 text-sm"
-                placeholder="Min. 8 karakter"
-                placeholderTextColor="#94a3b8"
-                secureTextEntry={!showNew}
-                value={form.new}
-                onChangeText={(v) => setForm(p => ({ ...p, new: v }))}
-              />
-              <TouchableOpacity onPress={() => setShowNew(v => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                {showNew ? <EyeOff size={15} color="#94a3b8" /> : <Eye size={15} color="#94a3b8" />}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Confirm password */}
-          <View className="mb-5">
-            <Text className="text-sm font-medium text-slate-700 mb-1.5">Konfirmasi Password Baru</Text>
-            <View className={`flex-row items-center bg-slate-50 border rounded-xl px-4 ${form.confirm && form.new !== form.confirm ? 'border-red-300' : 'border-slate-200'}`}>
-              <Lock size={15} color="#94a3b8" />
-              <TextInput
-                className="flex-1 ml-3 py-3.5 text-slate-900 text-sm"
-                placeholder="Ulangi password baru"
-                placeholderTextColor="#94a3b8"
-                secureTextEntry
-                value={form.confirm}
-                onChangeText={(v) => setForm(p => ({ ...p, confirm: v }))}
-              />
-            </View>
-            {form.confirm && form.new !== form.confirm && (
-              <Text className="text-xs text-red-500 mt-1">Password tidak cocok</Text>
-            )}
-          </View>
-
-          {/* Feedback */}
-          {feedback && (
-            <View className={`rounded-xl p-3 mb-4 flex-row items-center ${feedback.type === 'success' ? 'bg-emerald-50' : 'bg-red-50'}`}>
-              {feedback.type === 'success'
-                ? <CheckCircle size={16} color="#10b981" />
-                : <XCircle size={16} color="#ef4444" />}
-              <Text className={`ml-2 text-sm flex-1 ${feedback.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
-                {feedback.msg}
-              </Text>
-            </View>
-          )}
-
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={mutation.isPending}
-            className={`rounded-xl py-3.5 items-center ${mutation.isPending ? 'bg-primary/60' : 'bg-primary'}`}
-          >
-            {mutation.isPending
-              ? <ActivityIndicator color="white" size="small" />
-              : <Text className="text-white font-bold text-base">Ubah Password</Text>}
-          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
