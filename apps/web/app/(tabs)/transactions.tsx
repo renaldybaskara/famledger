@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, X, Filter, Trash2 } from 'lucide-react'
+import { Search, Plus, X, Filter, Trash2, Download } from 'lucide-react'
 import { useTransactions, useDeleteTransaction } from '../../src/hooks/useTransactions'
 import { Transaction, TransactionType } from '../../src/lib/api'
 import { formatDateShort, getCurrentMonthRange } from '../../src/lib/format'
@@ -81,6 +81,29 @@ export default function TransactionsScreen() {
     await queryClient.invalidateQueries({ queryKey: ['transactions'] })
     setRefreshing(false)
   }, [queryClient])
+
+  const handleExportCSV = () => {
+    if (transactions.length === 0) return
+    const headers = ['Tanggal','Tipe','Jumlah','Kategori','Merchant','Catatan','Rekening','Sumber']
+    const rows = transactions.map((t) => [
+      new Date(t.date).toLocaleDateString('id-ID'),
+      t.type === 'income' ? 'Pemasukan' : t.type === 'expense' ? 'Pengeluaran' : 'Transfer',
+      t.amount,
+      t.category?.name ?? '',
+      t.merchant ?? '',
+      (t as any).description ?? '',
+      t.account?.name ?? '',
+      (t as any).source ?? 'manual',
+    ])
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `transaksi-${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const handleDelete = (transaction: Transaction) => {
     if (Platform.OS === 'web') {
@@ -176,14 +199,24 @@ export default function TransactionsScreen() {
               {total > 0 ? `${total} transaksi bulan ini` : 'Bulan ini'}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => setShowFilters((v) => !v)}
-            className={`w-9 h-9 rounded-xl items-center justify-center ${
-              showFilters ? 'bg-primary' : 'bg-slate-100'
-            }`}
-          >
-            <Filter size={16} color={showFilters ? 'white' : '#64748b'} />
-          </TouchableOpacity>
+          <View className="flex-row gap-2">
+            {transactions.length > 0 && (
+              <TouchableOpacity
+                onPress={handleExportCSV}
+                className="w-9 h-9 rounded-xl items-center justify-center bg-emerald-50"
+              >
+                <Download size={16} color="#10b981" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => setShowFilters((v) => !v)}
+              className={`w-9 h-9 rounded-xl items-center justify-center ${
+                showFilters ? 'bg-primary' : 'bg-slate-100'
+              }`}
+            >
+              <Filter size={16} color={showFilters ? 'white' : '#64748b'} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search */}

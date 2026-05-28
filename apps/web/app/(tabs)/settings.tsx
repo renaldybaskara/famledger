@@ -11,8 +11,8 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Mail, Server, Send, ChevronRight, Eye, EyeOff, CheckCircle, XCircle, LogOut } from 'lucide-react'
-
+import { Mail, Server, Send, ChevronRight, Eye, EyeOff, CheckCircle, XCircle, LogOut, Wallet, Tag } from 'lucide-react'
+import { router } from 'expo-router'
 import { useAuthStore } from '../../src/store/auth.store'
 import { api, authApi } from '../../src/lib/api'
 
@@ -91,6 +91,37 @@ function MainSettings({ user, onLogout, onNavigate }: {
           <ChevronRight size={18} color="#94a3b8" />
         </TouchableOpacity>
 
+        {/* Data management */}
+        <View className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden">
+          <View className="px-4 pt-4 pb-2">
+            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Kelola Data</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/accounts')}
+            className="px-4 py-3.5 flex-row justify-between items-center border-t border-slate-50"
+          >
+            <View className="flex-row items-center">
+              <View className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center mr-3">
+                <Wallet size={16} color="#3b82f6" />
+              </View>
+              <Text className="text-base text-slate-800">Rekening & Akun</Text>
+            </View>
+            <ChevronRight size={16} color="#94a3b8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/categories')}
+            className="px-4 py-3.5 flex-row justify-between items-center border-t border-slate-50"
+          >
+            <View className="flex-row items-center">
+              <View className="w-8 h-8 bg-amber-50 rounded-lg items-center justify-center mr-3">
+                <Tag size={16} color="#f59e0b" />
+              </View>
+              <Text className="text-base text-slate-800">Kategori</Text>
+            </View>
+            <ChevronRight size={16} color="#94a3b8" />
+          </TouchableOpacity>
+        </View>
+
         {/* System / Email */}
         <View className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden">
           <View className="px-4 pt-4 pb-2">
@@ -106,7 +137,7 @@ function MainSettings({ user, onLogout, onNavigate }: {
               </View>
               <View>
                 <Text className="text-base text-slate-800">Konfigurasi Email (SMTP)</Text>
-                <Text className="text-xs text-slate-400 mt-0.5">Untuk verifikasi & notifikasi</Text>
+                <Text className="text-xs text-slate-400 mt-0.5">Untuk notifikasi & undangan</Text>
               </View>
             </View>
             <ChevronRight size={16} color="#94a3b8" />

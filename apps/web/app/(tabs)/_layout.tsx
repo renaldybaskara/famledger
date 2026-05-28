@@ -1,6 +1,7 @@
 import { Tabs, Redirect } from 'expo-router'
 import { View, Platform } from 'react-native'
 import { Home, List, PieChart, Mail, Settings } from 'lucide-react'
+// accounts and categories are accessible via Settings, not as tabs
 import { useAuthStore } from '../../src/store/auth.store'
 
 function TabBarIcon({ Icon, color, focused }: { Icon: any; color: string; focused: boolean }) {
@@ -94,6 +95,9 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Hidden screens — accessible via router.push but not in tab bar */}
+      <Tabs.Screen name="accounts"   options={{ href: null }} />
+      <Tabs.Screen name="categories" options={{ href: null }} />
     </Tabs>
   )
 }

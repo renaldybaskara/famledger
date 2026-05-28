@@ -171,6 +171,11 @@ export const dashboardApi = {
 
 export const categoriesApi = {
   list: () => api.get<Category[]>('/categories'),
+  create: (data: { name: string; icon: string; color: string; type: TransactionType }) =>
+    api.post<Category>('/categories', data),
+  update: (id: string, data: { name?: string; icon?: string; color?: string }) =>
+    api.patch<Category>(`/categories/${id}`, data),
+  delete: (id: string) => api.delete(`/categories/${id}`),
 }
 
 export const budgetsApi = {
@@ -197,5 +202,20 @@ export const accountsApi = {
     currency?: string
     color?: string
     icon?: string
+    bankCode?: string
+    accountNumber?: string
+    isDefault?: boolean
   }) => api.post<Account>('/accounts', data),
+  update: (id: string, data: {
+    name?: string
+    type?: string
+    balance?: number
+    color?: string
+    icon?: string
+    bankCode?: string
+    accountNumber?: string
+    isDefault?: boolean
+    isActive?: boolean
+  }) => api.patch<Account>(`/accounts/${id}`, data),
+  delete: (id: string) => api.delete(`/accounts/${id}`),
 }
