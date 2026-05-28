@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"strings"
 
 	httputil "github.com/fintrackr/api/internal/delivery/http/httputil"
@@ -183,7 +185,8 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 
 	token, err := h.oauth2Config.Exchange(context.Background(), code)
 	if err != nil {
-		c.Redirect(http.StatusTemporaryRedirect, "/?error=oauth_exchange_failed")
+		log.Printf("[GoogleCallback] token exchange failed: %v", err)
+		c.Redirect(http.StatusTemporaryRedirect, "/?error=oauth_exchange_failed&detail="+url.QueryEscape(err.Error()))
 		return
 	}
 

@@ -132,6 +132,7 @@ services:
       <<: *api-env
     networks:
       - internal
+      - public
     depends_on:
       postgres:
         condition: service_healthy
