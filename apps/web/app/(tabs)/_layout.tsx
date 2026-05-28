@@ -1,6 +1,6 @@
 import { Tabs, Redirect } from 'expo-router'
 import { View, Platform } from 'react-native'
-import { Home, List, PieChart, Mail, Settings } from 'lucide-react'
+import { Home, List, PieChart, Mail, Settings, Users } from 'lucide-react'
 // accounts and categories are accessible via Settings, not as tabs
 import { useAuthStore } from '../../src/store/auth.store'
 
@@ -83,6 +83,15 @@ export default function TabsLayout() {
           title: 'Email',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon Icon={Mail} color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="workspace"
+        options={{
+          title: 'Workspace',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon Icon={Users} color={color} focused={focused} />
           ),
         }}
       />

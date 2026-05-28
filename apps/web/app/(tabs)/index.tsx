@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   Linking,
   Modal,
-  TextInput,
-  Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
@@ -34,9 +32,13 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost/api'
 
 // ─── Date range presets ───────────────────────────────────────────────────────
-type Preset = 'this_month' | 'last_month' | 'last_3' | 'last_6' | 'this_year' | 'custom'
+type Preset = 'this_month' | 'last_month' | 'last_3' | 'last_6' | 'this_year' | 'payday' | 'custom'
 
-function getPresetRange(preset: Preset, custom?: { start: string; end: string }) {
+function getPresetRange(
+  preset: Preset,
+  custom?: { start: string; end: string },
+  paydayDate?: number,
+) {
   const now = new Date()
   switch (preset) {
     case 'this_month':
@@ -71,11 +73,32 @@ function getPresetRange(preset: Preset, custom?: { start: string; end: string })
         endDate: format(new Date(now.getFullYear(), 11, 31), 'yyyy-MM-dd'),
         label: `Tahun ${now.getFullYear()}`,
       }
+    case 'payday': {
+      const day = paydayDate ?? 25
+      // If today >= payday → period is this month's payday to next month's payday-1
+      // If today < payday → period is last month's payday to this month's payday-1
+      const todayDay = now.getDate()
+      let periodStart: Date
+      if (todayDay >= day) {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), day)
+      } else {
+        const prev = subMonths(now, 1)
+        periodStart = new Date(prev.getFullYear(), prev.getMonth(), day)
+      }
+      const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, day - 1)
+      return {
+        startDate: format(periodStart, 'yyyy-MM-dd'),
+        endDate: format(periodEnd, 'yyyy-MM-dd'),
+        label: `Gajian ${day} (${format(periodStart, 'd MMM', { locale: id })} – ${format(periodEnd, 'd MMM', { locale: id })})`,
+      }
+    }
     case 'custom':
       return {
         startDate: custom?.start ?? format(startOfMonth(now), 'yyyy-MM-dd'),
         endDate: custom?.end ?? format(endOfMonth(now), 'yyyy-MM-dd'),
-        label: custom ? `${custom.start} — ${custom.end}` : 'Custom',
+        label: custom
+          ? `${format(new Date(custom.start), 'd MMM yyyy', { locale: id })} – ${format(new Date(custom.end), 'd MMM yyyy', { locale: id })}`
+          : 'Custom',
       }
   }
 }
@@ -106,112 +129,166 @@ function ChangeBadge({ value }: { value: number | null | undefined }) {
 
 // ─── Date Filter Modal ────────────────────────────────────────────────────────
 function DateFilterModal({
-  visible,
-  current,
-  onSelect,
-  onClose,
+  visible, current, paydayDate, onSelect, onClose,
 }: {
   visible: boolean
   current: Preset
-  onSelect: (p: Preset, custom?: { start: string; end: string }) => void
+  paydayDate: number
+  onSelect: (p: Preset, custom?: { start: string; end: string }, payday?: number) => void
   onClose: () => void
 }) {
-  const [customStart, setCustomStart] = useState('')
-  const [customEnd, setCustomEnd] = useState('')
-  const [showCustom, setShowCustom] = useState(false)
+  const now = new Date()
+  const [customStart, setCustomStart] = useState(format(startOfMonth(now), 'yyyy-MM-dd'))
+  const [customEnd, setCustomEnd]     = useState(format(endOfMonth(now), 'yyyy-MM-dd'))
+  const [showCustom, setShowCustom]   = useState(false)
+  const [showPayday, setShowPayday]   = useState(false)
+  const [paydayInput, setPaydayInput] = useState(String(paydayDate))
 
-  const presets: { key: Preset; label: string }[] = [
-    { key: 'this_month', label: 'Bulan Ini' },
-    { key: 'last_month', label: 'Bulan Lalu' },
-    { key: 'last_3', label: '3 Bulan Terakhir' },
-    { key: 'last_6', label: '6 Bulan Terakhir' },
-    { key: 'this_year', label: 'Tahun Ini' },
-    { key: 'custom', label: 'Custom' },
+  const presets: { key: Preset; label: string; icon: string }[] = [
+    { key: 'this_month', label: 'Bulan Ini',         icon: '📅' },
+    { key: 'last_month', label: 'Bulan Lalu',         icon: '⬅️' },
+    { key: 'last_3',     label: '3 Bulan Terakhir',   icon: '📊' },
+    { key: 'last_6',     label: '6 Bulan Terakhir',   icon: '📈' },
+    { key: 'this_year',  label: 'Tahun Ini',          icon: '🗓️' },
+    { key: 'payday',     label: 'Periode Gajian',     icon: '💰' },
+    { key: 'custom',     label: 'Pilih Tanggal',      icon: '✏️' },
   ]
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity
-        className="flex-1 bg-black/40 justify-end"
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          className="bg-white rounded-t-3xl p-6"
-          onPress={() => {}}
-        >
-          <View className="flex-row items-center justify-between mb-5">
-            <Text className="text-lg font-bold text-slate-900">Filter Periode</Text>
-            <TouchableOpacity onPress={onClose}>
-              <X size={20} color="#94a3b8" />
-            </TouchableOpacity>
-          </View>
-
-          {presets.map((p) => (
-            <TouchableOpacity
-              key={p.key}
-              onPress={() => {
-                if (p.key === 'custom') {
-                  setShowCustom(true)
-                } else {
-                  onSelect(p.key)
-                  onClose()
-                }
-              }}
-              className={`py-3.5 px-4 rounded-xl mb-2 flex-row items-center justify-between ${
-                current === p.key ? 'bg-primary/10' : 'bg-slate-50'
-              }`}
-            >
-              <Text className={`font-medium ${current === p.key ? 'text-primary' : 'text-slate-700'}`}>
-                {p.label}
-              </Text>
-              {current === p.key && (
-                <View className="w-2 h-2 rounded-full bg-primary" />
-              )}
-            </TouchableOpacity>
-          ))}
-
-          {showCustom && (
-            <View className="mt-2 p-4 bg-slate-50 rounded-xl">
-              <Text className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">
-                Rentang Tanggal
-              </Text>
-              <View className="flex-row gap-3 mb-3">
-                <View className="flex-1">
-                  <Text className="text-xs text-slate-500 mb-1">Dari</Text>
-                  <TextInput
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900"
-                    placeholder="2024-01-01"
-                    value={customStart}
-                    onChangeText={setCustomStart}
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs text-slate-500 mb-1">Sampai</Text>
-                  <TextInput
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900"
-                    placeholder="2024-01-31"
-                    value={customEnd}
-                    onChangeText={setCustomEnd}
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity className="flex-1 bg-black/40 justify-end" activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} className="bg-white rounded-t-3xl" onPress={() => {}}>
+          <ScrollView>
+            <View className="p-6">
+              <View className="flex-row items-center justify-between mb-5">
+                <Text className="text-lg font-bold text-slate-900">Filter Periode</Text>
+                <TouchableOpacity onPress={onClose}><X size={20} color="#94a3b8" /></TouchableOpacity>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  if (customStart && customEnd) {
-                    onSelect('custom', { start: customStart, end: customEnd })
-                    onClose()
-                  }
-                }}
-                className="bg-primary rounded-xl py-3 items-center"
-              >
-                <Text className="text-white font-bold">Terapkan</Text>
-              </TouchableOpacity>
+
+              {presets.map((p) => (
+                <TouchableOpacity
+                  key={p.key}
+                  onPress={() => {
+                    if (p.key === 'custom') { setShowCustom(true); setShowPayday(false) }
+                    else if (p.key === 'payday') { setShowPayday(true); setShowCustom(false) }
+                    else { onSelect(p.key); onClose() }
+                  }}
+                  className={`py-3.5 px-4 rounded-xl mb-2 flex-row items-center justify-between ${
+                    current === p.key ? 'bg-primary/10' : 'bg-slate-50'
+                  }`}
+                >
+                  <View className="flex-row items-center">
+                    <Text className="mr-2.5" style={{ fontSize: 16 }}>{p.icon}</Text>
+                    <Text className={`font-medium ${current === p.key ? 'text-primary' : 'text-slate-700'}`}>
+                      {p.label}
+                    </Text>
+                  </View>
+                  {current === p.key && <View className="w-2 h-2 rounded-full bg-primary" />}
+                </TouchableOpacity>
+              ))}
+
+              {/* Payday period config */}
+              {showPayday && (
+                <View className="mt-1 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <Text className="text-xs font-semibold text-amber-700 mb-3">
+                    💰 Tanggal Gajian Kamu
+                  </Text>
+                  <Text className="text-xs text-amber-600 mb-3">
+                    Masukkan tanggal gajianmu (1–28). Periode otomatis dihitung dari tanggal itu.
+                  </Text>
+                  <View className="flex-row items-center gap-3 mb-3">
+                    <Text className="text-slate-700 text-sm font-medium">Tanggal:</Text>
+                    {/* HTML native number input */}
+                    <View className="flex-1 bg-white border border-amber-300 rounded-xl overflow-hidden">
+                      {typeof window !== 'undefined' ? (
+                        <input
+                          type="number"
+                          min={1} max={28}
+                          value={paydayInput}
+                          onChange={(e) => setPaydayInput(e.target.value)}
+                          style={{
+                            width: '100%', padding: '10px 14px',
+                            border: 'none', outline: 'none',
+                            fontSize: 14, color: '#1e293b',
+                            backgroundColor: 'transparent',
+                          }}
+                        />
+                      ) : null}
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const day = Math.min(28, Math.max(1, parseInt(paydayInput) || 25))
+                      onSelect('payday', undefined, day)
+                      onClose()
+                    }}
+                    className="bg-amber-500 rounded-xl py-3 items-center"
+                  >
+                    <Text className="text-white font-bold">Terapkan Periode Gajian</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Custom date range with HTML date picker */}
+              {showCustom && (
+                <View className="mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <Text className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">
+                    Pilih Rentang Tanggal
+                  </Text>
+                  <View className="flex-row gap-3 mb-3">
+                    <View className="flex-1">
+                      <Text className="text-xs text-slate-500 mb-1.5 font-medium">Dari</Text>
+                      <View className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        {typeof window !== 'undefined' ? (
+                          <input
+                            type="date"
+                            value={customStart}
+                            onChange={(e) => setCustomStart(e.target.value)}
+                            style={{
+                              width: '100%', padding: '10px 12px',
+                              border: 'none', outline: 'none',
+                              fontSize: 13, color: '#1e293b',
+                              backgroundColor: 'transparent',
+                            }}
+                          />
+                        ) : null}
+                      </View>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-xs text-slate-500 mb-1.5 font-medium">Sampai</Text>
+                      <View className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        {typeof window !== 'undefined' ? (
+                          <input
+                            type="date"
+                            value={customEnd}
+                            onChange={(e) => setCustomEnd(e.target.value)}
+                            style={{
+                              width: '100%', padding: '10px 12px',
+                              border: 'none', outline: 'none',
+                              fontSize: 13, color: '#1e293b',
+                              backgroundColor: 'transparent',
+                            }}
+                          />
+                        ) : null}
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (customStart && customEnd) {
+                        onSelect('custom', { start: customStart, end: customEnd })
+                        onClose()
+                      }
+                    }}
+                    className="bg-primary rounded-xl py-3 items-center"
+                  >
+                    <Text className="text-white font-bold">Terapkan</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <View className="h-4" />
             </View>
-          )}
+          </ScrollView>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -227,12 +304,14 @@ export default function DashboardScreen() {
   const [showDateFilter, setShowDateFilter] = useState(false)
   const [preset, setPreset] = useState<Preset>('this_month')
   const [customRange, setCustomRange] = useState<{ start: string; end: string } | undefined>()
+  const [paydayDate, setPaydayDate] = useState(25)
 
-  const range = getPresetRange(preset, customRange)
+  const range = getPresetRange(preset, customRange, paydayDate)
 
-  const handlePresetSelect = (p: Preset, custom?: { start: string; end: string }) => {
+  const handlePresetSelect = (p: Preset, custom?: { start: string; end: string }, payday?: number) => {
     setPreset(p)
     if (p === 'custom' && custom) setCustomRange(custom)
+    if (p === 'payday' && payday) setPaydayDate(payday)
     queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
 
@@ -523,6 +602,7 @@ export default function DashboardScreen() {
       <DateFilterModal
         visible={showDateFilter}
         current={preset}
+        paydayDate={paydayDate}
         onSelect={handlePresetSelect}
         onClose={() => setShowDateFilter(false)}
       />
