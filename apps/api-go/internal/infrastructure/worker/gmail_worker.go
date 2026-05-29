@@ -189,9 +189,10 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	if integ.LastSyncAt != nil {
 		since = *integ.LastSyncAt
 	}
-	// Gmail query: newer_than in days, plus only unread mails we haven't seen.
+	// Query all emails after `since` — deduplication via message_id in DB prevents re-import.
+	// Do NOT filter by is:unread — bank emails may already be read by the user.
 	sinceEpoch := since.Unix()
-	query := fmt.Sprintf("after:%d is:unread", sinceEpoch)
+	query := fmt.Sprintf("after:%d", sinceEpoch)
 
 	// 1. List message IDs matching the query.
 	listURL := fmt.Sprintf("%s/messages?q=%s&maxResults=%d",
