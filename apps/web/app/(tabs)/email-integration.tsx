@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -89,7 +89,6 @@ export default function EmailIntegrationScreen() {
     if (connected) {
       sessionStorage.removeItem('gmail_connected')
       setToast({ type: 'success', msg: `Gmail ${connected} berhasil dihubungkan!` })
-      qc.invalidateQueries({ queryKey: ['email-integrations'] })
     } else if (gmailError) {
       sessionStorage.removeItem('gmail_error')
       const msgs: Record<string, string> = {
@@ -151,10 +150,14 @@ function IntegrationList({ onAddGmail, onAddIMAP, onViewMessages }: {
   onViewMessages: (id: string) => void
 }) {
   const qc = useQueryClient()
-  const { data: integrations, isLoading, refetch } = useQuery({
+  const { data: integrationsRaw, isLoading, refetch } = useQuery({
     queryKey: ['email-integrations'],
     queryFn: () => emailApi.listIntegrations().then(r => r.data),
   })
+  // Ensure always array regardless of API response shape
+  const integrations: EmailIntegration[] = Array.isArray(integrationsRaw)
+    ? integrationsRaw
+    : (integrationsRaw as any)?.data ?? []
 
   const syncMut = useMutation({
     mutationFn: (id: string) => emailApi.sync(id),
