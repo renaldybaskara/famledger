@@ -19,10 +19,13 @@ export default function LoginScreen() {
   // Handle OAuth redirect: /?access_token=...&refresh_token=...
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
+    // Tokens are in fragment hash (never sent to server, not logged)
+    const hash = window.location.hash.replace('#', '')
+    const params = new URLSearchParams(hash)
     const accessToken = params.get('access_token')
     const refreshToken = params.get('refresh_token')
-    const oauthError = params.get('error')
+    // Errors still in query params (no sensitive data)
+    const oauthError = new URLSearchParams(window.location.search).get('error')
 
     if (accessToken && refreshToken) {
       window.history.replaceState({}, '', '/')

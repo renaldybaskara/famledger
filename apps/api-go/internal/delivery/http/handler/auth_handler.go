@@ -221,9 +221,9 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Redirect browser back to the web app with tokens as query params.
-	// The SPA reads them once on mount, stores in AsyncStorage, then cleans the URL.
-	redirectURL := fmt.Sprintf("/?access_token=%s&refresh_token=%s",
+	// Use URL fragment (#) so tokens are never sent to the server or logged.
+	// Fragment is processed client-side only and not stored in browser history.
+	redirectURL := fmt.Sprintf("/#access_token=%s&refresh_token=%s",
 		out.AccessToken, out.RefreshToken)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

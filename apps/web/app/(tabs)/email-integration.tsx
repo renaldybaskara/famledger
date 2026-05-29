@@ -71,19 +71,18 @@ export default function EmailIntegrationScreen() {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const qc = useQueryClient()
 
-  // Handle redirect back from Gmail OAuth callback
+  // Handle result from Gmail OAuth (stored in sessionStorage by index.tsx)
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const connected = params.get('gmail_connected')
-    const gmailError = params.get('gmail_error')
+    const connected = sessionStorage.getItem('gmail_connected')
+    const gmailError = sessionStorage.getItem('gmail_error')
 
     if (connected) {
-      window.history.replaceState({}, '', window.location.pathname)
+      sessionStorage.removeItem('gmail_connected')
       setToast({ type: 'success', msg: `Gmail ${connected} berhasil dihubungkan!` })
       qc.invalidateQueries({ queryKey: ['email-integrations'] })
     } else if (gmailError) {
-      window.history.replaceState({}, '', window.location.pathname)
+      sessionStorage.removeItem('gmail_error')
       const msgs: Record<string, string> = {
         missing_code: 'OAuth gagal — tidak ada kode dari Google.',
         invalid_state: 'OAuth gagal — state tidak valid.',

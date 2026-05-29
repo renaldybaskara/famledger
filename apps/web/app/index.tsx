@@ -19,12 +19,19 @@ export default function Index() {
     const gmailConnected = params.get('gmail_connected')
     const gmailError = params.get('gmail_error')
 
-    if ((gmailConnected || gmailError) && isAuthenticated) {
-      const query = gmailConnected
-        ? `?gmail_connected=${encodeURIComponent(gmailConnected)}`
-        : `?gmail_error=${encodeURIComponent(gmailError!)}`
+    if (gmailConnected || gmailError) {
+      // Store result in sessionStorage so email tab can read it
+      if (gmailConnected) {
+        sessionStorage.setItem('gmail_connected', gmailConnected)
+      } else if (gmailError) {
+        sessionStorage.setItem('gmail_error', gmailError)
+      }
+      // Clean URL immediately — no tokens in address bar
       window.history.replaceState({}, '', '/')
-      router.replace(`/(tabs)/email-integration${query}` as any)
+      // Navigate to email tab if authenticated
+      if (isAuthenticated) {
+        router.replace('/(tabs)/email-integration' as any)
+      }
     }
   }, [ready, isAuthenticated])
 
