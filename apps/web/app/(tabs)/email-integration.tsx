@@ -6,11 +6,20 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Alert,
-  FlatList,
   RefreshControl,
   Linking,
 } from 'react-native'
+
+// Web-safe alert helper
+const webAlert = (title: string, msg?: string) => {
+  if (typeof window !== 'undefined') {
+    window.alert(msg ? `${title}\n\n${msg}` : title)
+  }
+}
+const webConfirm = (msg: string): boolean => {
+  if (typeof window !== 'undefined') return window.confirm(msg)
+  return false
+}
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -152,9 +161,9 @@ function IntegrationList({ onAddGmail, onAddIMAP, onViewMessages }: {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['email-integrations'] })
       qc.invalidateQueries({ queryKey: ['email-messages'] })
-      Alert.alert('Sync dimulai', 'Memeriksa email baru... Cek tab Pesan dalam beberapa saat.')
+      webAlert('Sync dimulai', 'Memeriksa email baru... Cek tab Pesan dalam beberapa saat.')
     },
-    onError: () => Alert.alert('Gagal', 'Tidak bisa memulai sync. Cek koneksi IMAP/Gmail.'),
+    onError: () => webAlert('Gagal', 'Tidak bisa memulai sync. Cek koneksi IMAP/Gmail.'),
   })
 
   const toggleMut = useMutation({
@@ -168,14 +177,9 @@ function IntegrationList({ onAddGmail, onAddIMAP, onViewMessages }: {
   })
 
   const handleDelete = (id: string, email: string) => {
-    Alert.alert(
-      'Putuskan Integrasi',
-      `Hapus koneksi dengan ${email}? Email yang sudah diimport tidak terpengaruh.`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Hapus', style: 'destructive', onPress: () => deleteMut.mutate(id) },
-      ]
-    )
+    if (webConfirm(`Hapus koneksi dengan ${email}?\nEmail yang sudah diimport tidak terpengaruh.`)) {
+      deleteMut.mutate(id)
+    }
   }
 
   return (
@@ -462,12 +466,11 @@ function ConnectIMAPView({ onBack, onSuccess }: { onBack: () => void; onSuccess:
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['email-integrations'] })
-      Alert.alert('Berhasil!', 'Email terhubung. Worker akan mulai scan inbox dalam beberapa menit.', [
-        { text: 'OK', onPress: onSuccess },
-      ])
+      webAlert('Berhasil!', 'Email terhubung. Worker akan mulai scan inbox dalam beberapa menit.')
+      onSuccess()
     },
     onError: (e: any) => {
-      Alert.alert('Gagal', e.response?.data?.error || 'Tidak bisa terhubung ke server IMAP. Periksa host, port, dan password.')
+      webAlert('Gagal', e.response?.data?.error || 'Tidak bisa terhubung ke server IMAP. Periksa host, port, dan password.')
     },
   })
 
@@ -667,13 +670,12 @@ function EmailMessagesView({ integrationId, onBack }: {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={messages}
-          keyExtractor={m => m.id}
+        <ScrollView
           contentContainerStyle={{ padding: 16 }}
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-          renderItem={({ item: msg }) => (
-            <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+        >
+          {messages.map((msg) => (
+            <View key={msg.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
               {/* Status + bank */}
               <View className="flex-row items-center justify-between mb-2">
                 <StatusBadge status={msg.parseStatus} />
@@ -728,8 +730,8 @@ function EmailMessagesView({ integrationId, onBack }: {
                 </TouchableOpacity>
               )}
             </View>
-          )}
-        />
+          ))}
+        </ScrollView>
       )}
     </View>
   )
