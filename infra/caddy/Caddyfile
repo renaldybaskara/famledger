@@ -19,7 +19,8 @@
 }
 
 # ── Main application — HTTP only for local dev ───────────────
-http://{$DOMAIN:localhost} {
+# Listen on both IPv4 and IPv6 so localhost works regardless of OS resolution order
+http://{$DOMAIN:localhost}, http://[::1] {
 
     # ── Web frontend (nginx serving Expo static export) ──
     handle / {
