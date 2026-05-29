@@ -160,16 +160,29 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	}
 
 	// Build token from stored values.
+	// Set Expiry to past so oauth2 library always uses refresh_token to get a fresh access_token.
 	tok := &oauth2.Token{
 		AccessToken:  *integ.AccessToken,
 		TokenType:    "Bearer",
+		Expiry:       time.Now().Add(-time.Minute), // force refresh
 	}
 	if integ.RefreshToken != nil {
 		tok.RefreshToken = *integ.RefreshToken
 	}
+	if tok.RefreshToken == "" {
+		return fmt.Errorf("no refresh token — user must reconnect Gmail")
+	}
 
-	// Create an auto-refreshing HTTP client.
-	httpClient := w.oauthCfg.Client(ctx, tok)
+	// savingTokenSource wraps the standard oauth2 token source and persists
+	// refreshed tokens back to the database so the next poll uses the new token.
+	base := w.oauthCfg.TokenSource(ctx, tok)
+	saving := &savingTokenSource{
+		base:    base,
+		repo:    w.integrationRepo,
+		integID: integ.ID,
+		ctx:     ctx,
+	}
+	httpClient := oauth2.NewClient(ctx, saving)
 
 	// Determine since date.
 	since := time.Now().Add(-imapLookback)
@@ -462,4 +475,39 @@ func parseEmailDate(s string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("unrecognised date format: %s", s)
+}
+
+// savingTokenSource wraps an oauth2.TokenSource and persists refreshed tokens to DB.
+type savingTokenSource struct {
+	base    oauth2.TokenSource
+	repo    domainrepo.EmailIntegrationRepository
+	integID uuid.UUID
+	ctx     context.Context
+	last    string // last known access token to detect rotation
+}
+
+func (s *savingTokenSource) Token() (*oauth2.Token, error) {
+	tok, err := s.base.Token()
+	if err != nil {
+		return nil, err
+	}
+	// Persist only when access token rotated (avoids unnecessary DB writes).
+	if tok.AccessToken != s.last {
+		s.last = tok.AccessToken
+		updates := map[string]interface{}{
+			"access_token": tok.AccessToken,
+		}
+		if tok.RefreshToken != "" {
+			updates["refresh_token"] = tok.RefreshToken
+		}
+		if !tok.Expiry.IsZero() {
+			updates["watch_expiration"] = tok.Expiry
+		}
+		if _, dbErr := s.repo.Update(s.ctx, s.integID, updates); dbErr != nil {
+			log.Printf("[savingTokenSource] failed to persist rotated token: %v", dbErr)
+		} else {
+			log.Printf("[savingTokenSource] persisted rotated access token for integration %s", s.integID)
+		}
+	}
+	return tok, nil
 }
