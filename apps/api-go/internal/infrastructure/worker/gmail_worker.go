@@ -201,10 +201,12 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 		gmailFetchLimit,
 	)
 
+	log.Printf("[GmailWorker] polling since %s (epoch %d), query: %s", since.Format("2006-01-02 15:04"), sinceEpoch, query)
 	msgIDs, err := w.listMessageIDs(ctx, httpClient, listURL)
 	if err != nil {
 		return fmt.Errorf("list messages: %w", err)
 	}
+	log.Printf("[GmailWorker] found %d message(s) for %s", len(msgIDs), integ.Email)
 	if len(msgIDs) == 0 {
 		_ = w.updateLastSync(ctx, integ.ID, tok)
 		return nil
