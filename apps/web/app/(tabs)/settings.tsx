@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Mail, Server, Send, ChevronRight, Eye, EyeOff, CheckCircle, XCircle, LogOut, Wallet, Tag } from 'lucide-react'
+import { Mail, Server, Send, ChevronRight, Eye, EyeOff, CheckCircle, XCircle, LogOut, Wallet, Tag, Users } from 'lucide-react'
 import { router } from 'expo-router'
 import { useAuthStore } from '../../src/store/auth.store'
 import { api, authApi } from '../../src/lib/api'
@@ -117,6 +117,43 @@ function MainSettings({ user, onLogout, onNavigate }: {
                 <Tag size={16} color="#f59e0b" />
               </View>
               <Text className="text-base text-slate-800">Kategori</Text>
+            </View>
+            <ChevronRight size={16} color="#94a3b8" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Fitur */}
+        <View className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden">
+          <View className="px-4 pt-4 pb-2">
+            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fitur</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/email-integration')}
+            className="px-4 py-3.5 flex-row justify-between items-center border-t border-slate-50"
+          >
+            <View className="flex-row items-center">
+              <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-3">
+                <Mail size={16} color="#ef4444" />
+              </View>
+              <View>
+                <Text className="text-base text-slate-800">Integrasi Email</Text>
+                <Text className="text-xs text-slate-400 mt-0.5">Auto-import transaksi dari Gmail/IMAP</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color="#94a3b8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/workspace')}
+            className="px-4 py-3.5 flex-row justify-between items-center border-t border-slate-50"
+          >
+            <View className="flex-row items-center">
+              <View className="w-8 h-8 bg-indigo-50 rounded-lg items-center justify-center mr-3">
+                <Users size={16} color="#6366f1" />
+              </View>
+              <View>
+                <Text className="text-base text-slate-800">Workspace</Text>
+                <Text className="text-xs text-slate-400 mt-0.5">Keuangan bersama keluarga/tim</Text>
+              </View>
             </View>
             <ChevronRight size={16} color="#94a3b8" />
           </TouchableOpacity>

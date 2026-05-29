@@ -78,35 +78,19 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="email-integration"
-        options={{
-          title: 'Email',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon Icon={Mail} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="workspace"
-        options={{
-          title: 'Workspace',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon Icon={Users} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{
-          title: 'Pengaturan',
+          title: 'Lainnya',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon Icon={Settings} color={color} focused={focused} />
           ),
         }}
       />
-      {/* Hidden screens — accessible via router.push but not in tab bar */}
-      <Tabs.Screen name="accounts"   options={{ href: null }} />
-      <Tabs.Screen name="categories" options={{ href: null }} />
+      {/* Hidden screens — accessible via router.push / Settings menu */}
+      <Tabs.Screen name="email-integration" options={{ href: null }} />
+      <Tabs.Screen name="workspace"         options={{ href: null }} />
+      <Tabs.Screen name="accounts"          options={{ href: null }} />
+      <Tabs.Screen name="categories"        options={{ href: null }} />
     </Tabs>
   )
 }
