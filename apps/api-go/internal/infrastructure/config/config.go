@@ -15,6 +15,7 @@ type Config struct {
 	GoogleClientSecret         string
 	GoogleCallbackURL          string
 	GoogleGmailCallbackURL     string
+	RedisURL            string
 	AppURL              string
 	Port                string
 	AppEnv              string
@@ -42,6 +43,7 @@ func Load() *Config {
 		GoogleClientSecret:     getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleCallbackURL:      getEnv("GOOGLE_CALLBACK_URL", ""),
 		GoogleGmailCallbackURL: getEnv("GOOGLE_GMAIL_CALLBACK_URL", ""),
+		RedisURL:            getEnv("REDIS_URL", ""),
 		AppURL:              getEnv("APP_URL", "http://localhost"),
 		Port:                getEnv("PORT", "4000"),
 		AppEnv:              getEnv("NODE_ENV", "production"),

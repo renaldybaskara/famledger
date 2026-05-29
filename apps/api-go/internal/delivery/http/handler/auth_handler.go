@@ -14,6 +14,7 @@ import (
 	httputil "github.com/fintrackr/api/internal/delivery/http/httputil"
 	"github.com/fintrackr/api/internal/domain/entity"
 	domainuc "github.com/fintrackr/api/internal/domain/usecase"
+	"github.com/fintrackr/api/internal/infrastructure/tokenstore"
 	"github.com/fintrackr/api/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -24,9 +25,16 @@ import (
 type AuthHandler struct {
 	uc           domainuc.AuthUseCase
 	oauth2Config *oauth2.Config
+	tokenStore   tokenStore
 }
 
-func NewAuthHandler(uc domainuc.AuthUseCase, clientID, clientSecret, callbackURL string) *AuthHandler {
+// tokenStore is the minimal interface needed from tokenstore.Store.
+type tokenStore interface {
+	Save(ctx context.Context, pair tokenstore.TokenPair) (string, error)
+	Exchange(ctx context.Context, code string) (*tokenstore.TokenPair, error)
+}
+
+func NewAuthHandler(uc domainuc.AuthUseCase, clientID, clientSecret, callbackURL string, ts tokenStore) *AuthHandler {
 	var oauthCfg *oauth2.Config
 	if clientID != "" {
 		oauthCfg = &oauth2.Config{
@@ -37,7 +45,7 @@ func NewAuthHandler(uc domainuc.AuthUseCase, clientID, clientSecret, callbackURL
 			Endpoint:     google.Endpoint,
 		}
 	}
-	return &AuthHandler{uc: uc, oauth2Config: oauthCfg}
+	return &AuthHandler{uc: uc, oauth2Config: oauthCfg, tokenStore: ts}
 }
 
 type registerRequest struct {
@@ -221,11 +229,48 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Use URL fragment (#) so tokens are never sent to the server or logged.
-	// Fragment is processed client-side only and not stored in browser history.
-	redirectURL := fmt.Sprintf("/#access_token=%s&refresh_token=%s",
-		out.AccessToken, out.RefreshToken)
-	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	// Store tokens in Redis, redirect only with a short one-time code.
+	// Tokens never appear in the URL, browser history, or server logs.
+	if h.tokenStore != nil {
+		code, err := h.tokenStore.Save(c.Request.Context(), tokenstore.TokenPair{
+			AccessToken:  out.AccessToken,
+			RefreshToken: out.RefreshToken,
+		})
+		if err != nil {
+			log.Printf("[GoogleCallback] tokenstore save error: %v", err)
+			c.Redirect(http.StatusTemporaryRedirect, "/?error=server_error")
+			return
+		}
+		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/auth/callback?code=%s", code))
+		return
+	}
+	// Fallback if Redis not available — use fragment (tokens not sent to server)
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/#t=%s&r=%s",
+		out.AccessToken, out.RefreshToken))
+}
+
+// POST /api/auth/exchange — exchange one-time code for JWT tokens
+func (h *AuthHandler) ExchangeCode(c *gin.Context) {
+	var body struct {
+		Code string `json:"code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		httputil.ValidationError(c, err)
+		return
+	}
+	if h.tokenStore == nil {
+		httputil.BadRequest(c, "Token exchange not available")
+		return
+	}
+	pair, err := h.tokenStore.Exchange(c.Request.Context(), body.Code)
+	if err != nil {
+		httputil.Unauthorized(c, "Invalid or expired code")
+		return
+	}
+	httputil.OK(c, gin.H{
+		"accessToken":  pair.AccessToken,
+		"refreshToken": pair.RefreshToken,
+	})
 }
 
 // GET /api/auth/google/configured — returns whether Google OAuth is set up on this server

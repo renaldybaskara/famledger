@@ -11,6 +11,7 @@ import (
 	"github.com/fintrackr/api/internal/infrastructure/config"
 	"github.com/fintrackr/api/internal/infrastructure/database"
 	emailsvc "github.com/fintrackr/api/internal/infrastructure/email"
+	"github.com/fintrackr/api/internal/infrastructure/tokenstore"
 	"github.com/fintrackr/api/internal/infrastructure/worker"
 	"github.com/fintrackr/api/internal/repository"
 	"github.com/fintrackr/api/internal/usecase"
@@ -103,9 +104,21 @@ func main() {
 		parserRuleRepo,
 	)
 
+	// ── Token store (Redis) — secure OAuth token exchange, tokens never in URLs ──
+	var ts *tokenstore.Store
+	if cfg.RedisURL != "" {
+		var err error
+		ts, err = tokenstore.New(cfg.RedisURL)
+		if err != nil {
+			log.Printf("⚠️  TokenStore unavailable (Redis): %v — falling back to fragment", err)
+		} else {
+			log.Println("✅ TokenStore (Redis) ready")
+		}
+	}
+
 	// ── Handlers ─────────────────────────────────────────────
 	healthHandler           := handler.NewHealthHandler("1.0.0", cfg.AppEnv)
-	authHandler             := handler.NewAuthHandler(authUC, cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleCallbackURL)
+	authHandler             := handler.NewAuthHandler(authUC, cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleCallbackURL, ts)
 	usersHandler            := handler.NewUsersHandler(userUC)
 	accountsHandler         := handler.NewAccountsHandler(accountUC)
 	categoriesHandler       := handler.NewCategoriesHandler(categoryUC)
