@@ -200,9 +200,8 @@ var (
 )
 
 func (p *bcaParser) Matches(from, subject, combined string) bool {
-	return bcaFromPattern.MatchString(from) || bcaSubjectPattern.MatchString(subject) ||
-		strings.Contains(combined, "klikbca") || strings.Contains(combined, "mybca") ||
-		strings.Contains(combined, "bank central asia")
+	// Must come from BCA domain — do not match based on body content alone
+	return bcaFromPattern.MatchString(from)
 }
 
 func (p *bcaParser) Parse(from, subject, combined string) ParseResult {
@@ -258,8 +257,7 @@ var (
 )
 
 func (p *mandiriParser) Matches(from, subject, combined string) bool {
-	return mandiriFromRe.MatchString(from) || mandiriSubjectRe.MatchString(subject) ||
-		strings.Contains(combined, "bank mandiri") || strings.Contains(combined, "livin by mandiri")
+	return mandiriFromRe.MatchString(from)
 }
 
 func (p *mandiriParser) Parse(from, subject, combined string) ParseResult {
@@ -297,7 +295,9 @@ func (p *mandiriParser) Parse(from, subject, combined string) ParseResult {
 type briParser struct{}
 
 var (
-	briFromRe    = regexp.MustCompile(`(?i)(@bri\.co\.id|brimo|inforekening.bri)`)
+	// Match official BRI notification domains only — exclude promo subdomains like kk.bri.co.id
+	// Valid: info@bri.co.id, notifikasi@bri.co.id — Invalid: promo@kk.bri.co.id
+	briFromRe    = regexp.MustCompile(`(?i)@bri\.co\.id`)
 	briSubjectRe = regexp.MustCompile(`(?i)(bri|brimo|notifikasi (debit|kredit)|transaksi bri)`)
 	briAmountRe  = regexp.MustCompile(`(?i)(?:sebesar|jumlah|Rp\.?)\s*(?P<amount>[\d.,]+)`)
 	briTypeRe    = regexp.MustCompile(`(?i)(debit|debet|keluar|pembayaran|transfer ke|belanja)`)
@@ -307,9 +307,13 @@ var (
 )
 
 func (p *briParser) Matches(from, subject, combined string) bool {
-	return briFromRe.MatchString(from) || briSubjectRe.MatchString(subject) ||
-		strings.Contains(strings.ToLower(combined), "bank rakyat indonesia") ||
-		strings.Contains(strings.ToLower(combined), "brimo")
+	if !briFromRe.MatchString(from) {
+		return false
+	}
+	// Exclude promo/marketing subdomains — only allow direct @bri.co.id or known notification addresses
+	// e.g. reject promo@kk.bri.co.id (has subdomain before bri.co.id)
+	promoSubdomains := regexp.MustCompile(`(?i)@[a-z]+\.bri\.co\.id`)
+	return !promoSubdomains.MatchString(from)
 }
 
 func (p *briParser) Parse(from, subject, combined string) ParseResult {
@@ -347,8 +351,7 @@ var (
 )
 
 func (p *bniParser) Matches(from, subject, combined string) bool {
-	return bniFromRe.MatchString(from) || bniSubjectRe.MatchString(subject) ||
-		strings.Contains(strings.ToLower(combined), "bank negara indonesia")
+	return bniFromRe.MatchString(from)
 }
 
 func (p *bniParser) Parse(from, subject, combined string) ParseResult {
@@ -386,7 +389,7 @@ var (
 )
 
 func (p *gopayParser) Matches(from, subject, combined string) bool {
-	return gopayFromRe.MatchString(from) || gopaySubjectRe.MatchString(strings.ToLower(subject))
+	return gopayFromRe.MatchString(from)
 }
 
 func (p *gopayParser) Parse(from, subject, combined string) ParseResult {
@@ -423,7 +426,7 @@ var (
 )
 
 func (p *ovoParser) Matches(from, subject, combined string) bool {
-	return ovoFromRe.MatchString(from) || ovoSubjectRe.MatchString(strings.ToLower(subject))
+	return ovoFromRe.MatchString(from)
 }
 
 func (p *ovoParser) Parse(from, subject, combined string) ParseResult {
@@ -459,7 +462,7 @@ var (
 )
 
 func (p *danaParser) Matches(from, subject, combined string) bool {
-	return danaFromRe.MatchString(from) || danaSubjectRe.MatchString(strings.ToLower(subject))
+	return danaFromRe.MatchString(from)
 }
 
 func (p *danaParser) Parse(from, subject, combined string) ParseResult {
@@ -495,7 +498,7 @@ var (
 )
 
 func (p *shopeepayParser) Matches(from, subject, combined string) bool {
-	return shopeeFromRe.MatchString(from) || shopeeSubjectRe.MatchString(strings.ToLower(subject))
+	return shopeeFromRe.MatchString(from)
 }
 
 func (p *shopeepayParser) Parse(from, subject, combined string) ParseResult {
@@ -531,7 +534,7 @@ var (
 )
 
 func (p *jeniusParser) Matches(from, subject, combined string) bool {
-	return jeniusFromRe.MatchString(from) || jeniusSubjectRe.MatchString(strings.ToLower(subject))
+	return jeniusFromRe.MatchString(from)
 }
 
 func (p *jeniusParser) Parse(from, subject, combined string) ParseResult {
@@ -563,8 +566,7 @@ var (
 )
 
 func (p *livinParser) Matches(from, subject, combined string) bool {
-	return livinFromRe.MatchString(from) || livinSubjectRe.MatchString(strings.ToLower(subject)) ||
-		strings.Contains(strings.ToLower(combined), "livin by mandiri")
+	return livinFromRe.MatchString(from)
 }
 
 func (p *livinParser) Parse(from, subject, combined string) ParseResult {
@@ -590,7 +592,7 @@ var (
 )
 
 func (p *bsIParser) Matches(from, subject, combined string) bool {
-	return bsiFromRe.MatchString(from) || bsiSubjectRe.MatchString(strings.ToLower(subject))
+	return bsiFromRe.MatchString(from)
 }
 
 func (p *bsIParser) Parse(from, subject, combined string) ParseResult {
@@ -624,7 +626,7 @@ var (
 )
 
 func (p *cimbParser) Matches(from, subject, combined string) bool {
-	return cimbFromRe.MatchString(from) || cimbSubjectRe.MatchString(strings.ToLower(subject))
+	return cimbFromRe.MatchString(from)
 }
 
 func (p *cimbParser) Parse(from, subject, combined string) ParseResult {
@@ -656,7 +658,7 @@ var (
 )
 
 func (p *permataParser) Matches(from, subject, combined string) bool {
-	return permataFromRe.MatchString(from) || permataSubjectRe.MatchString(strings.ToLower(subject))
+	return permataFromRe.MatchString(from)
 }
 
 func (p *permataParser) Parse(from, subject, combined string) ParseResult {
@@ -689,7 +691,7 @@ var (
 )
 
 func (p *flipParser) Matches(from, subject, combined string) bool {
-	return flipFromRe.MatchString(from) || flipSubjectRe.MatchString(strings.ToLower(subject))
+	return flipFromRe.MatchString(from)
 }
 
 func (p *flipParser) Parse(from, subject, combined string) ParseResult {
@@ -720,7 +722,7 @@ var (
 )
 
 func (p *linkAjaParser) Matches(from, subject, combined string) bool {
-	return linkAjaFromRe.MatchString(from) || linkAjaSubjectRe.MatchString(strings.ToLower(subject))
+	return linkAjaFromRe.MatchString(from)
 }
 
 func (p *linkAjaParser) Parse(from, subject, combined string) ParseResult {
@@ -757,8 +759,7 @@ var (
 )
 
 func (p *danamonParser) Matches(from, subject, combined string) bool {
-	return danamonFromRe.MatchString(from) || danamonSubjectRe.MatchString(strings.ToLower(subject)) ||
-		strings.Contains(strings.ToLower(combined), "bank danamon")
+	return danamonFromRe.MatchString(from)
 }
 
 func (p *danamonParser) Parse(from, subject, combined string) ParseResult {
@@ -794,8 +795,7 @@ var (
 )
 
 func (p *btnParser) Matches(from, subject, combined string) bool {
-	return btnFromRe.MatchString(from) || btnSubjectRe.MatchString(strings.ToLower(subject)) ||
-		strings.Contains(strings.ToLower(combined), "bank tabungan negara")
+	return btnFromRe.MatchString(from)
 }
 
 func (p *btnParser) Parse(from, subject, combined string) ParseResult {
@@ -829,11 +829,10 @@ var (
 )
 
 func (p *islatransParser) Matches(from, subject, combined string) bool {
-	// Only match if there's a clear Rp amount AND a bank-like keyword
-	hasBankWord := genericBankFromRe.MatchString(from) ||
-		regexp.MustCompile(`(?i)(transaksi|notifikasi|transfer|pembayaran|debit|kredit)`).MatchString(subject)
-	hasAmount := genericAmountRe.MatchString(combined)
-	return hasBankWord && hasAmount
+	// Generic parser disabled — too many false positives.
+	// Email must come from a known bank/ewallet domain (handled by specific parsers above).
+	// Users can add custom rules via Settings > Parser Rules for unlisted banks.
+	return false
 }
 
 func (p *islatransParser) Parse(from, subject, combined string) ParseResult {
