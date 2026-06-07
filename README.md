@@ -1,2 +1,0 @@
-# Sakuku
-Project Sakuku
