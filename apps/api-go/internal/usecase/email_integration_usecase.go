@@ -91,8 +91,39 @@ func (uc *emailIntegrationUseCase) GetGmailAuthURL(ctx context.Context, userID u
 
 	cfg := uc.gmailOAuthConfig()
 	state := fmt.Sprintf("gmail_connect_%s", userID.String())
-	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
+
+	// Only force consent screen when no valid refresh token exists in DB.
+	// Google only issues a refresh_token on first auth or when prompt=consent is set.
+	opts := []oauth2.AuthCodeOption{oauth2.AccessTypeOffline}
+	if !uc.hasValidGmailRefreshToken(ctx, userID) {
+		opts = append(opts, oauth2.SetAuthURLParam("prompt", "consent"))
+	}
+
+	url := cfg.AuthCodeURL(state, opts...)
 	return url, nil
+}
+
+func (uc *emailIntegrationUseCase) restoreIntegration(ctx context.Context, id uuid.UUID, updates map[string]interface{}) (*entity.EmailIntegration, error) {
+	restored, err := uc.repo.Restore(ctx, id, updates)
+	if err != nil {
+		return nil, err
+	}
+	restored.AccessToken = nil
+	restored.RefreshToken = nil
+	return restored, nil
+}
+
+func (uc *emailIntegrationUseCase) hasValidGmailRefreshToken(ctx context.Context, userID uuid.UUID) bool {
+	integrations, err := uc.repo.FindByUserID(ctx, userID)
+	if err != nil {
+		return false
+	}
+	for _, integ := range integrations {
+		if integ.Provider == "gmail" && integ.RefreshToken != nil && *integ.RefreshToken != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func (uc *emailIntegrationUseCase) CompleteGmailOAuth(ctx context.Context, userID uuid.UUID, code string) (*entity.EmailIntegration, error) {
@@ -122,8 +153,8 @@ func (uc *emailIntegrationUseCase) CompleteGmailOAuth(ctx context.Context, userI
 		return nil, err
 	}
 
-	// Check if already connected — update tokens if so
-	existing, err := uc.repo.FindByUserIDAndEmail(ctx, userID, info.Email)
+	// Check if integration exists (including soft-deleted) — update or restore if so
+	existing, err := uc.repo.FindAnyByUserIDAndEmail(ctx, userID, info.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +172,11 @@ func (uc *emailIntegrationUseCase) CompleteGmailOAuth(ctx context.Context, userI
 		}
 		if !token.Expiry.IsZero() {
 			updates["watch_expiration"] = token.Expiry
+		}
+		// Restore soft-deleted integration via Unscoped — keep last_sync_at so worker resumes from last sync point
+		if existing.DeletedAt.Valid {
+			updates["deleted_at"] = nil
+			return uc.restoreIntegration(ctx, existing.ID, updates)
 		}
 		updated, err := uc.repo.Update(ctx, existing.ID, updates)
 		if err != nil {

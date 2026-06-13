@@ -79,6 +79,11 @@ func (p *DBBankParser) confirmBody(combined string) bool {
 
 // Parse extracts transaction details from the matched email.
 func (p *DBBankParser) Parse(from, subject, combined string) ParseResult {
+	// Rule has no extraction config → delegate to AI for full extraction.
+	if p.rule.ExpenseKeywords == "" && p.rule.IncomeKeywords == "" && p.rule.AmountRegex == "" {
+		return ParseResult{Matched: true, IsAIOnly: true, MatchedRuleID: p.rule.ID}
+	}
+
 	lower := strings.ToLower(combined)
 
 	// Determine transaction type.
@@ -149,7 +154,7 @@ func ParseWithRules(from, subject, bodyText, bodyHTML string, dbRules []entity.B
 		p := NewDBBankParser(rule)
 		if p.Matches(fromLower, subjectLower, combinedLower) {
 			result := p.Parse(from, subject, combined)
-			if result.Matched {
+			if result.Matched || result.IsAIOnly {
 				return result
 			}
 		}

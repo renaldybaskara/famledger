@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -24,9 +25,10 @@ import (
 )
 
 const (
-	gmailPollInterval = 5 * time.Minute
-	gmailFetchLimit   = 50
-	gmailAPIBase      = "https://gmail.googleapis.com/gmail/v1/users/me"
+	gmailPollInterval    = 5 * time.Minute
+	gmailPageSize        = 100 // max allowed by Gmail API per page
+	gmailMaxMessages     = 500 // hard cap per poll cycle to avoid flooding
+	gmailAPIBase         = "https://gmail.googleapis.com/gmail/v1/users/me"
 )
 
 // GmailWorker manages one polling goroutine per active Gmail integration.
@@ -138,6 +140,12 @@ func (w *GmailWorker) pollLoop(ctx context.Context, integ entity.EmailIntegratio
 	for {
 		if err := w.poll(ctx, integ); err != nil {
 			log.Printf("%s poll error: %v", label, err)
+			if isUnrecoverableTokenError(err) {
+				log.Printf("%s unrecoverable token error — soft-deleting integration", label)
+				_ = w.integrationRepo.Delete(ctx, integ.ID)
+				delete(w.cancels, integ.ID)
+				return
+			}
 		}
 		// Refresh integration (tokens may have rotated).
 		updated, err := w.integrationRepo.FindByID(ctx, integ.ID)
@@ -184,6 +192,13 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	}
 	httpClient := oauth2.NewClient(ctx, saving)
 
+	// Always reload integration from DB before determining since date.
+	// This ensures manual resets of last_sync_at (e.g. for reprocessing) are respected
+	// even while the poll loop is running, because the in-memory integ may be stale.
+	if fresh, err := w.integrationRepo.FindByID(ctx, integ.ID); err == nil && fresh != nil {
+		integ = *fresh
+	}
+
 	// Determine since date.
 	since := time.Now().Add(-imapLookback)
 	if integ.LastSyncAt != nil {
@@ -194,21 +209,21 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	sinceEpoch := since.Unix()
 	query := fmt.Sprintf("after:%d", sinceEpoch)
 
-	// 1. List message IDs matching the query.
-	listURL := fmt.Sprintf("%s/messages?q=%s&maxResults=%d",
+	// 1. List all message IDs matching the query — paginate until exhausted or cap hit.
+	baseListURL := fmt.Sprintf("%s/messages?q=%s&maxResults=%d",
 		gmailAPIBase,
 		encodeQuery(query),
-		gmailFetchLimit,
+		gmailPageSize,
 	)
 
 	log.Printf("[GmailWorker] polling since %s (epoch %d), query: %s", since.Format("2006-01-02 15:04"), sinceEpoch, query)
-	msgIDs, err := w.listMessageIDs(ctx, httpClient, listURL)
+	msgIDs, err := w.listAllMessageIDs(ctx, httpClient, baseListURL)
 	if err != nil {
 		return fmt.Errorf("list messages: %w", err)
 	}
 	log.Printf("[GmailWorker] found %d message(s) for %s", len(msgIDs), integ.Email)
 	if len(msgIDs) == 0 {
-		_ = w.updateLastSync(ctx, integ.ID, tok)
+		_ = w.updateLastSync(ctx, integ.ID)
 		return nil
 	}
 
@@ -232,7 +247,7 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	}
 
 	if len(newMsgs) == 0 {
-		_ = w.updateLastSync(ctx, integ.ID, tok)
+		_ = w.updateLastSync(ctx, integ.ID)
 		return nil
 	}
 
@@ -246,7 +261,7 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 		}
 	}
 
-	_ = w.updateLastSync(ctx, integ.ID, tok)
+	_ = w.updateLastSync(ctx, integ.ID)
 	log.Printf("[GmailWorker %s] processed %d message(s)", integ.Email, len(newMsgs))
 	return nil
 }
@@ -257,6 +272,7 @@ type gmailListResponse struct {
 	Messages []struct {
 		ID string `json:"id"`
 	} `json:"messages"`
+	NextPageToken string `json:"nextPageToken"`
 }
 
 type gmailMessage struct {
@@ -286,7 +302,28 @@ type gmailMessage struct {
 	} `json:"payload"`
 }
 
-func (w *GmailWorker) listMessageIDs(ctx context.Context, c *http.Client, url string) ([]string, error) {
+// listAllMessageIDs fetches all message IDs matching the query by following nextPageToken pagination.
+// Stops early if gmailMaxMessages is reached to avoid flooding on initial sync.
+func (w *GmailWorker) listAllMessageIDs(ctx context.Context, c *http.Client, baseURL string) ([]string, error) {
+	var allIDs []string
+	pageURL := baseURL
+	for {
+		result, err := w.listOnePage(ctx, c, pageURL)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range result.Messages {
+			allIDs = append(allIDs, m.ID)
+		}
+		if result.NextPageToken == "" || len(allIDs) >= gmailMaxMessages {
+			break
+		}
+		pageURL = baseURL + "&pageToken=" + result.NextPageToken
+	}
+	return allIDs, nil
+}
+
+func (w *GmailWorker) listOnePage(ctx context.Context, c *http.Client, url string) (*gmailListResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -306,12 +343,7 @@ func (w *GmailWorker) listMessageIDs(ctx context.Context, c *http.Client, url st
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-
-	ids := make([]string, 0, len(result.Messages))
-	for _, m := range result.Messages {
-		ids = append(ids, m.ID)
-	}
-	return ids, nil
+	return &result, nil
 }
 
 func (w *GmailWorker) fetchMessage(ctx context.Context, c *http.Client, gmailID string) (*gmailMessage, error) {
@@ -439,19 +471,10 @@ func extractGmailBody(msg *gmailMessage) (plain, html string) {
 	return strings.TrimSpace(plain), strings.TrimSpace(html)
 }
 
-func (w *GmailWorker) updateLastSync(ctx context.Context, id uuid.UUID, tok *oauth2.Token) error {
-	now := time.Now()
-	updates := map[string]interface{}{
-		"last_sync_at": now,
-	}
-	// Persist rotated access token if it changed.
-	if tok != nil && tok.AccessToken != "" {
-		updates["access_token"] = tok.AccessToken
-		if tok.RefreshToken != "" {
-			updates["refresh_token"] = tok.RefreshToken
-		}
-	}
-	_, err := w.integrationRepo.Update(ctx, id, updates)
+func (w *GmailWorker) updateLastSync(ctx context.Context, id uuid.UUID) error {
+	_, err := w.integrationRepo.Update(ctx, id, map[string]interface{}{
+		"last_sync_at": time.Now(),
+	})
 	return err
 }
 
@@ -494,7 +517,7 @@ func (s *savingTokenSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Persist only when access token rotated (avoids unnecessary DB writes).
+// Persist only when access token rotated (avoids unnecessary DB writes).
 	if tok.AccessToken != s.last {
 		s.last = tok.AccessToken
 		updates := map[string]interface{}{
@@ -513,4 +536,14 @@ func (s *savingTokenSource) Token() (*oauth2.Token, error) {
 		}
 	}
 	return tok, nil
+}
+
+// isUnrecoverableTokenError returns true for errors that cannot be fixed by retrying —
+// the user must reconnect Gmail to issue a new refresh token.
+func isUnrecoverableTokenError(err error) bool {
+	if strings.Contains(err.Error(), "no refresh token") {
+		return true
+	}
+	var rErr *oauth2.RetrieveError
+	return errors.As(err, &rErr) && rErr.ErrorCode == "invalid_grant"
 }

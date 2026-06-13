@@ -95,14 +95,14 @@ func (s *smtpService) SendVerificationEmail(to, name, token string) error {
 	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", s.appURL, token)
 	body := emailTemplate("Verifikasi Email Kamu", fmt.Sprintf(`
 		<p>Halo <strong>%s</strong>,</p>
-		<p>Terima kasih sudah mendaftar di FinTrackr! Klik tombol di bawah untuk memverifikasi email kamu.</p>
+		<p>Terima kasih sudah mendaftar di Saku! Klik tombol di bawah untuk memverifikasi email kamu.</p>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#6366f1;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Verifikasi Email</a>
+			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Verifikasi Email</a>
 		</p>
 		<p>Link berlaku selama <strong>24 jam</strong>. Jika kamu tidak mendaftar, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
 	`, name, verifyURL, verifyURL, verifyURL))
-	return s.send(to, "Verifikasi Email FinTrackr", body)
+	return s.send(to, "Verifikasi Email Saku", body)
 }
 
 func (s *smtpService) SendPasswordResetEmail(to, name, token string) error {
@@ -111,19 +111,19 @@ func (s *smtpService) SendPasswordResetEmail(to, name, token string) error {
 		<p>Halo <strong>%s</strong>,</p>
 		<p>Kami menerima permintaan reset password untuk akun FinTrackr kamu.</p>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#ef4444;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Reset Password</a>
+			<a href="%s" style="background:#C66B6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Reset Password</a>
 		</p>
 		<p>Link berlaku selama <strong>1 jam</strong>. Jika kamu tidak meminta reset password, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
 	`, name, resetURL, resetURL, resetURL))
-	return s.send(to, "Reset Password FinTrackr", body)
+	return s.send(to, "Reset Password Saku", body)
 }
 
 func (s *smtpService) SendWelcomeEmail(to, name string) error {
 	body := emailTemplate("Selamat Datang!", fmt.Sprintf(`
 		<p>Halo <strong>%s</strong>,</p>
 		<p>Selamat datang di FinTrackr! Akun kamu sudah aktif dan siap digunakan.</p>
-		<p>Mulai kelola keuangan kamu dengan mudah:</p>
+		<p>Mulai kelola keuangan keluargamu dengan mudah:</p>
 		<ul>
 			<li>📊 Dashboard ringkasan keuangan bulanan</li>
 			<li>💸 Catat pemasukan dan pengeluaran</li>
@@ -131,40 +131,50 @@ func (s *smtpService) SendWelcomeEmail(to, name string) error {
 			<li>📉 Buat budget dan pantau progress</li>
 		</ul>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#6366f1;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Buka FinTrackr</a>
+			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Buka FinTrackr</a>
 		</p>
 	`, name, s.appURL))
-	return s.send(to, "Selamat Datang di FinTrackr!", body)
+	return s.send(to, "Selamat Datang di Saku! 🌿", body)
 }
 
 func (s *smtpService) SendWorkspaceInviteEmail(to, inviterName, workspaceName, token string) error {
 	acceptURL := fmt.Sprintf("%s/workspace/accept-invite?token=%s", s.appURL, token)
 	body := emailTemplate("Undangan Workspace", fmt.Sprintf(`
 		<p>Halo,</p>
-		<p><strong>%s</strong> mengundang kamu untuk bergabung ke workspace <strong>%s</strong> di FinTrackr.</p>
+		<p><strong>%s</strong> mengundang kamu untuk bergabung ke workspace <strong>%s</strong> di Saku.</p>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#6366f1;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">Terima Undangan</a>
+			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Terima Undangan</a>
 		</p>
 		<p>Link berlaku selama <strong>7 hari</strong>. Jika kamu tidak mengenal pengirim, abaikan email ini.</p>
 	`, inviterName, workspaceName, acceptURL))
-	return s.send(to, fmt.Sprintf("Undangan Workspace %s - FinTrackr", workspaceName), body)
+	return s.send(to, fmt.Sprintf("Undangan Workspace %s - Saku 🌿", workspaceName), body)
 }
 
 func emailTemplate(title, content string) string {
 	return strings.TrimSpace(fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;margin:0;padding:20px;">
-  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-    <div style="background:#6366f1;padding:24px 32px;">
-      <h1 style="color:#fff;margin:0;font-size:20px;">💰 FinTrackr</h1>
-      <p style="color:#e0e7ff;margin:4px 0 0;font-size:14px;">%s</p>
+<body style="font-family:'Nunito','Segoe UI',system-ui,sans-serif;background:#FAF7F2;margin:0;padding:20px;">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(45,42,38,0.08);">
+    <!-- Header sage gradient -->
+    <div style="background:linear-gradient(160deg,#6B8E6B 0%%,#41594F 100%%);padding:28px 32px;position:relative;overflow:hidden;">
+      <!-- Decorative blob -->
+      <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%%;background:#C97B5C;opacity:0.25;"></div>
+      <div style="position:relative;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;">🌿</span>
+          <span style="color:#ffffff;font-size:22px;font-weight:900;letter-spacing:-0.5px;">Saku.</span>
+        </div>
+        <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:13px;font-weight:600;letter-spacing:0.3px;">%s</p>
+      </div>
     </div>
-    <div style="padding:32px;color:#374151;line-height:1.6;">
+    <!-- Body -->
+    <div style="padding:32px;color:#2D2A26;line-height:1.7;font-size:15px;">
       %s
     </div>
-    <div style="padding:16px 32px;background:#f3f4f6;text-align:center;font-size:12px;color:#9ca3af;">
-      FinTrackr · Self-Hosted Financial Tracker<br>
+    <!-- Footer -->
+    <div style="padding:16px 32px;background:#F4EEE3;text-align:center;font-size:12px;color:#8E887F;border-top:1px solid #ECE4D3;">
+      Saku · Self-Hosted Family Finance Tracker 🌿<br>
       Email ini dikirim otomatis, jangan dibalas.
     </div>
   </div>

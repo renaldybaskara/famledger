@@ -1,356 +1,168 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Linking,
-  Modal,
+  View, Text, ScrollView, RefreshControl,
+  TouchableOpacity, Linking, Platform,
 } from 'react-native'
+import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useQueryClient, useQuery } from '@tanstack/react-query'
-import {
-  Bell, TrendingUp, TrendingDown, ChevronRight, Mail, X, Zap,
-  Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, Minus,
-} from 'lucide-react'
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
+import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend } from '../../src/hooks/useDashboard'
 import { useTransactions } from '../../src/hooks/useTransactions'
 import { useAuthStore } from '../../src/store/auth.store'
 import { api } from '../../src/lib/api'
-import { getCurrentMonthRange, formatCurrency, formatCurrencyCompact } from '../../src/lib/format'
-import { SummaryCard } from '../../components/dashboard/SummaryCard'
-import { CategoryPieChart } from '../../components/dashboard/CategoryPieChart'
-import { MonthlyBarChart } from '../../components/dashboard/MonthlyBarChart'
+import { formatCurrency, formatCurrencyCompact } from '../../src/lib/format'
 import { TransactionItem } from '../../components/transactions/TransactionItem'
-import { Card } from '../../components/ui/Card'
+import { TransactionDetailModal } from '../../components/transactions/TransactionDetailModal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost/api'
-
-// ─── Date range presets ───────────────────────────────────────────────────────
-type Preset = 'this_month' | 'last_month' | 'last_3' | 'last_6' | 'this_year' | 'payday' | 'custom'
-
-function getPresetRange(
-  preset: Preset,
-  custom?: { start: string; end: string },
-  paydayDate?: number,
-) {
-  const now = new Date()
-  switch (preset) {
-    case 'this_month':
-      return {
-        startDate: format(startOfMonth(now), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
-        label: format(now, 'MMMM yyyy', { locale: id }),
-      }
-    case 'last_month': {
-      const last = subMonths(now, 1)
-      return {
-        startDate: format(startOfMonth(last), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(last), 'yyyy-MM-dd'),
-        label: format(last, 'MMMM yyyy', { locale: id }),
-      }
-    }
-    case 'last_3':
-      return {
-        startDate: format(startOfMonth(subMonths(now, 2)), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
-        label: '3 Bulan Terakhir',
-      }
-    case 'last_6':
-      return {
-        startDate: format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
-        label: '6 Bulan Terakhir',
-      }
-    case 'this_year':
-      return {
-        startDate: format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd'),
-        endDate: format(new Date(now.getFullYear(), 11, 31), 'yyyy-MM-dd'),
-        label: `Tahun ${now.getFullYear()}`,
-      }
-    case 'payday': {
-      const day = paydayDate ?? 25
-      // If today >= payday → period is this month's payday to next month's payday-1
-      // If today < payday → period is last month's payday to this month's payday-1
-      const todayDay = now.getDate()
-      let periodStart: Date
-      if (todayDay >= day) {
-        periodStart = new Date(now.getFullYear(), now.getMonth(), day)
-      } else {
-        const prev = subMonths(now, 1)
-        periodStart = new Date(prev.getFullYear(), prev.getMonth(), day)
-      }
-      const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, day - 1)
-      return {
-        startDate: format(periodStart, 'yyyy-MM-dd'),
-        endDate: format(periodEnd, 'yyyy-MM-dd'),
-        label: `Gajian ${day} (${format(periodStart, 'd MMM', { locale: id })} – ${format(periodEnd, 'd MMM', { locale: id })})`,
-      }
-    }
-    case 'custom':
-      return {
-        startDate: custom?.start ?? format(startOfMonth(now), 'yyyy-MM-dd'),
-        endDate: custom?.end ?? format(endOfMonth(now), 'yyyy-MM-dd'),
-        label: custom
-          ? `${format(new Date(custom.start), 'd MMM yyyy', { locale: id })} – ${format(new Date(custom.end), 'd MMM yyyy', { locale: id })}`
-          : 'Custom',
-      }
-  }
+// ── Saku design tokens ────────────────────────────────────────
+const C = {
+  heroStart:    '#6B8E6B',
+  heroEnd:      '#41594F',
+  accent:       '#C97B5C',
+  accentSoft:   '#F4DDD0',
+  cream:        '#FAF7F2',
+  creamSunken:  '#F4EEE3',
+  surface:      '#FFFFFF',
+  primary:      '#6B8E6B',
+  primarySoft:  '#DEE8D7',
+  incomeSoft:   '#DEE8D7',
+  expenseSoft:  '#F4DDD0',
+  savingSoft:   '#FBEFD2',
+  fg1:          '#2D2A26',
+  fg2:          '#55504A',
+  fg3:          '#8E887F',
+  fg4:          '#A8A39B',
+  border:       '#E0DBD2',
+  divider:      '#ECE4D3',
+  mustard:      '#D9A441',
 }
 
-// ─── % change badge ───────────────────────────────────────────────────────────
-function ChangeBadge({ value }: { value: number | null | undefined }) {
-  if (value == null) return null
-  const abs = Math.abs(Math.round(value))
-  if (value > 0) return (
-    <View className="flex-row items-center bg-red-50 px-1.5 py-0.5 rounded-lg ml-2">
-      <ArrowUpRight size={11} color="#ef4444" />
-      <Text className="text-red-500 text-xs font-semibold ml-0.5">{abs}%</Text>
-    </View>
-  )
-  if (value < 0) return (
-    <View className="flex-row items-center bg-emerald-50 px-1.5 py-0.5 rounded-lg ml-2">
-      <ArrowDownRight size={11} color="#10b981" />
-      <Text className="text-emerald-600 text-xs font-semibold ml-0.5">{abs}%</Text>
-    </View>
-  )
+// ── Category progress row ─────────────────────────────────────
+function CategoryRow({ name, amount, color, pct }: { name: string; amount: number; color: string; pct: number }) {
   return (
-    <View className="flex-row items-center bg-slate-50 px-1.5 py-0.5 rounded-lg ml-2">
-      <Minus size={11} color="#94a3b8" />
-      <Text className="text-slate-400 text-xs font-semibold ml-0.5">0%</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+      <View style={{
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: color + '22',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: color }} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>{name}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+            {formatCurrencyCompact(amount)}
+          </Text>
+        </View>
+        <View style={{ height: 6, borderRadius: 999, backgroundColor: C.creamSunken, overflow: 'hidden' }}>
+          <View style={{ width: `${Math.min(pct, 100)}%` as any, height: '100%', backgroundColor: color, borderRadius: 999 }} />
+        </View>
+      </View>
     </View>
   )
 }
 
-// ─── Date Filter Modal ────────────────────────────────────────────────────────
-function DateFilterModal({
-  visible, current, paydayDate, onSelect, onClose,
-}: {
-  visible: boolean
-  current: Preset
-  paydayDate: number
-  onSelect: (p: Preset, custom?: { start: string; end: string }, payday?: number) => void
-  onClose: () => void
-}) {
-  const now = new Date()
-  const [customStart, setCustomStart] = useState(format(startOfMonth(now), 'yyyy-MM-dd'))
-  const [customEnd, setCustomEnd]     = useState(format(endOfMonth(now), 'yyyy-MM-dd'))
-  const [showCustom, setShowCustom]   = useState(false)
-  const [showPayday, setShowPayday]   = useState(false)
-  const [paydayInput, setPaydayInput] = useState(String(paydayDate))
-
-  const presets: { key: Preset; label: string; icon: string }[] = [
-    { key: 'this_month', label: 'Bulan Ini',         icon: '📅' },
-    { key: 'last_month', label: 'Bulan Lalu',         icon: '⬅️' },
-    { key: 'last_3',     label: '3 Bulan Terakhir',   icon: '📊' },
-    { key: 'last_6',     label: '6 Bulan Terakhir',   icon: '📈' },
-    { key: 'this_year',  label: 'Tahun Ini',          icon: '🗓️' },
-    { key: 'payday',     label: 'Periode Gajian',     icon: '💰' },
-    { key: 'custom',     label: 'Pilih Tanggal',      icon: '✏️' },
-  ]
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity className="flex-1 bg-black/40 justify-end" activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} className="bg-white rounded-t-3xl" onPress={() => {}}>
-          <ScrollView>
-            <View className="p-6">
-              <View className="flex-row items-center justify-between mb-5">
-                <Text className="text-lg font-bold text-slate-900">Filter Periode</Text>
-                <TouchableOpacity onPress={onClose}><X size={20} color="#94a3b8" /></TouchableOpacity>
-              </View>
-
-              {presets.map((p) => (
-                <TouchableOpacity
-                  key={p.key}
-                  onPress={() => {
-                    if (p.key === 'custom') { setShowCustom(true); setShowPayday(false) }
-                    else if (p.key === 'payday') { setShowPayday(true); setShowCustom(false) }
-                    else { onSelect(p.key); onClose() }
-                  }}
-                  className={`py-3.5 px-4 rounded-xl mb-2 flex-row items-center justify-between ${
-                    current === p.key ? 'bg-primary/10' : 'bg-slate-50'
-                  }`}
-                >
-                  <View className="flex-row items-center">
-                    <Text className="mr-2.5" style={{ fontSize: 16 }}>{p.icon}</Text>
-                    <Text className={`font-medium ${current === p.key ? 'text-primary' : 'text-slate-700'}`}>
-                      {p.label}
-                    </Text>
-                  </View>
-                  {current === p.key && <View className="w-2 h-2 rounded-full bg-primary" />}
-                </TouchableOpacity>
-              ))}
-
-              {/* Payday period config */}
-              {showPayday && (
-                <View className="mt-1 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <Text className="text-xs font-semibold text-amber-700 mb-3">
-                    💰 Tanggal Gajian Kamu
-                  </Text>
-                  <Text className="text-xs text-amber-600 mb-3">
-                    Masukkan tanggal gajianmu (1–28). Periode otomatis dihitung dari tanggal itu.
-                  </Text>
-                  <View className="flex-row items-center gap-3 mb-3">
-                    <Text className="text-slate-700 text-sm font-medium">Tanggal:</Text>
-                    {/* HTML native number input */}
-                    <View className="flex-1 bg-white border border-amber-300 rounded-xl overflow-hidden">
-                      {typeof window !== 'undefined' ? (
-                        <input
-                          type="number"
-                          min={1} max={28}
-                          value={paydayInput}
-                          onChange={(e) => setPaydayInput(e.target.value)}
-                          style={{
-                            width: '100%', padding: '10px 14px',
-                            border: 'none', outline: 'none',
-                            fontSize: 14, color: '#1e293b',
-                            backgroundColor: 'transparent',
-                          }}
-                        />
-                      ) : null}
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const day = Math.min(28, Math.max(1, parseInt(paydayInput) || 25))
-                      onSelect('payday', undefined, day)
-                      onClose()
-                    }}
-                    className="bg-amber-500 rounded-xl py-3 items-center"
-                  >
-                    <Text className="text-white font-bold">Terapkan Periode Gajian</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Custom date range with HTML date picker */}
-              {showCustom && (
-                <View className="mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  <Text className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">
-                    Pilih Rentang Tanggal
-                  </Text>
-                  <View className="flex-row gap-3 mb-3">
-                    <View className="flex-1">
-                      <Text className="text-xs text-slate-500 mb-1.5 font-medium">Dari</Text>
-                      <View className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                        {typeof window !== 'undefined' ? (
-                          <input
-                            type="date"
-                            value={customStart}
-                            onChange={(e) => setCustomStart(e.target.value)}
-                            style={{
-                              width: '100%', padding: '10px 12px',
-                              border: 'none', outline: 'none',
-                              fontSize: 13, color: '#1e293b',
-                              backgroundColor: 'transparent',
-                            }}
-                          />
-                        ) : null}
-                      </View>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-xs text-slate-500 mb-1.5 font-medium">Sampai</Text>
-                      <View className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                        {typeof window !== 'undefined' ? (
-                          <input
-                            type="date"
-                            value={customEnd}
-                            onChange={(e) => setCustomEnd(e.target.value)}
-                            style={{
-                              width: '100%', padding: '10px 12px',
-                              border: 'none', outline: 'none',
-                              fontSize: 13, color: '#1e293b',
-                              backgroundColor: 'transparent',
-                            }}
-                          />
-                        ) : null}
-                      </View>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (customStart && customEnd) {
-                        onSelect('custom', { start: customStart, end: customEnd })
-                        onClose()
-                      }
-                    }}
-                    className="bg-primary rounded-xl py-3 items-center"
-                  >
-                    <Text className="text-white font-bold">Terapkan</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              <View className="h-4" />
-            </View>
-          </ScrollView>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
-  )
-}
-
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+// ── Main Dashboard ────────────────────────────────────────────
 export default function DashboardScreen() {
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
-  const [bannerDismissed, setBannerDismissed] = useState(false)
-  const [showDateFilter, setShowDateFilter] = useState(false)
+  const [bannerDismissed, setBannerDismissed]     = useState(false)
+  const [showPeriod, setShowPeriod]               = useState(false)
+  const [detailTransaction, setDetailTransaction] = useState<any>(null)
   const [preset, setPreset] = useState<Preset>('this_month')
   const [customRange, setCustomRange] = useState<{ start: string; end: string } | undefined>()
   const [paydayDate, setPaydayDate] = useState(25)
+  const [selectedWsIds, setSelectedWsIds] = useState<string[]>([])
 
   const range = getPresetRange(preset, customRange, paydayDate)
 
   const handlePresetSelect = (p: Preset, custom?: { start: string; end: string }, payday?: number) => {
     setPreset(p)
     if (p === 'custom' && custom) setCustomRange(custom)
-    if (p === 'payday' && payday) setPaydayDate(payday)
+    if (p === 'payday' && payday)  setPaydayDate(payday)
     queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
 
-  // Check whether user has any active email integration
-  // staleTime=0 so it always re-checks when dashboard mounts (e.g. after Gmail connect redirect)
+  const { data: pendingInvites } = useQuery({
+    queryKey: ['ws-my-pending-invites'],
+    queryFn:  () => api.get<{ id: string; role: string; token?: string; expiresAt: string }[]>('/workspaces/invites/pending').then(r => r.data ?? []),
+    refetchInterval: 10_000,
+  })
+
+  const acceptInviteMut = useMutation({
+    mutationFn: (token: string) => api.post('/workspaces/invites/accept', { token }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
+      queryClient.invalidateQueries({ queryKey: ['ws-my-pending-invites'] })
+    },
+  })
+  const declineInviteMut = useMutation({
+    mutationFn: (token: string) => api.post('/workspaces/invites/decline', { token }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ws-my-pending-invites'] }),
+  })
+
   const { data: integrations } = useQuery({
-    queryKey: ['email-integrations'],
-    queryFn: () => api.get<{ id: string; isActive: boolean }[]>('/email-integrations'),
-    staleTime: 0,
-    refetchOnMount: true,
+    queryKey:         ['email-integrations'],
+    queryFn:          () => api.get<{ id: string; isActive: boolean }[]>('/email-integrations'),
+    staleTime:        0,
+    refetchOnMount:   true,
     refetchOnWindowFocus: true,
   })
   const hasEmailIntegration = (integrations?.data?.length ?? 0) > 0
-  const showGmailBanner = !hasEmailIntegration && !bannerDismissed
+  const showGmailBanner     = !hasEmailIntegration && !bannerDismissed
 
   const handleConnectGmail = async () => {
     try {
       const { data } = await api.get<{ url: string }>('/email-integrations/gmail/auth')
-      if (typeof window !== 'undefined') {
-        window.location.href = data.url
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') window.location.href = data.url
       } else {
-        Linking.openURL(data.url)
+        await WebBrowser.openAuthSessionAsync(data.url, 'fintrackr://')
       }
-    } catch {
-      // silently ignore — user can try from Email tab
-    }
+    } catch {}
   }
 
-  const { data: summary, isLoading: summaryLoading } = useDashboardSummary({
-    startDate: range.startDate,
-    endDate: range.endDate,
+  const { data: workspacesData } = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: () => api.get<any[]>('/workspaces').then(r => r.data ?? []),
+    staleTime: 60_000,
   })
-  const { data: categoryData, isLoading: categoryLoading } = useCategoryBreakdown({
-    startDate: range.startDate,
-    endDate: range.endDate,
-    type: 'expense',
+  const workspaces = workspacesData ?? []
+
+  const toggleWs = (id: string) =>
+    setSelectedWsIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+
+  const scopeParams = selectedWsIds.length > 0
+    ? { workspaceIds: selectedWsIds, includePersonal: true }
+    : {}
+
+  const { data: summary, isLoading: summaryLoading } = useDashboardSummary({ startDate: range.startDate, endDate: range.endDate, ...scopeParams })
+  const { data: categoryData }                        = useCategoryBreakdown({ startDate: range.startDate, endDate: range.endDate, type: 'expense', ...scopeParams })
+  const { data: trendRaw }                            = useMonthlyTrend(6)
+
+  // Recent transactions — personal with date filter
+  const { data: recentData, isLoading: recentLoading } = useTransactions({
+    limit: 5, page: 1, startDate: range.startDate, endDate: range.endDate,
   })
-  const { data: trendData, isLoading: trendLoading } = useMonthlyTrend(6)
-  const { data: recentData, isLoading: recentLoading } = useTransactions({ limit: 5, page: 1 })
+  // Recent transactions — first selected workspace with date filter
+  const activeWsId = selectedWsIds[0] ?? null
+  const { data: wsRecentData, isLoading: wsRecentLoading } = useQuery({
+    queryKey: ['ws-recent-tx', activeWsId, range.startDate, range.endDate],
+    queryFn:  () => api.get<any>(`/workspaces/${activeWsId}/transactions`, {
+      params: { limit: 5, startDate: range.startDate, endDate: range.endDate },
+    }).then(r => r.data),
+    enabled: !!activeWsId,
+  })
+  const activeRecentTxns = activeWsId ? (wsRecentData?.data ?? []) : (recentData?.data ?? [])
+  const activeRecentLoading = activeWsId ? wsRecentLoading : recentLoading
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -359,261 +171,372 @@ export default function DashboardScreen() {
     setRefreshing(false)
   }, [queryClient])
 
-  const greeting = getGreeting()
+  const firstName = user?.name?.split(' ')[0] ?? 'Kamu'
+  const totalIn   = summary?.totalIncome  ?? 0
+  const totalOut  = summary?.totalExpense ?? 0
+  const balance   = summary?.netBalance   ?? 0
 
-  // % change values from API
-  const incomeChange = summary?.incomeChange as number | null | undefined
-  const expenseChange = summary?.expenseChange as number | null | undefined
-  const netChange = summary?.netBalanceChange as number | null | undefined
+  // Build top categories
+  const topCats = (categoryData ?? []).slice(0, 4)
+  const maxAmt  = topCats[0]?.total ?? 1
+
+  // Category accent colors (fallback palette)
+  const CAT_COLORS = ['#C97B5C','#6B8E6B','#D9A441','#6E97AE','#C66B6B','#7E4F94']
+
+  // Monthly trend: [{month:"2026-01",type:"income",total:N},...] → [{label:"Jan",income:N,expense:N},...]
+  const trendData = useMemo(() => {
+    if (!trendRaw || !Array.isArray(trendRaw)) return []
+    const map: Record<string, { label: string; income: number; expense: number }> = {}
+    for (const row of trendRaw as { month: string; type: string; total: number }[]) {
+      if (!map[row.month]) {
+        const d = new Date(row.month + '-02')
+        map[row.month] = { label: format(d, 'MMM', { locale: id }), income: 0, expense: 0 }
+      }
+      if (row.type === 'income')  map[row.month].income  = row.total
+      if (row.type === 'expense') map[row.month].expense = row.total
+    }
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v)
+  }, [trendRaw])
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#1A2B4A"
-            colors={['#1A2B4A']}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} colors={[C.primary]} />
         }
       >
-        {/* Header */}
-        <View className="bg-primary px-5 pt-4 pb-8">
-          <View className="flex-row items-center justify-between mb-1">
+        {/* ── Hero ── */}
+        <View style={{
+          backgroundColor: C.heroStart,
+          ...(({ background: `linear-gradient(160deg, ${C.heroStart} 0%, ${C.heroEnd} 100%)` }) as any),
+          paddingTop: 24, paddingBottom: 40,
+          paddingHorizontal: 22,
+          borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+          overflow: 'hidden', position: 'relative',
+        }}>
+          {/* Background blobs */}
+          <View style={{ position: 'absolute', top: -60, right: -60, width: 220, height: 220, borderRadius: 999, backgroundColor: C.accent, opacity: 0.35 }} />
+          <View style={{ position: 'absolute', bottom: -40, left: -50, width: 180, height: 180, borderRadius: 999, backgroundColor: '#A2BD97', opacity: 0.4 }} />
+
+          {/* Top row: greeting + notif + avatar */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
             <View>
-              <Text className="text-white/70 text-sm">{greeting},</Text>
-              <Text className="text-white text-xl font-bold mt-0.5">
-                {user?.name?.split(' ')[0] ?? 'Pengguna'}
+              <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_800ExtraBold' }}>
+                {format(new Date(), 'EEEE, d MMM', { locale: id })}
+              </Text>
+              <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', marginTop: 4, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>
+                Halo, {firstName} 🌿
               </Text>
             </View>
-            <TouchableOpacity className="w-10 h-10 bg-white/10 rounded-full items-center justify-center">
-              <Bell size={20} color="white" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              <View style={{
+                width: 40, height: 40, borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 18 }}>🔔</Text>
+              </View>
+              <View style={{
+                width: 40, height: 40, borderRadius: 999,
+                backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>
+                  {firstName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            </View>
           </View>
 
-          {/* Date filter chip */}
+          {/* Balance */}
+          <View style={{ position: 'relative', marginTop: 28 }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Nunito_700Bold' }}>
+              Saldo bulan ini
+            </Text>
+            <Text style={{ fontSize: 36, fontWeight: '900', color: '#fff', marginTop: 4, letterSpacing: -1, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+              {summaryLoading ? '—' : formatCurrency(balance)}
+            </Text>
+          </View>
+
+          {/* Period chip */}
           <TouchableOpacity
-            onPress={() => setShowDateFilter(true)}
-            className="flex-row items-center self-start mt-2 bg-white/15 rounded-full px-3 py-1.5"
+            onPress={() => setShowPeriod(true)}
+            style={{
+              marginTop: 14, flexDirection: 'row', alignItems: 'center',
+              alignSelf: 'flex-start',
+              backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999,
+              paddingHorizontal: 14, paddingVertical: 6,
+              borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+            }}
           >
-            <Calendar size={13} color="rgba(255,255,255,0.8)" />
-            <Text className="text-white/80 text-xs font-medium mx-2">{range.label}</Text>
-            <ChevronDown size={13} color="rgba(255,255,255,0.8)" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)', fontFamily: 'Nunito_700Bold' }}>
+              {range.label}
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', marginLeft: 6 }}>▾</Text>
           </TouchableOpacity>
+
+          {/* In / Out glass cards */}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, position: 'relative' }}>
+            {[
+              { label: 'MASUK', amount: totalIn,  arrow: '↓' },
+              { label: 'KELUAR', amount: totalOut, arrow: '↑' },
+            ].map(({ label, amount, arrow }) => (
+              <View key={label} style={{
+                flex: 1,
+                backgroundColor: 'rgba(255,255,255,0.18)',
+                borderRadius: 16, padding: 14,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)' }}>{arrow}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Nunito_800ExtraBold' }}>
+                    {label}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 17, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+                  {summaryLoading ? '—' : formatCurrencyCompact(amount)}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {/* Gmail integration banner */}
-        {showGmailBanner && (
-          <View className="mx-4 mt-4 rounded-2xl overflow-hidden"
-            style={{ backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
-          >
-            <View className="p-4">
-              <View className="flex-row items-start justify-between">
-                <View className="flex-row items-center flex-1 mr-3">
-                  <View className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                    style={{ backgroundColor: '#6366F1' }}
-                  >
-                    <Zap size={20} color="white" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-bold text-sm" style={{ color: '#3730A3' }}>
-                      Aktifkan Auto-Import Transaksi
-                    </Text>
-                    <Text className="text-xs mt-0.5 leading-4" style={{ color: '#6366F1' }}>
-                      Hubungkan Gmail agar transaksi masuk otomatis
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={() => setBannerDismissed(true)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <X size={16} color="#6366F1" />
-                </TouchableOpacity>
-              </View>
+        {/* ── Workspace context chips ── */}
+        {workspaces.length > 0 && (
+          <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: C.fg4, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, fontFamily: 'Nunito_800ExtraBold' }}>
+              Tampilkan data dari
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               <TouchableOpacity
-                onPress={handleConnectGmail}
-                activeOpacity={0.85}
-                className="mt-3 rounded-xl py-2.5 items-center flex-row justify-center"
-                style={{ backgroundColor: '#6366F1' }}
+                onPress={() => setSelectedWsIds([])}
+                style={{
+                  paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999,
+                  backgroundColor: selectedWsIds.length === 0 ? C.primary : C.surface,
+                  borderWidth: 1.5, borderColor: selectedWsIds.length === 0 ? C.primary : C.border,
+                }}
               >
-                <Mail size={15} color="white" />
-                <Text className="text-white font-bold text-sm ml-2">Hubungkan Gmail Sekarang</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: selectedWsIds.length === 0 ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Pribadi</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setBannerDismissed(true)} className="mt-2 items-center py-1">
-                <Text className="text-xs" style={{ color: '#818CF8' }}>Ingatkan saya nanti</Text>
-              </TouchableOpacity>
-            </View>
+              {workspaces.map((ws: any) => {
+                const active = selectedWsIds.includes(ws.id)
+                return (
+                  <TouchableOpacity
+                    key={ws.id}
+                    onPress={() => toggleWs(ws.id)}
+                    style={{
+                      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999,
+                      backgroundColor: active ? C.primary : C.surface,
+                      borderWidth: 1.5, borderColor: active ? C.primary : C.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </ScrollView>
           </View>
         )}
 
-        {/* Summary cards */}
-        <View className={`mx-4 ${showGmailBanner ? 'mt-4' : '-mt-4'}`}>
-          <Card variant="elevated" padding="md">
-            {summaryLoading ? <LoadingSpinner /> : (
-              <>
-                {/* Net balance */}
-                <View className="mb-3">
-                  <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-1">
-                    Saldo Bersih
-                  </Text>
-                  <View className="flex-row items-center">
-                    <Text className={`text-3xl font-bold font-mono ${
-                      (summary?.netBalance ?? 0) >= 0 ? 'text-primary' : 'text-red-500'
-                    }`}>
-                      {formatCurrency(summary?.netBalance ?? 0)}
-                    </Text>
-                    <ChangeBadge value={netChange} />
-                  </View>
-                  {summary?.previousPeriod && (
-                    <Text className="text-slate-400 text-xs mt-1">
-                      vs {formatCurrencyCompact(summary.previousPeriod.netBalance ?? 0)} periode lalu
-                    </Text>
-                  )}
-                </View>
-
-                {/* Income / Expense row */}
-                <View className="flex-row gap-3">
-                  <View className="flex-1 bg-emerald-50 rounded-xl p-3">
-                    <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-xs text-emerald-700 font-medium">Pemasukan</Text>
-                      <ChangeBadge value={incomeChange} />
-                    </View>
-                    <Text className="text-base font-bold text-emerald-700 font-mono">
-                      {formatCurrencyCompact(summary?.totalIncome ?? 0)}
-                    </Text>
-                  </View>
-                  <View className="flex-1 bg-red-50 rounded-xl p-3">
-                    <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-xs text-red-600 font-medium">Pengeluaran</Text>
-                      <ChangeBadge value={expenseChange} />
-                    </View>
-                    <Text className="text-base font-bold text-red-600 font-mono">
-                      {formatCurrencyCompact(summary?.totalExpense ?? 0)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Transaction count */}
-                <Text className="text-slate-400 text-xs mt-2 text-right">
-                  {summary?.transactionCount ?? 0} transaksi
-                </Text>
-              </>
-            )}
-          </Card>
-        </View>
-
-        <View className="px-4 mt-5 gap-5">
-          {/* Category Breakdown */}
-          <Card padding="md">
-            <View className="flex-row items-center justify-between mb-4">
-              <View>
-                <Text className="text-slate-800 font-bold text-base">Pengeluaran per Kategori</Text>
-                <Text className="text-slate-400 text-xs mt-0.5">{range.label}</Text>
+        {/* ── Gmail banner ── */}
+        {showGmailBanner && (
+          <View style={{ marginHorizontal: 16, marginTop: 16 }}>
+            <TouchableOpacity
+              onPress={handleConnectGmail}
+              style={{
+                backgroundColor: '#FBEFD2', borderRadius: 18, padding: 16,
+                flexDirection: 'row', alignItems: 'center', gap: 14,
+                borderWidth: 1, borderColor: '#E3B25A',
+              }}
+            >
+              <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.7)', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 22 }}>⚡</Text>
               </View>
-              <View className="bg-red-50 px-2 py-1 rounded-lg">
-                <TrendingDown size={14} color="#EF4444" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>Auto-Import Transaksi</Text>
+                <Text style={{ fontSize: 12, color: C.fg2, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Hubungkan Gmail untuk import otomatis</Text>
               </View>
-            </View>
-            {categoryLoading ? <LoadingSpinner /> : <CategoryPieChart data={categoryData ?? []} />}
-          </Card>
-
-          {/* Monthly Trend */}
-          <Card padding="md">
-            <View className="flex-row items-center justify-between mb-4">
-              <View>
-                <Text className="text-slate-800 font-bold text-base">Tren 6 Bulan Terakhir</Text>
-                <Text className="text-slate-400 text-xs mt-0.5">Pemasukan vs Pengeluaran</Text>
-              </View>
-              <View className="bg-emerald-50 px-2 py-1 rounded-lg">
-                <TrendingUp size={14} color="#10B981" />
-              </View>
-            </View>
-            {trendLoading ? <LoadingSpinner /> : <MonthlyBarChart data={trendData ?? []} />}
-          </Card>
-
-          {/* Recent Transactions */}
-          <Card padding="none">
-            <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
-              <View>
-                <Text className="text-slate-800 font-bold text-base">Transaksi Terbaru</Text>
-                <Text className="text-slate-400 text-xs mt-0.5">5 transaksi terakhir</Text>
-              </View>
+              <Text style={{ fontSize: 18, color: C.fg3 }}>›</Text>
               <TouchableOpacity
-                onPress={() => router.push('/(tabs)/transactions')}
-                className="flex-row items-center"
+                onPress={() => setBannerDismissed(true)}
+                style={{ position: 'absolute', top: 8, right: 8 }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text className="text-primary text-sm font-medium">Lihat semua</Text>
-                <ChevronRight size={14} color="#1A2B4A" />
+                <Text style={{ color: C.fg3, fontSize: 16 }}>✕</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Workspace invite banners ── */}
+        {(pendingInvites ?? []).map((inv) => (
+          <View key={inv.id} style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: '#FBEFD2', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#D9A441' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#FBEFD2', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 20 }}>✉️</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>Undangan Workspace</Text>
+                <Text style={{ fontSize: 12, color: C.fg2, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                  Kamu diundang sebagai {inv.role}
+                </Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => inv.token && acceptInviteMut.mutate(inv.token)}
+                disabled={acceptInviteMut.isPending || !inv.token}
+                style={{ flex: 1, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>Terima</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => inv.token && declineInviteMut.mutate(inv.token)}
+                disabled={declineInviteMut.isPending || !inv.token}
+                style={{ flex: 1, backgroundColor: '#F4EEE3', borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}
+              >
+                <Text style={{ color: C.fg2, fontWeight: '700', fontSize: 13, fontFamily: 'Nunito_700Bold' }}>Tolak</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+
+        <View style={{ paddingHorizontal: 16, paddingTop: 20, gap: 16 }}>
+
+          {/* ── Tren Bulanan ── */}
+          {trendData.length > 0 && (
+            <View style={{ backgroundColor: C.surface, borderRadius: 18, padding: 16, shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Tren 6 Bulan</Text>
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: C.primary }} />
+                    <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_600SemiBold' }}>Masuk</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: C.accent }} />
+                    <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_600SemiBold' }}>Keluar</Text>
+                  </View>
+                </View>
+              </View>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={trendData} barGap={3} barCategoryGap="30%" margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.divider} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: C.fg3, fontFamily: 'Nunito_600SemiBold' }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={(v: number) => formatCurrencyCompact(v)} tick={{ fontSize: 10, fill: C.fg4, fontFamily: 'Nunito_500Medium' }} axisLine={false} tickLine={false} width={56} />
+                  <Tooltip
+                    cursor={{ fill: C.creamSunken }}
+                    contentStyle={{ borderRadius: 12, border: `1px solid ${C.border}`, backgroundColor: C.surface, fontFamily: 'Nunito_700Bold', fontSize: 12 }}
+                    formatter={(value: number, name: string) => [formatCurrency(value), name === 'income' ? 'Masuk' : 'Keluar']}
+                  />
+                  <Bar dataKey="income"  fill={C.primary} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" fill={C.accent}  radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </View>
+          )}
+
+          {/* ── Top Kategori ── */}
+          {topCats.length > 0 && (
+            <View style={{ backgroundColor: C.surface, borderRadius: 18, padding: 16, shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Top Kategori</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/budget')}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>Lihat semua</Text>
+                </TouchableOpacity>
+              </View>
+              {topCats.map((cat, i) => (
+                <CategoryRow
+                  key={cat.categoryId ?? i}
+                  name={cat.categoryName ?? 'Lainnya'}
+                  amount={cat.total}
+                  color={CAT_COLORS[i % CAT_COLORS.length]}
+                  pct={(cat.total / maxAmt) * 100}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* ── Transaksi Terbaru ── */}
+          <View style={{ backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Transaksi Terbaru</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>Lihat semua</Text>
               </TouchableOpacity>
             </View>
 
-            {recentLoading ? <LoadingSpinner /> : recentData?.data && recentData.data.length > 0 ? (
+            {activeRecentLoading ? (
+              <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                <LoadingSpinner />
+              </View>
+            ) : activeRecentTxns.length > 0 ? (
               <View>
-                {recentData.data.map((transaction, idx) => (
-                  <View key={transaction.id}>
-                    <TransactionItem
-                      transaction={transaction}
-                      onPress={() => router.push('/(tabs)/transactions')}
-                    />
-                    {idx < recentData.data.length - 1 && <View className="h-px bg-slate-50 mx-4" />}
+                {activeRecentTxns.map((txn: any, idx: number) => (
+                  <View key={txn.id}>
+                    <TransactionItem transaction={txn} onPress={() => setDetailTransaction(txn)} />
+                    {idx < activeRecentTxns.length - 1 && (
+                      <View style={{ height: 1, backgroundColor: C.divider, marginLeft: 70 }} />
+                    )}
                   </View>
                 ))}
-                <View className="h-2" />
+                <View style={{ height: 8 }} />
               </View>
             ) : (
-              <View className="py-10 items-center">
-                <Text className="text-slate-400 text-sm">Belum ada transaksi</Text>
-                <Text className="text-slate-300 text-xs mt-1">Tambahkan transaksi pertamamu</Text>
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>Belum ada transaksi</Text>
+                <Text style={{ fontSize: 13, color: C.fg3, marginTop: 4 }}>Tambahkan transaksi pertamamu</Text>
               </View>
             )}
-          </Card>
+          </View>
 
-          {/* Quick insight */}
+          {/* ── Quick Insight ── */}
           {summary && summary.totalExpense > 0 && summary.totalIncome > 0 && (
-            <Card padding="md" className="bg-primary/5 border border-primary/10">
-              <View className="flex-row items-start">
-                <View className="w-8 h-8 bg-primary/10 rounded-xl items-center justify-center mr-3 mt-0.5">
-                  <TrendingUp size={16} color="#1A2B4A" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-primary font-semibold text-sm">Insight Periode Ini</Text>
-                  <Text className="text-slate-500 text-sm mt-1 leading-5">
-                    {summary.netBalance >= 0
-                      ? `Kamu menabung ${formatCurrency(summary.netBalance)}. `
-                      : `Pengeluaran melebihi pemasukan ${formatCurrency(Math.abs(summary.netBalance))}. `}
-                    Rasio pengeluaran:{' '}
-                    <Text className="font-semibold text-slate-700">
-                      {Math.round((summary.totalExpense / summary.totalIncome) * 100)}%
-                    </Text>
-                    {' '}dari pemasukan.
-                  </Text>
-                </View>
+            <View style={{
+              backgroundColor: C.primarySoft, borderRadius: 18, padding: 16,
+              borderWidth: 1, borderColor: '#C2D4B9',
+              flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+            }}>
+              <View style={{ width: 36, height: 36, backgroundColor: 'rgba(107,142,107,0.2)', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                <Text style={{ fontSize: 18 }}>💡</Text>
               </View>
-            </Card>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.heroEnd, fontFamily: 'Nunito_800ExtraBold' }}>Insight Periode Ini</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg2, marginTop: 4, lineHeight: 20, fontFamily: 'Nunito_500Medium' }}>
+                  {balance >= 0
+                    ? `Kamu menabung ${formatCurrencyCompact(balance)}. `
+                    : `Pengeluaran melebihi pemasukan ${formatCurrencyCompact(Math.abs(balance))}. `}
+                  Rasio pengeluaran:{' '}
+                  <Text style={{ fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
+                    {Math.round((summary.totalExpense / summary.totalIncome) * 100)}%
+                  </Text>
+                  {' '}dari pemasukan.
+                </Text>
+              </View>
+            </View>
           )}
 
-          <View className="h-4" />
+          <View style={{ height: 24 }} />
         </View>
       </ScrollView>
 
-      {/* Date filter modal */}
-      <DateFilterModal
-        visible={showDateFilter}
+      <PeriodModal
+        visible={showPeriod}
         current={preset}
         paydayDate={paydayDate}
         onSelect={handlePresetSelect}
-        onClose={() => setShowDateFilter(false)}
+        onClose={() => setShowPeriod(false)}
+      />
+
+      <TransactionDetailModal
+        transaction={detailTransaction}
+        visible={detailTransaction !== null}
+        onClose={() => setDetailTransaction(null)}
+        onDeleted={() => setDetailTransaction(null)}
       />
     </SafeAreaView>
   )
-}
-
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Selamat pagi'
-  if (hour < 15) return 'Selamat siang'
-  if (hour < 18) return 'Selamat sore'
-  return 'Selamat malam'
 }

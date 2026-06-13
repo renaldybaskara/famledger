@@ -51,4 +51,16 @@ type TransactionRepository interface {
 	GetSummary(ctx context.Context, userID uuid.UUID, start, end time.Time) (*TransactionSummary, error)
 	GetCategoryBreakdown(ctx context.Context, userID uuid.UUID, txType string, start, end time.Time) ([]CategoryBreakdownRow, error)
 	GetMonthlyTrend(ctx context.Context, userID uuid.UUID, months int) ([]MonthlyTrendRow, error)
+	// ExistsByAmountMerchantWindow returns true when a non-deleted transaction already exists
+	// for the same user/bank/type/amount/merchant within the given lookback window.
+	// Used for fuzzy-dedup of banks (e.g. BRI) that send the same notification twice.
+	ExistsByAmountMerchantWindow(ctx context.Context, userID uuid.UUID, bank, txType string, amountCents int64, merchantNorm string, after time.Time) (bool, error)
+
+	// Multi-user variants for workspace shared views.
+	// Accepts a pre-fetched list of user IDs (collected from workspace_members)
+	// so no subquery JOIN is needed — two separate queries in the application layer.
+	FindAllByUserIDs(ctx context.Context, userIDs []uuid.UUID, q ListTransactionsQuery) ([]entity.Transaction, int64, error)
+	GetSummaryByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) (*TransactionSummary, error)
+	GetCategoryBreakdownByUserIDs(ctx context.Context, userIDs []uuid.UUID, txType string, start, end time.Time) ([]CategoryBreakdownRow, error)
+	GetMonthlyTrendByUserIDs(ctx context.Context, userIDs []uuid.UUID, months int) ([]MonthlyTrendRow, error)
 }

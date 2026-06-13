@@ -14,6 +14,11 @@ type EmailIntegrationRepository interface {
 	FindByUserIDAndEmail(ctx context.Context, userID uuid.UUID, email string) (*entity.EmailIntegration, error)
 	// FindAllActive returns every active integration (used by background workers on startup).
 	FindAllActive(ctx context.Context) ([]entity.EmailIntegration, error)
+	// FindAnyByUserIDAndEmail finds an integration regardless of soft-delete status.
+	// Used to restore a previously disconnected integration on reconnect.
+	FindAnyByUserIDAndEmail(ctx context.Context, userID uuid.UUID, email string) (*entity.EmailIntegration, error)
 	Update(ctx context.Context, id uuid.UUID, data map[string]interface{}) (*entity.EmailIntegration, error)
+	// Restore unscopes the soft-delete filter so a previously deleted record can be updated.
+	Restore(ctx context.Context, id uuid.UUID, data map[string]interface{}) (*entity.EmailIntegration, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }

@@ -1,27 +1,109 @@
-# FinTrackr — Self-Hosted Financial Tracker
+# Saku — Self-Hosted Family Finance Tracker
 
-Aplikasi manajemen keuangan personal yang **otomatis mencatat transaksi** dari email notifikasi bank & e-wallet.
+> **"Saku"** = kantong/dompet dalam bahasa Indonesia 🌿
+
+Aplikasi manajemen keuangan keluarga yang **otomatis mencatat transaksi** dari email notifikasi bank & e-wallet, dengan dukungan **workspace bersama** untuk hingga 5 anggota keluarga.
 
 - **Backend**: Go + Gin + GORM (Clean Architecture)
-- **Frontend**: Expo (React Native Web) → nginx static
+- **Frontend**: Expo (React Native Web) + Nunito font → nginx static
 - **Database**: PostgreSQL 16 + pgvector
 - **Proxy**: Caddy (auto-HTTPS di production)
 - **Monitoring**: Grafana, Prometheus, Loki, Uptime Kuma
+
+### Design System
+- **Primary**: Sage green `#6B8E6B` (bukan navy)
+- **Accent**: Clay/terracotta `#C97B5C`
+- **Canvas**: Warm cream `#FAF7F2` (bukan pure white)
+- **Income = sage**, **Expense = clay** (bukan merah/hijau)
 
 ---
 
 ## Daftar Isi
 
 1. [Quick Start](#-quick-start)
-2. [Cara Kerja Secara Keseluruhan](#-cara-kerja-secara-keseluruhan)
-3. [Setup Google OAuth](#-setup-google-oauth-wajib-untuk-login-google--email-integration)
-4. [Flow Login & Register](#-flow-login--register)
-5. [Flow Email Auto-Import](#-flow-email-auto-import-transaksi)
-6. [Fitur Aplikasi](#-fitur-aplikasi)
-7. [Konfigurasi .env](#-konfigurasi-env)
-8. [Perintah Docker Berguna](#-perintah-docker-berguna)
-9. [API Reference](#-api-reference-lengkap)
-10. [Troubleshooting](#-troubleshooting)
+2. [Deploy & Update](#-deploy--update)
+3. [Fitur Lengkap](#-fitur-lengkap)
+4. [Cara Kerja Secara Keseluruhan](#-cara-kerja-secara-keseluruhan)
+5. [Setup Google OAuth](#-setup-google-oauth-wajib-untuk-login-google--email-integration)
+6. [Flow Login & Register](#-flow-login--register)
+7. [Flow Email Auto-Import](#-flow-email-auto-import-transaksi)
+8. [Flow Workspace & Undangan Anggota](#-flow-workspace--undangan-anggota)
+9. [OpenRouter AI Integration](#-openrouter-ai-integration)
+10. [Konfigurasi .env](#-konfigurasi-env)
+11. [Melihat Log](#-melihat-log)
+12. [Perintah Docker Berguna](#-perintah-docker-berguna)
+13. [API Reference](#-api-reference-lengkap)
+14. [Troubleshooting](#-troubleshooting)
+
+---
+
+## ✨ Fitur Lengkap
+
+### Transaksi
+| Fitur | Keterangan |
+|---|---|
+| **Auto-import dari email** | Gmail & IMAP — BRI, BCA, Mandiri, BNI, GoPay, OVO, DANA, dll |
+| **Anti-double import** | Idempotency key berbasis `bank+tipe+jumlah+tanggal_transaksi` |
+| **Tambah manual** | Form dengan kategori, rekening, tanggal, merchant, catatan |
+| **Detail & edit** | Klik transaksi → modal detail → bisa edit semua field |
+| **Hapus transaksi** | Dari modal detail atau long-press di list |
+| **Export CSV** | Download semua transaksi bulan ini |
+| **Filter & search** | Cari merchant, filter tipe, filter rentang tanggal |
+| **Grouped by day** | List dikelompokkan per hari dengan total harian |
+
+### Kategorisasi Otomatis
+| Metode | Urutan |
+|---|---|
+| **AI hint (OpenRouter)** | 1st — jika merchant ambigu, tanya AI |
+| **Keyword map (50+ kata)** | 2nd — warung makan→Makanan, grab→Transport, PLN→Tagihan, dll |
+| **Nama kategori user** | 3rd — nama kategori vs merchant |
+| **Manual** | Fallback — user isi sendiri dari modal edit |
+
+### Email Parser (BRI)
+| Jenis Email | Diimport? | Merchant Extraction |
+|---|---|---|
+| `Notification BRI` | ✅ (canonical) | Dari `Ket.:` field — QRIS/BRIVA/KK/NBMB dibersihkan |
+| `Pembelian QRIS Berhasil` | ✅ | `Nama Merchant` field — nama toko jelas |
+| `Transfer Between BRI Account` | ❌ | Covered by `Notification BRI` (Ket.: NBMB...TO NAMA) |
+| `Pemindahan Dana Sesama Rekening` | ❌ | Covered by `Notification BRI` |
+| `Transfer to Other Domestic Bank` | ❌ | Covered by `Notification BRI` |
+| `BRIVA Payment Successful` | ❌ | Covered by `Notification BRI` (Ket.: BRIVA...NBMB NAMA) |
+| `Pembayaran KK BRI Berhasil` | ❌ | Covered by `Notification BRI` (Ket.: KK...) |
+| `Notification BRI` dengan `Ket.: QRIS-` | ❌ | Covered by `Pembelian QRIS Berhasil` |
+
+### Dashboard
+| Widget | Keterangan |
+|---|---|
+| **Saldo bulan ini** | Net balance (income − expense) |
+| **Periode fleksibel** | Bulan ini, bulan lalu, 3/6 bulan, tahun, gajian custom |
+| **Top kategori** | Bar progress per kategori pengeluaran |
+| **Transaksi terbaru** | 4 terakhir, klik untuk detail/edit |
+| **Quick insight** | Rasio pengeluaran vs pemasukan |
+
+### Rekening (Multi-Account)
+- Bank, e-wallet, tunai, kartu kredit
+- Multiple rekening per user
+- Auto-matching ke rekening saat import email
+- Lihat di **Settings → Rekening & Akun**
+
+### Budget & Anggaran
+- Budget per kategori (bulanan/mingguan/tahunan)
+- Progress bar dengan alert threshold
+- Badge status: Aman / Hampir Habis / Melebihi
+- Ringkasan total budget dengan gradient card
+
+### Workspace (Keuangan Bersama)
+- Hingga 5 anggota keluarga per workspace
+- Role: Owner, Admin, Contributor, Viewer
+- **Undang via email** — link accept yang bisa diakses tanpa akun dulu
+- Tab Anggota / Undangan / Aktivitas
+- Activity log semua aksi workspace
+
+### AI (OpenRouter)
+- **Gratis** — default model `google/gemini-2.0-flash-exp:free`
+- Fallback kategorisasi ketika keyword tidak match
+- Extract merchant dari format email yang tidak dikenal
+- Diaktifkan via `OPENROUTER_API_KEY` di `.env`
 
 ---
 
@@ -71,6 +153,165 @@ docker compose ps
 > ```powershell
 > docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 > ```
+
+---
+
+## 🚢 Deploy & Update
+
+### Prasyarat Sekali (Windows)
+
+Sebelum pertama kali deploy, pastikan `docker`, `docker-compose`, dan `node` bisa dipanggil langsung dari terminal tanpa full path. Jalankan sekali di PowerShell:
+
+```powershell
+# Tambah Docker + Node.js ke User PATH permanen
+$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+$toAdd = "C:\Program Files\Docker\Docker\resources\bin;" +
+         "C:\Program Files\nodejs;" +
+         "$env:APPDATA\npm;" +
+         "C:\Users\$env:USERNAME\AppData\Local\Programs\Git\bin"
+[Environment]::SetEnvironmentVariable("PATH", "$toAdd;$userPath", "User")
+
+# Tambah ke PowerShell profile agar aktif di setiap terminal baru
+$profileContent = @"
+
+# Dev Tools PATH (Docker, Node.js, npm, Git bash)
+`$env:PATH = "C:\Program Files\Docker\Docker\resources\bin;" +
+            "C:\Program Files\nodejs;" +
+            "`$env:APPDATA\npm;" +
+            "C:\Users\`$env:USERNAME\AppData\Local\Programs\Git\bin;" +
+            `$env:PATH
+"@
+Add-Content $PROFILE.CurrentUserAllHosts $profileContent
+```
+
+Setelah itu **tutup terminal dan buka baru** — `docker`, `docker-compose`, dan `node` langsung bisa dipakai di project manapun.
+
+---
+
+### Deploy Pertama Kali
+
+```powershell
+# 1. Clone repo & masuk folder
+git clone <repo-url>
+cd FinTracker
+
+# 2. Buat file .env dari template
+cp .env.example .env
+# Edit .env → isi minimal: JWT_SECRET, JWT_REFRESH_SECRET, POSTGRES_PASSWORD
+
+# 3. Pastikan Docker Desktop sudah running (buka dari Start Menu)
+
+# 4. Build semua image & jalankan
+docker-compose up -d --build
+
+# 5. Tunggu semua container healthy (~60-90 detik)
+docker-compose ps
+```
+
+---
+
+### Deploy Update (Setelah Perubahan Kode)
+
+Setelah ada perubahan kode, hanya perlu rebuild service yang berubah — service lain (PostgreSQL, Redis, dll) **tidak perlu direstart**.
+
+#### Update API (Go backend)
+
+```powershell
+# Build + deploy hanya API
+docker compose build api
+docker compose up -d --no-deps api
+
+# Verifikasi API sehat
+curl http://localhost/api/health
+# Ekspektasi: {"status":"ok"}
+```
+
+#### Update Web (React Native / Expo frontend)
+
+```powershell
+# Build + deploy hanya Web
+docker compose build web
+docker compose up -d --no-deps web
+```
+
+#### Update Keduanya Sekaligus
+
+```powershell
+docker compose build api web
+docker compose up -d --no-deps api web
+```
+
+#### Update Semua Service
+
+```powershell
+docker compose build
+docker compose up -d
+```
+
+> Flag `--no-deps` penting: tanpanya, Docker juga merestart dependencies (postgres, redis, minio) yang tidak perlu direstart.
+
+---
+
+### Verifikasi Deployment
+
+```powershell
+# Cek semua container berjalan
+docker compose ps
+
+# API health check
+curl http://localhost/api/health
+
+# Cek log API untuk error
+docker logs fintrackr-api-1 --tail=50
+
+# Cek log Web
+docker logs fintrackr-web-1 --tail=20
+```
+
+Output `docker compose ps` yang sehat:
+
+```
+NAME                    STATUS          PORTS
+fintrackr-api-1         Up (healthy)    4000/tcp
+fintrackr-web-1         Up (healthy)    80/tcp
+fintrackr-caddy-1       Up (healthy)    0.0.0.0:80->80/tcp
+fintrackr-postgres-1    Up (healthy)    0.0.0.0:5432->5432/tcp
+fintrackr-redis-1       Up (healthy)
+fintrackr-minio-1       Up (healthy)    9000/tcp
+```
+
+---
+
+### Skenario Umum
+
+| Skenario | Perintah |
+|----------|---------|
+| Update kode Go backend | `docker compose build api && docker compose up -d --no-deps api` |
+| Update kode frontend | `docker compose build web && docker compose up -d --no-deps web` |
+| Ganti config `.env` | Edit `.env` → `docker compose up -d api` (reload env) |
+| Restart service stuck | `docker compose restart api` |
+| Lihat log live | `docker logs fintrackr-api-1 -f` |
+| Cek resource usage | `docker stats` |
+| Stop semua (data tetap) | `docker compose down` |
+| Stop + hapus semua data | `docker compose down -v` ⚠️ |
+
+---
+
+### Rollback
+
+Jika ada masalah setelah deploy, rollback dengan checkout commit sebelumnya + rebuild:
+
+```powershell
+# Lihat commit sebelumnya
+git log --oneline -5
+
+# Checkout ke commit terakhir yang baik
+git checkout <commit-hash>
+
+# Rebuild service yang bermasalah
+docker compose build api
+docker compose up -d --no-deps api
+```
 
 ---
 
@@ -404,63 +645,102 @@ flowchart TD
     Start(["📧 Email masuk\ndi Gmail/IMAP"]) --> Poll
 
     subgraph Worker["⚙️ Background Worker (setiap 5 menit)"]
-        Poll["Ambil email baru\nsejak last_sync_at"]
-        Poll --> Dedup{{"Sudah ada\ndi database?"}}
-        Dedup -->|"Ya"| Skip1["Lewati"]
-        Dedup -->|"Belum"| Store
+        Poll["Ambil email baru\nsejak last_sync_at\n(pagination 100/page, max 500)"]
+        Poll --> MsgDedup{{"message_id sudah\nada di DB?"}}
+        MsgDedup -->|"Ya"| Skip0["Lewati"]
+        MsgDedup -->|"Belum"| Store
         Store["Simpan ke email_messages\nstatus = pending"]
     end
 
-    Store --> Parser
+    Store --> BankMatch
 
-    subgraph Parser["🔍 Email Parser"]
-        P1{{"Cocok dengan\nparser bank mana?"}}
-        P1 -->|"BCA, Mandiri,\nBRI, BNI, dll"| Extract
-        P1 -->|"Tidak ada\nyang cocok"| Skipped(["status = skipped\nlewati"])
-        
-        Extract["Ekstrak dari email:
-        ✓ Nominal (Rp 150.000)
-        ✓ Jenis (debet/kredit)
-        ✓ Merchant/toko
-        ✓ Nomor rekening
-        ✓ Tanggal transaksi"]
+    subgraph BankMatch["🏦 Bank Matching"]
+        B1{{"From domain\ncocok bank mana?"}}
+        B1 -->|"Tidak cocok"| SkipBank(["status = skipped"])
+        B1 -->|"BCA, Mandiri, dll"| Extract
+        B1 -->|"BRI"| BRIRouter
     end
 
-    Extract --> Match
+    subgraph BRIRouter["🔀 BRI Email Router\n(Anti-Double Logic)"]
+        direction TB
+        R1{{"Subject\nemail apa?"}}
+        R1 -->|"Pembelian QRIS Berhasil"| AccQRIS["✅ Import\n(punya merchant name\n& tanggal di body)"]
+        R1 -->|"Notification BRI"| CheckKet
+        R1 -->|"Transfer Between BRI /\nTransfer to Other /\nPemindahan Dana"| SkipTransfer(["❌ Skip\n(sudah dicakup oleh\nNotification BRI\nKet.: NBMB...TO NAMA)"])
+        R1 -->|"BRIVA Payment /\nPembayaran KK BRI"| SkipSpec(["❌ Skip\n(sudah dicakup oleh\nNotification BRI\nKet.: BRIVA/KK...)"])
 
-    subgraph Match["🎯 Account Matching"]
-        M1{{"Cocokkan ke\nrekening user"}}
-        M1 -->|"Nomor rek cocok"| Found1["Rekening ditemukan ✅"]
-        M1 -->|"Kode bank cocok"| Found1
-        M1 -->|"Pakai default"| Found2["Rekening default"]
-        M1 -->|"Tidak ada"| Found3["account_id = null\n(isi manual nanti)"]
+        CheckKet{{"Ket.: dimulai QRIS?"}}
+        CheckKet -->|"Ya"| SkipQRIS(["❌ Skip\n(sudah ada dari\nPembelian QRIS Berhasil)"])
+        CheckKet -->|"Tidak"| AccNotif["✅ Import\n(canonical source untuk\nsemua income/expense BRI)"]
     end
 
-    Found1 --> Categorize
-    Found2 --> Categorize
-    Found3 --> Categorize
+    AccQRIS --> Extract
+    AccNotif --> Extract
 
-    subgraph Categorize["🏷️ Auto-Kategorisasi"]
-        C1{{"Merchant cocok\ndengan kategori?"}}
-        C1 -->|"Indomaret → Belanja\nGrab → Transport"| CatFound["Kategori otomatis ✅"]
-        C1 -->|"Tidak cocok"| CatNull["category_id = null\n(isi manual nanti)"]
+    subgraph Extract["🔍 Field Extraction"]
+        direction TB
+        E1["Tanggal transaksi\ndari BODY email\n(bukan received_at!)"]
+        E2["Nominal dari Rp..."]
+        E3["Tipe: keluar=expense\nmasuk=income"]
+        E4["Merchant dari Ket.:\nQRIS-NAMA → bersih\nNBMB...TO NAMA → bersih\nBRIVA...NBMB NAMA → bersih\nSETORTUNAI → 'Setor Tunai'\nKK... → 'Kartu Kredit'"]
     end
 
-    CatFound --> Create
-    CatNull --> Create
+    Extract --> IdempCheck
 
-    subgraph Create["💾 Simpan Transaksi"]
-        Create2["INSERT transactions
-        • type: expense/income/transfer
-        • amount: 150000
-        • source: 'email'
-        • idempotency_key: 'email:userID:msgID'
-        ← Mencegah double-import 100%"]
+    subgraph IdempCheck["🔑 Anti-Double: Idempotency Key + Fuzzy Dedup"]
+        I1["Key = userID + bank + type + amount_cents + tx_date + merchant\nContoh: 'txn:abc123:BRI:expense:300000000:2026-05-25:nuraini'\n\n1. UNIQUE CONSTRAINT: jika key persis sama → skip\n2. FUZZY DEDUP: jika merchant tidak kosong,\n   cek DB apakah ada transaksi dengan\n   bank+type+amount+merchant yang sama\n   dalam 30 hari terakhir → skip jika ada\n   (handle kasus BRI kirim 2x email tgl berbeda)"]
     end
 
-    Create --> Done(["✅ Transaksi muncul\ndi Dashboard"])
-    Create --> UpdateMsg["Update email_messages\nstatus = imported\ntransaction_id = UUID"]
+    IdempCheck --> Match
+
+    subgraph Match["🎯 Account & Kategori"]
+        M1["Cocokkan rekening:\n1. Nomor rek cocok\n2. Kode bank cocok\n3. Rekening default\n4. null (isi manual)"]
+        M2["Auto-kategori via keyword:\nQRIS-WARUNG MAKAN → Makanan\nPLN → Tagihan\nGrab → Transport\nAlfamart → Belanja\ndll (50+ keyword)"]
+    end
+
+    Match --> Create
+
+    subgraph Create["💾 Simpan"]
+        C1["INSERT transactions\nsource = 'email'\nstatus = 'confirmed'"]
+    end
+
+    Create --> Done(["✅ Muncul di Dashboard"])
 ```
+
+---
+
+### Logika Anti-Double BRI (Detail)
+
+BRI mengirim **beberapa email untuk satu transaksi yang sama**. Contoh:
+
+| Skenario | Email 1 | Email 2 | Strategi |
+|---|---|---|---|
+| Bayar QRIS Rp 20.000 | `Pembelian QRIS Berhasil` (punya merchant, tx date) | `Notification BRI` dengan `Ket.: QRIS-...` | Import QRIS, **skip** Notification BRI |
+| Transfer ke orang (BRI kirim 2x) | `Notification BRI` Ket.: NBMB...TO NURAINI (tgl 25 Mei) | `Notification BRI` Ket.: NBMB...TO NURAINI (tgl 30 Mei, pengiriman ulang BRI) | Import email 1, **skip** email 2 via fuzzy-dedup (sama merchant+amount dalam 30 hari) |
+| Transfer ke orang | `Notification BRI` dengan `Ket.: NBMB...TO NAMA` | `Transfer Between BRI Account` | Import Notification BRI, **skip** Transfer (router langsung filter) |
+| Bayar tagihan BRIVA | `Notification BRI` dengan `Ket.: BRIVA...NBMB NAMA` | `BRIVA Payment Successful` | Import Notification BRI, **skip** BRIVA Payment (router filter) |
+| Bayar KK | `Notification BRI` dengan `Ket.: KK...` | `Pembayaran KK BRI Berhasil` | Import Notification BRI, **skip** KK email (router filter) |
+
+**Kunci utama:** Idempotency key dibuat dari `userID + bank + type + amount + tanggal_transaksi_dari_body_email + merchant` (bukan tanggal email diterima). Ditambah **fuzzy-dedup**: jika merchant tidak kosong, sistem cek apakah sudah ada transaksi dengan bank+type+amount+merchant yang sama dalam 30 hari — sehingga walaupun BRI kirim 2 email untuk transaksi yang sama dengan tanggal berbeda, hanya 1 yang masuk.
+
+---
+
+### Contoh Nyata: Input → Output Parser
+
+| Body Email | Subject | Merchant | Tipe | Jumlah | Kategori |
+|---|---|---|---|---|---|
+| `...Ket.: QRIS-WARUNG MAKAN PADANG...` | Pembelian QRIS | Warung Makan Padang | expense | Rp 25.000 | Makanan |
+| `...Ket.: QRIS-DAPOER BUNDA RITA...` | Pembelian QRIS | Dapoer Bunda Rita | expense | Rp 20.000 | Makanan |
+| `...Ket.: QRIS-JUS SARI TEBET BARAT...` | Pembelian QRIS | Jus Sari Tebet Barat | expense | Rp 12.000 | Kopi/Makanan |
+| `...Ket.: SETORTUNAI#5221...` | Notification BRI | Setor Tunai | income | Rp 3.000.000 | — |
+| `...Ket.: BFST...NBMB:SUNIIDJA` | Notification BRI | Suniidja | income | Rp 1.770.000 | — |
+| `...Ket.: BRIVA...NBMBPLNMobil...` | Notification BRI | PLNMobil | expense | Rp 501.750 | Tagihan |
+| `...Ket.: KK 436502XXXXXXXX09NBMB...` | Notification BRI | Kartu Kredit | expense | Rp 941.455 | Tagihan |
+| `...Ket.: SAP-DD TRANSACTION...` | Notification BRI | SAP-DD Transaction | income | Rp 12.277.937 | — |
+| `...Ket.: BRIVA...NBMBMidtrans redB...` | Notification BRI | Midtrans redB | expense | Rp 360.000 | Belanja |
+| `Recipient's Name FERDINANDUS HANRY...` | Transfer Between BRI | Ferdinandus Hanry Ku | expense | Rp 360.000 | — |
+
+---
 
 ### Status Email Messages
 
@@ -468,7 +748,7 @@ flowchart TD
 |--------|---------|------|
 | `pending` | Baru masuk, belum diproses | Otomatis diproses |
 | `imported` | Berhasil jadi transaksi ✅ | — |
-| `skipped` | Bukan email bank/tidak dikenali | Bisa reprocess jika parser diupdate |
+| `skipped` | Bukan email bank / duplicate / tidak dikenali | Bisa reprocess jika parser diupdate |
 | `failed` | Parser cocok tapi error saat import | Coba reprocess |
 
 ---
@@ -572,6 +852,48 @@ Gmail tidak izinkan password biasa untuk SMTP — harus pakai App Password:
 4. Select app: Mail | Select device: Other → ketik "FinTrackr"
 5. Klik Generate → salin 16 karakter
 6. Paste ke SMTP_PASS di .env
+```
+
+---
+
+## 📋 Melihat Log
+
+Semua proses berjalan dalam **satu container**: `fintrackr-api-1`
+
+| Yang ingin dilihat | Service | Perintah |
+|---|---|---|
+| Log API (semua) | `fintrackr-api-1` | `docker logs fintrackr-api-1 -f` |
+| Log Gmail Worker (polling) | `fintrackr-api-1` | `docker logs fintrackr-api-1 \| grep -i "gmail\|worker\|poll"` |
+| Log IMAP Worker | `fintrackr-api-1` | `docker logs fintrackr-api-1 \| grep -i "imap\|worker"` |
+| Log Email Parser (hasil parse) | `fintrackr-api-1` | `docker logs fintrackr-api-1 \| grep -i "import\|parse\|skipped\|duplicate"` |
+| Log AI (OpenRouter) | `fintrackr-api-1` | `docker logs fintrackr-api-1 \| grep -i "\[AI\]"` |
+| Log undangan workspace | `fintrackr-api-1` | `docker logs fintrackr-api-1 \| grep -i "invite\|workspace"` |
+| Log SMTP (email terkirim) | `fintrackr-api-1` | `docker logs fintrackr-api-1 \| grep -i "\[EMAIL\]"` |
+
+> **Dev mode (SMTP tidak dikonfigurasi):** Semua email (undangan, verifikasi, reset password) dicetak ke stdout dengan prefix `[EMAIL]`. Cukup lihat log API untuk dapatkan token/link.
+
+```powershell
+# Lihat email undangan workspace di log (jika SMTP tidak dikonfigurasi)
+docker logs fintrackr-api-1 | grep -A5 "\[EMAIL\]"
+
+# Lihat transaksi yang berhasil diimport hari ini
+docker logs fintrackr-api-1 | grep "imported"
+
+# Lihat email yang diskip beserta alasannya
+docker logs fintrackr-api-1 | grep "skipped\|duplicate"
+
+# Live log Gmail Worker
+docker logs fintrackr-api-1 -f | grep -i "gmail\|poll"
+```
+
+### Flow Email Integration di Log
+
+```
+[GmailWorker] polling for user abc123 — found 5 new emails
+[EmailImport]  msg gmail:abc → matched BRI Notification, amount=50000, merchant=Warung Padang
+[EmailImport]  msg gmail:def → skipped: duplicate (fuzzy match: same bank/type/amount/merchant within 30d)
+[EmailImport]  msg gmail:ghi → skipped: no matching bank parser
+[EmailImport]  msg gmail:jkl → imported → tx_id=xyz789
 ```
 
 ---
@@ -781,12 +1103,221 @@ GET|PATCH|DELETE      /api/workspaces/:id
 GET                   /api/workspaces/:id/members
 PATCH|DELETE          /api/workspaces/:id/members/:userId
 DELETE                /api/workspaces/:id/leave
-POST                  /api/workspaces/:id/invites         Undang via email
-GET                   /api/workspaces/:id/invites
-DELETE                /api/workspaces/:id/invites/:id
-POST                  /api/workspaces/invites/accept
-POST                  /api/workspaces/invites/decline
+POST                  /api/workspaces/:id/invites         Undang anggota via email
+GET                   /api/workspaces/:id/invites         List undangan workspace
+DELETE                /api/workspaces/:id/invites/:id     Cabut undangan
+POST                  /api/workspaces/invites/accept      Terima undangan (token)
+POST                  /api/workspaces/invites/decline     Tolak undangan (token)
+GET                   /api/workspaces/invites/pending     Inbox undangan user ini ← notif UI
 GET                   /api/workspaces/:id/activity
+```
+
+---
+
+## 👨‍👩‍👧 Flow Workspace & Undangan Anggota
+
+Workspace adalah fitur **keuangan bersama** — 1 workspace bisa dipakai oleh hingga 5 anggota keluarga. Setiap anggota punya role yang berbeda.
+
+### Role Anggota
+
+| Role | Bisa Lihat | Bisa Tambah Transaksi | Bisa Undang | Bisa Kelola Workspace |
+|------|-----------|----------------------|-------------|----------------------|
+| **Owner** | ✅ | ✅ | ✅ | ✅ |
+| **Admin** | ✅ | ✅ | ✅ | ✅ |
+| **Contributor** | ✅ | ✅ | ❌ | ❌ |
+| **Viewer** | ✅ | ❌ | ❌ | ❌ |
+
+---
+
+### Flow Mengundang Anggota via Email
+
+```mermaid
+sequenceDiagram
+    participant O as 👑 Owner/Admin
+    participant App as 📱 Saku App
+    participant API as ⚡ API
+    participant DB as 🗄️ Database
+    participant SMTP as 📧 SMTP Server
+    participant Email as 📬 Inbox Penerima
+    participant U as 👤 User Baru
+
+    O->>App: Buka Workspace → tab "Undangan"
+    O->>App: Klik "Undang Anggota"
+    O->>App: Isi email + pilih role (Contributor/Viewer)
+    App->>API: POST /api/workspaces/:id/invites
+    
+    API->>DB: Buat invite token (valid 7 hari)
+    API->>DB: Simpan WorkspaceInvite
+    API-->>SMTP: Kirim email undangan (background)
+    API->>App: ✅ "Undangan terkirim ke email@..."
+    
+    SMTP->>Email: Email "Undangan Workspace Saku"
+    
+    Note over Email,U: Isi email yang diterima penerima ↓
+    
+    Email->>U: Subject: "Undangan Workspace Keluarga Baskara - Saku"
+    
+    alt Penerima sudah punya akun Saku — via email link
+        U->>App: Klik tombol "Terima Undangan" di email
+        App->>API: POST /api/workspaces/invites/accept {token}
+        API->>DB: Tambah sebagai anggota workspace
+        App->>U: 🎉 "Berhasil bergabung!" → Lihat Workspace
+
+    else Penerima sudah punya akun Saku — via login biasa (tanpa klik email)
+        U->>App: Login seperti biasa (email/password atau Google)
+        App->>U: Masuk Dashboard
+        App->>API: GET /api/workspaces/invites/pending
+        API->>App: Return daftar undangan pending
+        App->>U: Banner notifikasi undangan muncul di tab Workspace
+        U->>App: Klik "Terima" di banner
+        App->>API: POST /api/workspaces/invites/accept {token}
+        API->>DB: Tambah sebagai anggota workspace
+        App->>U: 🎉 "Berhasil bergabung!"
+
+    else Penerima belum punya akun — daftar email/password
+        U->>App: Klik tombol "Terima Undangan" di email (atau daftar mandiri)
+        U->>App: Isi form Register (nama, email, password)
+        App->>API: POST /api/auth/register
+        API->>DB: Buat user baru
+        API->>API: autoJoinWorkspaces → cari pending invite untuk email ini
+        API->>DB: Tambah sebagai anggota workspace otomatis
+        App->>U: ✅ Langsung masuk workspace (tanpa perlu klik accept lagi)
+
+    else Penerima belum punya akun — login Google pertama kali
+        U->>App: Klik tombol "Terima Undangan" di email
+        App->>U: Halaman "Login dulu yuk!"
+        U->>App: Klik "Masuk dengan Google"
+        App->>API: OAuth Google → akun baru dibuat otomatis
+        API->>API: autoJoinWorkspaces → cari pending invite untuk email ini
+        API->>DB: Tambah sebagai anggota workspace otomatis
+        App->>U: ✅ Langsung masuk workspace
+    end
+```
+
+---
+
+### Tampilan Email yang Diterima
+
+Email dikirim dari SMTP yang dikonfigurasi di Settings dengan format berikut:
+
+```
+┌─────────────────────────────────────────────────┐
+│  🌿 Saku                          [Header Sage]  │
+│  Undangan Workspace                              │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  Halo,                                          │
+│                                                 │
+│  Renaldy mengundang kamu untuk bergabung        │
+│  ke workspace "Keluarga Baskara" di Saku.       │
+│                                                 │
+│         ┌──────────────────────┐                │
+│         │   Terima Undangan    │  ← tombol sage │
+│         └──────────────────────┘                │
+│                                                 │
+│  Link berlaku selama 7 hari.                    │
+│  Jika tidak mengenal pengirim, abaikan.         │
+│                                                 │
+├─────────────────────────────────────────────────┤
+│  Saku · Self-Hosted Financial Tracker           │
+│  Email ini dikirim otomatis, jangan dibalas.    │
+└─────────────────────────────────────────────────┘
+```
+
+Tombol "Terima Undangan" mengarah ke:
+```
+http://localhost/workspace/accept-invite?token=<token_unik_7_hari>
+```
+
+---
+
+### Halaman Accept Invite (Frontend)
+
+Halaman `/workspace/accept-invite` menangani 3 kondisi:
+
+```
+Token valid + sudah login  →  Langsung join  →  "🎉 Berhasil bergabung!"
+Token valid + belum login  →  Tampilkan Login Google  →  Setelah login → join
+Token expired/invalid      →  "😕 Undangan tidak valid"
+```
+
+### Banner Notifikasi Undangan (Existing User)
+
+Untuk existing user yang login tanpa mengklik link email, undangan muncul sebagai **banner di tab Workspace**. Banner ini:
+- Muncul otomatis saat membuka tab Workspace
+- Menampilkan nama workspace + nama pengundang
+- Tombol **Terima** dan **Tolak** langsung di banner
+
+```
+┌────────────────────────────────────────────────────┐
+│  📨 Kamu diundang ke "Keluarga Baskara"            │
+│  oleh Renaldy · sebagai Contributor                │
+│  [Terima]  [Tolak]                                 │
+└────────────────────────────────────────────────────┘
+```
+
+---
+
+### Kelola Undangan yang Sudah Dikirim
+
+Di tab **"Undangan"** dalam detail workspace:
+- Lihat semua undangan pending (email + role + expired date)
+- **Cabut undangan** sebelum diterima — klik ikon hapus
+- Undangan expired otomatis tidak bisa digunakan
+
+---
+
+### Prasyarat Undangan Email Berfungsi
+
+SMTP harus dikonfigurasi di **Settings → Konfigurasi Email (SMTP)**. Tanpa SMTP, undangan tetap tersimpan di database tapi email tidak terkirim.
+
+Untuk testing tanpa SMTP, token undangan bisa dicek di log API:
+```powershell
+docker logs fintrackr-api-1 | grep "invite"
+```
+
+---
+
+## 🤖 OpenRouter AI Integration
+
+AI digunakan sebagai **fallback** ketika regex parser tidak bisa menentukan merchant atau kategori dari email bank.
+
+### Cara Kerja
+
+```mermaid
+flowchart LR
+    Email["📧 Email bank"] --> Parser["Regex Parser"]
+    Parser -->|"Merchant kosong\natau ambigu"| AI["🤖 OpenRouter AI\ngoogle/gemini-2.0-flash-exp:free"]
+    Parser -->|"Merchant jelas"| Category["🏷️ Keyword Matching\n50+ kata Indonesia"]
+    AI -->|"merchant + category hint"| Category
+    Category --> Result["✅ Transaksi\ndikategorikan"]
+```
+
+### Setup
+
+Daftar di [openrouter.ai](https://openrouter.ai) → ambil API key → isi di `.env`:
+
+```env
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxx
+OPENROUTER_MODEL=google/gemini-2.0-flash-exp:free  # gratis, tidak perlu kredit
+```
+
+### Model Gratis yang Tersedia
+
+| Model | Keterangan |
+|---|---|
+| `google/gemini-2.0-flash-exp:free` | **Default** — cepat, akurat untuk Bahasa Indonesia |
+| `meta-llama/llama-3.1-8b-instruct:free` | Alternatif open-source |
+| `mistralai/mistral-7b-instruct:free` | Alternatif |
+
+> Jika `OPENROUTER_API_KEY` tidak diisi, AI dinonaktifkan — keyword matching tetap berjalan.
+
+### Startup Log
+
+```
+✅ OpenRouter AI enabled (model: google/gemini-2.0-flash-exp:free)
+# atau
+ℹ️  OpenRouter AI disabled — set OPENROUTER_API_KEY to enable
 ```
 
 ---
@@ -863,4 +1394,4 @@ Self-hosted, open-source. Lihat file `LICENSE`.
 
 ---
 
-*FinTrackr v1.0.0 · Go + Expo + PostgreSQL · Self-Hosted*
+*Saku v1.0.0 · Go + Expo + PostgreSQL · Self-Hosted*

@@ -24,9 +24,20 @@ type Config struct {
 	SMTPPort string
 	SMTPUser string
 	SMTPPass string
+	// OpenRouter AI (optional — for ambiguous email parsing & auto-categorisation)
+	OpenRouterAPIKey string
+	OpenRouterModel  string
+	// OCR microservice (PaddleOCR Python service)
+	OCRServiceURL string
 	// Rate limiting
 	RateLimitRequests int
 	RateLimitWindow   int // seconds
+	// Midtrans payment gateway (optional)
+	MidtransServerKey    string
+	MidtransClientKey    string
+	MidtransIsProduction bool
+	// Tier enforcement bypass (self-hosted / dev)
+	DisableTierLimits bool
 }
 
 func Load() *Config {
@@ -51,8 +62,15 @@ func Load() *Config {
 		SMTPPort:            getEnv("SMTP_PORT", "587"),
 		SMTPUser:            getEnv("SMTP_USER", ""),
 		SMTPPass:            getEnv("SMTP_PASS", ""),
-		RateLimitRequests:   rateLimitRequests,
-		RateLimitWindow:     rateLimitWindow,
+		OpenRouterAPIKey:    getEnv("OPENROUTER_API_KEY", ""),
+		OpenRouterModel:     getEnv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free"),
+		OCRServiceURL:        getEnv("OCR_SERVICE_URL", "http://ocr:5000"),
+		RateLimitRequests:    rateLimitRequests,
+		RateLimitWindow:      rateLimitWindow,
+		MidtransServerKey:    getEnv("MIDTRANS_SERVER_KEY", ""),
+		MidtransClientKey:    getEnv("MIDTRANS_CLIENT_KEY", ""),
+		MidtransIsProduction: getEnv("MIDTRANS_IS_PRODUCTION", "false") == "true",
+		DisableTierLimits:    getEnv("DISABLE_TIER_LIMITS", "false") == "true" || getEnv("SELF_HOSTED_MODE", "false") == "true",
 	}
 }
 

@@ -25,15 +25,16 @@ func (r *emailMessageRepository) Create(ctx context.Context, msg *entity.EmailMe
 	return r.db.WithContext(ctx).Create(msg).Error
 }
 
-// CreateBatch inserts a slice of messages and silently ignores duplicates based on the
-// (message_id) unique index — safe to call on every polling cycle.
+// CreateBatch inserts a slice of messages and silently ignores duplicates.
+// Conflict check is per (email_integration_id, message_id) so two users
+// connecting the same inbox each get their own row with their own user_id.
 func (r *emailMessageRepository) CreateBatch(ctx context.Context, msgs []entity.EmailMessage) error {
 	if len(msgs) == 0 {
 		return nil
 	}
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "message_id"}},
+			Columns:   []clause.Column{{Name: "email_integration_id"}, {Name: "message_id"}},
 			DoNothing: true,
 		}).
 		CreateInBatches(msgs, 50).Error
@@ -76,6 +77,9 @@ func (r *emailMessageRepository) ListByUser(ctx context.Context, userID uuid.UUI
 	}
 	if q.ParseStatus != "" {
 		db = db.Where("parse_status = ?", q.ParseStatus)
+	}
+	if q.AIUsed != nil {
+		db = db.Where("ai_used = ?", *q.AIUsed)
 	}
 
 	var total int64

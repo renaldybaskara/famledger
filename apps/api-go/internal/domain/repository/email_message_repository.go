@@ -12,6 +12,7 @@ import (
 type ListEmailMessagesQuery struct {
 	IntegrationID *uuid.UUID
 	ParseStatus   string // pending|parsed|skipped|failed — empty means all
+	AIUsed        *bool  // nil = no filter, true = only AI-processed messages
 	Page          int
 	Limit         int
 }

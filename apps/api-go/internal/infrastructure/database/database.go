@@ -38,6 +38,19 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 }
 
 func AutoMigrate(db *gorm.DB) error {
+	if err := db.Exec(`
+		CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_transactions_user_date
+		ON transactions (user_id, date DESC)
+		WHERE deleted_at IS NULL
+	`).Error; err != nil {
+		_ = err
+	}
+
+	// Drop the old global unique index on message_id (replaced by the composite
+	// index on (email_integration_id, message_id) so each user gets their own row
+	// when multiple integrations poll the same inbox).
+	_ = db.Exec(`DROP INDEX IF EXISTS idx_email_messages_message_id`).Error
+
 	return db.AutoMigrate(
 		&entity.User{},
 		&entity.RefreshToken{},
@@ -60,5 +73,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.EmailMessage{},
 		// Admin-managed bank parser rules
 		&entity.BankParserRule{},
+		// Subscription billing
+		&entity.UserSubscription{},
+		&entity.PaymentOrder{},
 	)
 }

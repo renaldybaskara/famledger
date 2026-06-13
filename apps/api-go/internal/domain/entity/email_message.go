@@ -11,11 +11,13 @@ import (
 // ParseStatus tracks the pipeline: received → parsed → imported (or failed/skipped).
 type EmailMessage struct {
 	ID                  uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	EmailIntegrationID  uuid.UUID      `gorm:"type:uuid;not null;index" json:"emailIntegrationId"`
+	EmailIntegrationID  uuid.UUID      `gorm:"type:uuid;not null;index;uniqueIndex:idx_email_messages_integ_msg" json:"emailIntegrationId"`
 	UserID              uuid.UUID      `gorm:"type:uuid;not null;index" json:"userId"`
 
 	// Raw email data
-	MessageID           string         `gorm:"size:500;uniqueIndex" json:"messageId"` // IMAP UID or Gmail message ID
+	// uniqueIndex is scoped per integration so two users connecting the same inbox
+	// each get their own copy of the email message (with their own user_id).
+	MessageID           string         `gorm:"size:500;uniqueIndex:idx_email_messages_integ_msg" json:"messageId"`
 	Subject             string         `gorm:"size:1000" json:"subject"`
 	From                string         `gorm:"size:500" json:"from"`
 	ReceivedAt          time.Time      `json:"receivedAt"`
@@ -38,6 +40,10 @@ type EmailMessage struct {
 	TransactionID       *uuid.UUID     `gorm:"type:uuid" json:"transactionId,omitempty"` // set when imported
 	ImportedAt          *time.Time     `json:"importedAt,omitempty"`
 	SkipReason          *string        `gorm:"size:255" json:"skipReason,omitempty"`
+
+	// AI processing tracking
+	AIUsed      bool           `gorm:"default:false;not null" json:"aiUsed"`
+	AIRawResult datatypes.JSON `gorm:"type:jsonb" json:"aiRawResult,omitempty"`
 
 	CreatedAt           time.Time      `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt           time.Time      `gorm:"autoUpdateTime" json:"updatedAt"`

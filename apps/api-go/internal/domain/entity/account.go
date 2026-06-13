@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Account struct {
@@ -40,10 +41,11 @@ type EmailIntegration struct {
 	ImapPort          *int       `json:"imapPort,omitempty"`
 	ImapUser          *string    `gorm:"size:255" json:"imapUser,omitempty"`
 	ImapPassword      *string    `json:"-"`
-	IsActive          bool       `gorm:"default:true;not null" json:"isActive"`
-	LastSyncAt        *time.Time `json:"lastSyncAt,omitempty"`
-	CreatedAt         time.Time  `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt         time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
+	IsActive          bool           `gorm:"default:true;not null" json:"isActive"`
+	LastSyncAt        *time.Time     `json:"lastSyncAt,omitempty"`
+	CreatedAt         time.Time      `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt         time.Time      `gorm:"autoUpdateTime" json:"updatedAt"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (EmailIntegration) TableName() string {

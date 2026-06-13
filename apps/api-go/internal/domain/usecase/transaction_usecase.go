@@ -54,4 +54,9 @@ type TransactionUseCase interface {
 	GetSummary(ctx context.Context, userID uuid.UUID, start, end time.Time) (*repository.TransactionSummary, error)
 	GetCategoryBreakdown(ctx context.Context, userID uuid.UUID, txType string, start, end time.Time) ([]repository.CategoryBreakdownRow, error)
 	GetMonthlyTrend(ctx context.Context, userID uuid.UUID, months int) ([]repository.MonthlyTrendRow, error)
+
+	// Multi-user variants used by dashboard (workspace context) and workspace handlers.
+	GetSummaryByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) (*repository.TransactionSummary, error)
+	GetCategoryBreakdownByUserIDs(ctx context.Context, userIDs []uuid.UUID, txType string, start, end time.Time) ([]repository.CategoryBreakdownRow, error)
+	GetMonthlyTrendByUserIDs(ctx context.Context, userIDs []uuid.UUID, months int) ([]repository.MonthlyTrendRow, error)
 }

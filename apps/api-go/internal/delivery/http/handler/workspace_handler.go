@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"math"
 	"net/http"
 	"strconv"
+	"time"
 
 	httputil "github.com/fintrackr/api/internal/delivery/http/httputil"
 	"github.com/fintrackr/api/internal/domain/entity"
+	domainrepo "github.com/fintrackr/api/internal/domain/repository"
 	domainuc "github.com/fintrackr/api/internal/domain/usecase"
 	"github.com/fintrackr/api/internal/usecase"
 	"github.com/gin-gonic/gin"
@@ -145,7 +148,29 @@ func (h *WorkspaceHandler) ListMembers(c *gin.Context) {
 		workspaceError(c, err)
 		return
 	}
-	httputil.OK(c, members)
+	type memberDTO struct {
+		UserID   string `json:"userId"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Role     string `json:"role"`
+		JoinedAt string `json:"joinedAt"`
+	}
+	dto := make([]memberDTO, 0, len(members))
+	for _, m := range members {
+		name, email := "", ""
+		if m.User != nil {
+			name = m.User.Name
+			email = m.User.Email
+		}
+		dto = append(dto, memberDTO{
+			UserID:   m.UserID.String(),
+			Name:     name,
+			Email:    email,
+			Role:     string(m.Role),
+			JoinedAt: m.JoinedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+	httputil.OK(c, dto)
 }
 
 // PATCH /api/workspaces/:id/members/:userId
@@ -364,6 +389,125 @@ func (h *WorkspaceHandler) ListActivity(c *gin.Context) {
 		return
 	}
 	httputil.OK(c, logs)
+}
+
+// GET /api/workspaces/invites/pending
+func (h *WorkspaceHandler) GetMyPendingInvites(c *gin.Context) {
+	user := c.MustGet("currentUser").(*entity.User)
+	invites, err := h.uc.GetMyPendingInvites(c.Request.Context(), user.Email)
+	if err != nil {
+		httputil.InternalError(c, err)
+		return
+	}
+	// Build response including token so the invitee can accept/decline in-app.
+	type inviteResp struct {
+		entity.WorkspaceInvite
+		Token string `json:"token"`
+	}
+	resp := make([]inviteResp, len(invites))
+	for i, inv := range invites {
+		resp[i] = inviteResp{WorkspaceInvite: inv, Token: inv.Token}
+	}
+	httputil.OK(c, resp)
+}
+
+// GET /api/workspaces/:id/transactions
+func (h *WorkspaceHandler) GetWorkspaceTransactions(c *gin.Context) {
+	userID := c.MustGet("currentUserID").(uuid.UUID)
+	wsID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		httputil.BadRequest(c, "Invalid workspace ID")
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	q := domainrepo.ListTransactionsQuery{
+		Page:   page,
+		Limit:  limit,
+		Type:   c.Query("type"),
+		Search: c.Query("search"),
+	}
+	if s := c.Query("startDate"); s != "" {
+		t, err := time.ParseInLocation("2006-01-02", s, wibLoc)
+		if err == nil {
+			q.StartDate = &t
+		}
+	}
+	if s := c.Query("endDate"); s != "" {
+		t, err := time.ParseInLocation("2006-01-02", s, wibLoc)
+		if err == nil {
+			t = t.Add(24*time.Hour - time.Nanosecond)
+			q.EndDate = &t
+		}
+	}
+
+	rows, total, err := h.uc.GetWorkspaceTransactions(c.Request.Context(), wsID, userID, q)
+	if err != nil {
+		workspaceError(c, err)
+		return
+	}
+
+	if limit < 1 {
+		limit = 20
+	}
+	if page < 1 {
+		page = 1
+	}
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	httputil.OK(c, gin.H{
+		"data": rows,
+		"pagination": gin.H{
+			"page": page, "limit": limit,
+			"total": total, "totalPages": totalPages,
+		},
+	})
+}
+
+// GET /api/workspaces/:id/summary
+func (h *WorkspaceHandler) GetWorkspaceSummary(c *gin.Context) {
+	userID := c.MustGet("currentUserID").(uuid.UUID)
+	wsID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		httputil.BadRequest(c, "Invalid workspace ID")
+		return
+	}
+	start, end := parseOrCurrentMonth(c.Query("startDate"), c.Query("endDate"))
+
+	summary, err := h.uc.GetWorkspaceSummary(c.Request.Context(), wsID, userID, start, end)
+	if err != nil {
+		workspaceError(c, err)
+		return
+	}
+	httputil.OK(c, gin.H{
+		"totalIncome": summary.Income, "totalExpense": summary.Expense,
+		"netBalance": summary.Net, "transactionCount": summary.TransactionCount,
+		"period": gin.H{"startDate": start.Format("2006-01-02"), "endDate": end.Format("2006-01-02")},
+	})
+}
+
+// GET /api/workspaces/:id/category-breakdown
+func (h *WorkspaceHandler) GetWorkspaceCategoryBreakdown(c *gin.Context) {
+	userID := c.MustGet("currentUserID").(uuid.UUID)
+	wsID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		httputil.BadRequest(c, "Invalid workspace ID")
+		return
+	}
+	txType := c.DefaultQuery("type", "expense")
+	start, end := parseOrCurrentMonth(c.Query("startDate"), c.Query("endDate"))
+
+	rows, err := h.uc.GetWorkspaceCategoryBreakdown(c.Request.Context(), wsID, userID, txType, start, end)
+	if err != nil {
+		workspaceError(c, err)
+		return
+	}
+	httputil.OK(c, rows)
 }
 
 func workspaceError(c *gin.Context, err error) {

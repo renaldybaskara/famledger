@@ -2,10 +2,20 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/fintrackr/api/internal/domain/entity"
+	domainrepo "github.com/fintrackr/api/internal/domain/repository"
 	"github.com/google/uuid"
 )
+
+// WorkspaceTxRow is a transaction enriched with the member's name and ID,
+// used when returning workspace-level transaction lists.
+type WorkspaceTxRow struct {
+	entity.Transaction
+	MemberName string    `json:"memberName"`
+	MemberID   uuid.UUID `json:"memberId"`
+}
 
 type CreateWorkspaceInput struct {
 	Name        string
@@ -45,7 +55,14 @@ type WorkspaceUseCase interface {
 	DeclineInvite(ctx context.Context, token string, userID uuid.UUID) error
 	ListInvites(ctx context.Context, workspaceID, requestingUserID uuid.UUID) ([]entity.WorkspaceInvite, error)
 	RevokeInvite(ctx context.Context, inviteID, workspaceID, requestingUserID uuid.UUID) error
+	GetMyPendingInvites(ctx context.Context, userEmail string) ([]entity.WorkspaceInvite, error)
 
 	// Activity
 	ListActivity(ctx context.Context, workspaceID, userID uuid.UUID, limit int) ([]entity.WorkspaceActivityLog, error)
+
+	// Shared finance data — aggregates across all workspace members (two-query, no JOIN).
+	GetMemberUserIDsForScope(ctx context.Context, workspaceID, requestingUserID uuid.UUID) ([]uuid.UUID, error)
+	GetWorkspaceTransactions(ctx context.Context, workspaceID, requestingUserID uuid.UUID, q domainrepo.ListTransactionsQuery) ([]WorkspaceTxRow, int64, error)
+	GetWorkspaceSummary(ctx context.Context, workspaceID, requestingUserID uuid.UUID, start, end time.Time) (*domainrepo.TransactionSummary, error)
+	GetWorkspaceCategoryBreakdown(ctx context.Context, workspaceID, requestingUserID uuid.UUID, txType string, start, end time.Time) ([]domainrepo.CategoryBreakdownRow, error)
 }

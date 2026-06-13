@@ -24,9 +24,11 @@ type ParsedTransaction struct {
 
 // ParseResult wraps the outcome of parsing one email.
 type ParseResult struct {
-	Matched bool
-	Data    *ParsedTransaction
-	Error   error
+	Matched       bool
+	IsAIOnly      bool  // DB rule matched but has no extraction config; delegate to AI
+	MatchedRuleID uint  // ID of the matching DB rule (used for rule graduation after AI)
+	Data          *ParsedTransaction
+	Error         error
 }
 
 // Parse attempts to extract a transaction from an email subject + body.
@@ -66,6 +68,7 @@ var allParsers = []bankParser{
 	&bcaParser{},
 	&mandiriParser{},
 	&briParser{},
+	&wondrParser{}, // BNI Wondr — before generic bniParser
 	&bniParser{},
 	&gopayParser{},
 	&ovoParser{},
@@ -80,6 +83,7 @@ var allParsers = []bankParser{
 	&linkAjaParser{},
 	&danamonParser{},
 	&btnParser{},
+	&alfagiftParser{},  // Alfagift / Alfamart loyalty receipts
 	&islatransParser{}, // generic catch-all for other banks
 }
 
@@ -99,12 +103,26 @@ func parseAmount(s string) (float64, bool) {
 		s = strings.ReplaceAll(s, ".", "")
 		s = strings.ReplaceAll(s, ",", ".")
 	} else {
-		// Single dot could be decimal (1500000.50) or thousands (1.500.000)
-		// If dot position from end is 3 chars, treat as thousands separator
+		// Single dot: if 3 digits after it, it's a thousands separator ("1.500" → 1500)
 		if idx := strings.Index(s, "."); idx != -1 && len(s)-idx-1 == 3 {
 			s = strings.ReplaceAll(s, ".", "")
 		}
-		s = strings.ReplaceAll(s, ",", ".")
+		// Comma handling: Shopee (and some providers) use US format where comma = thousands.
+		// Multiple commas → all thousands: "1,500,000" → "1500000"
+		// Single comma 3-from-end → thousands: "72,000" / "62,395" → 72000 / 62395
+		// Single comma NOT 3-from-end → decimal: "1,50" → "1.50"
+		switch strings.Count(s, ",") {
+		case 0:
+			// nothing
+		case 1:
+			if idx := strings.Index(s, ","); len(s)-idx-1 == 3 {
+				s = strings.ReplaceAll(s, ",", "") // thousands separator
+			} else {
+				s = strings.ReplaceAll(s, ",", ".") // decimal separator
+			}
+		default:
+			s = strings.ReplaceAll(s, ",", "") // multiple commas → all thousands
+		}
 	}
 	// Remove any remaining non-numeric except dot
 	var clean strings.Builder
@@ -150,6 +168,7 @@ func stripHTML(html string) string {
 		"&amp;", "&", "&lt;", "<", "&gt;", ">",
 		"&nbsp;", " ", "&#160;", " ",
 		"&quot;", `"`, "&#39;", "'",
+		"&#44;", ",",  // comma — used in BRImo date: "25 May 2026 &#44; 11:18:22 WIB"
 	)
 	text = replacer.Replace(text)
 	// Collapse whitespace
@@ -157,21 +176,58 @@ func stripHTML(html string) string {
 	return strings.TrimSpace(spaceRe.ReplaceAllString(text, " "))
 }
 
+// idMonths translates Indonesian month names to English so parseIDDate can use standard Go layouts.
+var idMonths = strings.NewReplacer(
+	"Januari", "January", "Februari", "February", "Maret", "March",
+	"April", "April", "Mei", "May", "Juni", "June", "Juli", "July",
+	"Agustus", "August", "September", "September", "Oktober", "October",
+	"November", "November", "Desember", "December",
+)
+
 func parseIDDate(s string) *time.Time {
 	s = strings.TrimSpace(s)
+	// Translate Indonesian month names (Mei, Januari, etc.) to English
+	s = idMonths.Replace(s)
+	// Normalise: remove timezone suffixes and stray commas/spaces
+	// e.g. "26 May 2026 , 11:18:22 WIB" → "26 May 2026 11:18:22"
+	tzRe := regexp.MustCompile(`(?i)\s*(WIB|WITA|WIT)\s*$`)
+	s = tzRe.ReplaceAllString(s, "")
+	s = strings.ReplaceAll(s, " ,", "")
+	s = strings.ReplaceAll(s, ", ", " ")
+	s = strings.ReplaceAll(s, ",", " ")
+	// Collapse multiple spaces
+	spRe := regexp.MustCompile(`\s{2,}`)
+	s = spRe.ReplaceAllString(s, " ")
+	s = strings.TrimSpace(s)
+
 	layouts := []string{
+		// 4-digit year formats
 		"02/01/2006 15:04:05",
 		"02/01/2006 15:04",
 		"02-01-2006 15:04:05",
 		"02-01-2006 15:04",
 		"2006-01-02T15:04:05",
 		"2006-01-02 15:04:05",
+		"2 Jan 2006 15:04:05",
+		"2 Jan 2006 15:04",
 		"02 Jan 2006 15:04:05",
+		"02 Jan 2006 15:04",
+		"2 January 2006 15:04:05",
+		"2 January 2006 15:04",
 		"02 January 2006",
 		"2 January 2006",
+		// Dash-separated with 3-letter month (e.g. "16-May-2026" after ID→EN translation)
+		"02-Jan-2006 15:04:05",
+		"02-Jan-2006 15:04",
+		"02-Jan-2006",
+		"2-Jan-2006",
 		"02/01/2006",
 		"02-01-2006",
 		"2006-01-02",
+		// 2-digit year formats (BRI Notification: "07/05/26 03:28:12")
+		"02/01/06 15:04:05",
+		"02/01/06 15:04",
+		"02/01/06",
 	}
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	for _, layout := range layouts {
@@ -208,11 +264,10 @@ func (p *bcaParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 
 	txType := "expense"
-	if bcaTypeKreditRe.MatchString(lower) {
+	isDebit := bcaTypeDebitRe.MatchString(lower)
+	isKredit := bcaTypeKreditRe.MatchString(lower)
+	if isKredit && !isDebit {
 		txType = "income"
-	}
-	if bcaTypeDebitRe.MatchString(lower) {
-		txType = "expense"
 	}
 
 	amountStr := extractFirst(bcaAmountRe, combined)
@@ -257,6 +312,10 @@ var (
 )
 
 func (p *mandiriParser) Matches(from, subject, combined string) bool {
+	// Exclude Livin' emails — handled by dedicated livinParser
+	if strings.Contains(strings.ToLower(from), "livin") {
+		return false
+	}
 	return mandiriFromRe.MatchString(from)
 }
 
@@ -299,27 +358,288 @@ var (
 	// Valid: info@bri.co.id, notifikasi@bri.co.id — Invalid: promo@kk.bri.co.id
 	briFromRe    = regexp.MustCompile(`(?i)@bri\.co\.id`)
 	briSubjectRe = regexp.MustCompile(`(?i)(bri|brimo|notifikasi (debit|kredit)|transaksi bri)`)
-	briAmountRe  = regexp.MustCompile(`(?i)(?:sebesar|jumlah|Rp\.?)\s*(?P<amount>[\d.,]+)`)
-	briTypeRe    = regexp.MustCompile(`(?i)(debit|debet|keluar|pembayaran|transfer ke|belanja)`)
-	briCrRe      = regexp.MustCompile(`(?i)(kredit|masuk|diterima|transfer dari|top.?up)`)
+	briAmountRe  = regexp.MustCompile(`(?i)(?:sebesar|jumlah|nominal|Rp\.?)\s*(?P<amount>[\d.,]+)`)
+	briTypeRe    = regexp.MustCompile(`(?i)(debit|debet|keluar|pembayaran|transfer ke|belanja|pembelian|tarik tunai|penarikan)`)
+	briCrRe      = regexp.MustCompile(`(?i)(kredit|masuk|diterima|transfer dari|top.?up|setoran|setor tunai)`)
+	// "Ket.: QRIS-WARUNG MAKAN PADANG" or "Ket.: NBMB RENALDY TO FLIPTECH"
+	briKetRe     = regexp.MustCompile(`(?i)Ket\.\s*:\s*(?P<ket>[^\n<]{3,120})`)
 	briMerchRe   = regexp.MustCompile(`(?i)(?:ke|keterangan|merchant)[:\s]+(?P<m>[^\n,;]{3,80})`)
-	briDateRe    = regexp.MustCompile(`(?P<date>\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}(?::\d{2})?)`)
+	// BRI format 1: "pada 07/05/26 03:28:12" (Notification BRI — DD/MM/YY or DD/MM/YYYY)
+	// BRI format 2: "26 May 2026 , 11:18:22 WIB" (BRImo HTML email — decoded from &#44;)
+	briDateRe    = regexp.MustCompile(`(?i)(?:pada\s+)?(?P<date>\d{2}/\d{2}/\d{2,4}\s+\d{2}:\d{2}(?::\d{2})?)`)
+	// "Date 26 May 2026 , 11:18:22 WIB" (Transfer BRImo) or "Tanggal Transaksi  11 May 2026, 21:16:09 WIB" (QRIS BRImo)
+	briDateRe2   = regexp.MustCompile(`(?i)(?:Date|Tanggal(?:\s+Transaksi)?)\s+(?P<date>\d{1,2}\s+\w+\s+\d{4}\s*[,،]?\s*\d{2}:\d{2}(?::\d{2})?\s*(?:WIB|WITA|WIT)?)`)
 )
+
+var briPromoSubdomainRe = regexp.MustCompile(`(?i)@[a-z]+\.bri\.co\.id`)
+
+// ── BRI email subject categories ──────────────────────────────────────────────
+// Each subject type has a dedicated parser to extract merchant correctly.
+// Anti-double strategy: each real-money-movement has ONE canonical email type.
+//
+//   QRIS payment     → "Pembelian QRIS Berhasil"         (preferred, has merchant name)
+//                      "Notification BRI" with Ket.: QRIS-... is SKIPPED
+//   BRIVA payment    → "BRIVA Payment Successful"         (preferred)
+//                      "Notification BRI" with Ket.: BRIVA... checked for duplicate
+//   Transfer out     → "Transfer Between BRI Account" or "Pemindahan Dana Sesama Rekening BRI"
+//                      "Notification BRI" with Ket.: NBMB...TO... is SKIPPED
+//   Other debit      → "Notification BRI" (catch-all for anything not covered above)
+//   Income/credit    → "Notification BRI" with credit keywords
+var (
+	briSubjectQRIS       = regexp.MustCompile(`(?i)^pembelian qris`)
+	briSubjectBRIVA      = regexp.MustCompile(`(?i)^briva payment successful`)
+	briSubjectTransfer   = regexp.MustCompile(`(?i)(transfer between bri|pemindahan dana sesama rekening bri|transfer to other domestic bank)`)
+	briSubjectKK         = regexp.MustCompile(`(?i)(pembayaran kk bri|credit card)`)
+	briSubjectNotif      = regexp.MustCompile(`(?i)^notification bri$`)
+
+	// Ket. field patterns inside "Notification BRI"
+	briKetQRISRe         = regexp.MustCompile(`(?i)Ket\.\s*:\s*QRIS`)
+	briKetNBMBToRe       = regexp.MustCompile(`(?i)Ket\.\s*:\s*NBMB\s+.+?\s+TO\s+`)
+	briKetBRIVARe        = regexp.MustCompile(`(?i)Ket\.\s*:\s*BRIVA\d+`)
+
+	// Merchant extraction helpers
+	// QRIS email: "Nama Merchant WARUNG MAKAN PADANG Lokasi Merchant..." — stop at "Lokasi"
+	briQRISMerchantRe    = regexp.MustCompile(`(?i)Nama\s+Merchant\s+(?P<m>[^\n<]{3,60}?)(?:\s+Lokasi|\s+Nama\s+Penerbit|$)`)
+	briQRISBodyAmountRe  = regexp.MustCompile(`(?i)(?:nominal|jumlah|total\s+transaksi|amount)[:\s]*(?:Rp\.?\s*)?(?P<amount>[\d.,]+)`)
+	// Match recipient name, stop at "Notes", line break, or HTML tag
+	briTransferToRe      = regexp.MustCompile(`(?i)(?:Recipient.s Name|Nama\s+(?:Penerima|Tujuan))[:\s]+(?P<m>[^\n<]{3,60}?)(?:\s+Notes|\s+Catatan|$)`)
+	// BRIVA email has "Tujuan Pembayaran", "Merchant Name", or Ket.: BRIVA<digits>NBMB<name>
+	briBRIVAMerchantRe   = regexp.MustCompile(`(?i)(?:Tujuan\s+Pembayaran|Merchant\s+Name|Merchant|Nama\s+Merchant)[:\s]+(?P<m>[^\n<]{3,80})`)
+
+	// Ket.: field — full extraction
+	briKetFullRe         = regexp.MustCompile(`(?i)Ket\.\s*:\s*(?P<ket>[^\n<]{3,120})`)
+	briKetNoiseRe        = regexp.MustCompile(`(?i)\s+JANGAN\s+.*$`)
+	briKetBRIVACleanRe   = regexp.MustCompile(`(?i)^BRIVA\d+NBMB`)
+	briKetNBMBCleanRe    = regexp.MustCompile(`(?i)^NBMB\s+\S+\s+TO\s+`)
+	briKetQRISCleanRe    = regexp.MustCompile(`(?i)^QRIS[-\s]+`)
+)
+
+// extractBRIKet extracts and cleans the Ket.: field from Notification BRI body.
+// Returns empty string if Ket. is absent or only contains BRI privacy notice.
+func extractBRIKet(combined string) string {
+	ket := extractFirst(briKetFullRe, combined)
+	if ket == "" {
+		return ""
+	}
+	ket = briKetNoiseRe.ReplaceAllString(ket, "")
+	ket = strings.TrimSpace(ket)
+	// If Ket. started directly with BRI's privacy notice (no actual content), return empty
+	if strings.HasPrefix(strings.ToUpper(ket), "JANGAN") {
+		return ""
+	}
+	return ket
+}
+
+var briKetKKRe = regexp.MustCompile(`(?i)^KK\s+\d+`)  // "KK 436502..." → credit card payment
+
+// extractBRINotifMerchant cleans the Ket. value into a readable merchant name.
+func extractBRINotifMerchant(ket string) string {
+	if ket == "" {
+		return ""
+	}
+	// "BRIVA<digits>NBMB<name>" → name
+	if briKetBRIVACleanRe.MatchString(ket) {
+		parts := briKetBRIVACleanRe.Split(ket, 2)
+		if len(parts) == 2 && strings.TrimSpace(parts[1]) != "" {
+			return strings.TrimSpace(parts[1])
+		}
+		return "BRIVA"
+	}
+	// "NBMB SENDER NAME TO MERCHANT" → MERCHANT (already filtered in Matches, but clean anyway)
+	if briKetNBMBCleanRe.MatchString(ket) {
+		return strings.TrimSpace(briKetNBMBCleanRe.ReplaceAllString(ket, ""))
+	}
+	// "QRIS-MERCHANT" → MERCHANT
+	if briKetQRISCleanRe.MatchString(ket) {
+		return strings.TrimSpace(briKetQRISCleanRe.ReplaceAllString(ket, ""))
+	}
+	// "KK 436502XXXXXXXX09NBMB..." → "Kartu Kredit"
+	if briKetKKRe.MatchString(ket) {
+		return "Kartu Kredit"
+	}
+	// "SETORTUNAI#..." → "Setor Tunai"
+	if strings.HasPrefix(strings.ToUpper(ket), "SETORTUNAI") {
+		return "Setor Tunai"
+	}
+	// "BFST..." → bank transfer masuk
+	if strings.HasPrefix(strings.ToUpper(ket), "BFST") {
+		// Try extract name after pattern like "BFST... NBMB:NAME"
+		if idx := strings.Index(strings.ToUpper(ket), "NBMB:"); idx != -1 {
+			name := strings.TrimSpace(ket[idx+5:])
+			if name != "" {
+				return name
+			}
+		}
+		return "Transfer Masuk"
+	}
+	// Remove trailing noise (hash codes, long alphanumeric IDs)
+	noiseRe := regexp.MustCompile(`\s+[A-F0-9]{8,}.*$`)
+	cleaned := strings.TrimSpace(noiseRe.ReplaceAllString(ket, ""))
+	if cleaned != "" {
+		return cleaned
+	}
+	return ket
+}
 
 func (p *briParser) Matches(from, subject, combined string) bool {
 	if !briFromRe.MatchString(from) {
 		return false
 	}
-	// Exclude promo/marketing subdomains — only allow direct @bri.co.id or known notification addresses
-	// e.g. reject promo@kk.bri.co.id (has subdomain before bri.co.id)
-	promoSubdomains := regexp.MustCompile(`(?i)@[a-z]+\.bri\.co\.id`)
-	return !promoSubdomains.MatchString(from)
+	// Reject promo subdomains (kk.bri.co.id, dll)
+	if briPromoSubdomainRe.MatchString(from) {
+		return false
+	}
+	subj := strings.TrimSpace(subject)
+
+	// ── Strategy: "Notification BRI" is the canonical source for all debit/credit.
+	// It always contains the actual transaction date in body ("pada DD/MM/YY HH:MM:SS").
+	// Other BRI email types (BRIVA Payment, Transfer Between BRI, KK, Pemindahan) are
+	// SUPPLEMENTARY — they only get imported if they contain unique info not in Notification BRI,
+	// specifically: QRIS (has merchant name not in Notification BRI).
+	// Everything else is dedup'd by the idempotency key (bank+type+amount+tx_date).
+
+	// QRIS: import from "Pembelian QRIS Berhasil" — has merchant name, has tx date in body
+	if briSubjectQRIS.MatchString(subj) {
+		return true
+	}
+
+	// Notification BRI: canonical source — accept ALL except:
+	// 1. NBMB...TO (transfer) → we use "Transfer Between BRI Account" for those (has recipient name)
+	// Wait — Transfer Between BRI does NOT have tx date. So use Notification BRI for transfers too.
+	// Accept Notification BRI for everything EXCEPT QRIS (covered above).
+	if briSubjectNotif.MatchString(subj) {
+		// Skip: QRIS in Notification BRI — covered by "Pembelian QRIS Berhasil"
+		if briKetQRISRe.MatchString(combined) {
+			return false
+		}
+		return true
+	}
+
+	// All supplementary email types → skip. Notification BRI is the canonical source
+	// for every debit/credit. Transfer/BRIVA/KK emails cause duplicates because
+	// their date or amount may parse differently than the Notification BRI for the
+	// same transaction (e.g. transfer amount vs total debit including fee, or
+	// "Date 25 May 2026" format vs "pada 25/05/26" leading to a different txDateDay
+	// when one parse fails and falls back to ReceivedAt on a different day).
+	if briSubjectBRIVA.MatchString(subj) ||
+		briSubjectKK.MatchString(subj) ||
+		briSubjectTransfer.MatchString(subj) {
+		return false
+	}
+
+	return false
 }
 
 func (p *briParser) Parse(from, subject, combined string) ParseResult {
+	subj := strings.TrimSpace(subject)
+
+	// ── QRIS: "Pembelian QRIS Berhasil" ───────────────────────────────────────
+	if briSubjectQRIS.MatchString(subj) {
+		return p.parseQRIS(subject, combined)
+	}
+
+	// ── BRIVA: "BRIVA Payment Successful" ─────────────────────────────────────
+	if briSubjectBRIVA.MatchString(subj) {
+		return p.parseBRIVA(subject, combined)
+	}
+
+	// ── Transfer out ──────────────────────────────────────────────────────────
+	if briSubjectTransfer.MatchString(subj) {
+		return p.parseTransfer(subject, combined)
+	}
+
+	// ── KK / Credit card payment ──────────────────────────────────────────────
+	if briSubjectKK.MatchString(subj) {
+		return p.parseKK(subject, combined)
+	}
+
+	// ── Notification BRI (catch-all) ──────────────────────────────────────────
+	return p.parseNotification(subject, combined)
+}
+
+func (p *briParser) parseQRIS(subject, combined string) ParseResult {
+	// Try body amount (more specific field), fallback to generic
+	amountStr := extractFirst(briQRISBodyAmountRe, combined)
+	if amountStr == "" {
+		amountStr = extractFirst(briAmountRe, combined)
+	}
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+	merchant := extractFirst(briQRISMerchantRe, combined)
+	dateStr := extractFirst(briDateRe, combined)
+	if dateStr == "" {
+		dateStr = extractFirst(briDateRe2, combined)
+	}
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank: "BRI", Type: "expense", Amount: amount,
+		Merchant: merchant, Description: "BRI QRIS: " + merchant,
+		Date: parseIDDate(dateStr),
+		RawFields: map[string]string{"subject": subject, "email_type": "qris"},
+	}}
+}
+
+func (p *briParser) parseBRIVA(subject, combined string) ParseResult {
+	amountStr := extractFirst(briAmountRe, combined)
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+	merchant := extractFirst(briBRIVAMerchantRe, combined)
+	dateStr := extractFirst(briDateRe2, combined)
+	if dateStr == "" {
+		dateStr = extractFirst(briDateRe, combined)
+	}
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank: "BRI", Type: "expense", Amount: amount,
+		Merchant: merchant, Description: "BRI BRIVA: " + merchant,
+		Date: parseIDDate(dateStr),
+		RawFields: map[string]string{"subject": subject, "email_type": "briva"},
+	}}
+}
+
+func (p *briParser) parseTransfer(subject, combined string) ParseResult {
+	amountStr := extractFirst(briAmountRe, combined)
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+	merchant := extractFirst(briTransferToRe, combined)
+	dateStr := extractFirst(briDateRe2, combined)
+	if dateStr == "" {
+		dateStr = extractFirst(briDateRe, combined)
+	}
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank: "BRI", Type: "expense", Amount: amount,
+		Merchant: merchant, Description: "BRI Transfer: " + merchant,
+		Date: parseIDDate(dateStr),
+		RawFields: map[string]string{"subject": subject, "email_type": "transfer"},
+	}}
+}
+
+func (p *briParser) parseKK(subject, combined string) ParseResult {
+	amountStr := extractFirst(briAmountRe, combined)
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+	dateStr := extractFirst(briDateRe2, combined)
+	if dateStr == "" {
+		dateStr = extractFirst(briDateRe, combined)
+	}
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank: "BRI", Type: "expense", Amount: amount,
+		Merchant: "Kartu Kredit BRI", Description: "BRI: " + subject,
+		Date: parseIDDate(dateStr),
+		RawFields: map[string]string{"subject": subject, "email_type": "kk"},
+	}}
+}
+
+func (p *briParser) parseNotification(subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if briCrRe.MatchString(lower) {
+	if briCrRe.MatchString(lower) && !briTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(briAmountRe, combined)
@@ -327,12 +647,88 @@ func (p *briParser) Parse(from, subject, combined string) ParseResult {
 	if !ok || amount <= 0 {
 		return ParseResult{Matched: false}
 	}
-	merchant := extractFirst(briMerchRe, combined)
-	date := parseIDDate(extractFirst(briDateRe, combined))
+	ket := extractBRIKet(combined)
+	merchant := extractBRINotifMerchant(ket)
+	dateStr := extractFirst(briDateRe, combined)
+	if dateStr == "" {
+		dateStr = extractFirst(briDateRe2, combined)
+	}
 	return ParseResult{Matched: true, Data: &ParsedTransaction{
 		Bank: "BRI", Type: txType, Amount: amount,
-		Merchant: merchant, Description: "BRI: " + subject, Date: date,
-		RawFields: map[string]string{"subject": subject},
+		Merchant: merchant, Description: "BRI: " + subject,
+		Date: parseIDDate(dateStr),
+		RawFields: map[string]string{"subject": subject, "email_type": "notification", "ket": ket},
+	}}
+}
+
+// ─── BNI Wondr ────────────────────────────────────────────────────────────────
+// Dedicated parser for wondr by BNI emails (wondr@bni.co.id).
+// The HTML format differs significantly from classic BNI emails: merchant/recipient
+// is in a "Penerima" block, amount is in a "Total" line, and dates use Indonesian
+// month names (e.g. "03 Mei 2026", "16-Mei-2026").
+
+type wondrParser struct{}
+
+var (
+	wondrFromRe       = regexp.MustCompile(`(?i)wondr@bni\.co\.id`)
+	wondrAmountRe     = regexp.MustCompile(`(?i)Total\s+Rp\.?\s*(?P<amount>[\d.,]+)`)
+	wondrAmountRe2    = regexp.MustCompile(`(?i)Nominal\s+Rp\.?\s*(?P<amount>[\d.,]+)`)
+	wondrAmountRe3    = regexp.MustCompile(`(?i)Rp\.?\s*(?P<amount>[\d.,]+)`)
+	wondrMerchRe      = regexp.MustCompile(`(?i)Penerima\s+(?P<m>[A-Za-z0-9][A-Za-z0-9 '&.,-]{1,50}?)\s+(?:Sumber dana|•|\*{3,}|\b(?:BNI|Mandiri|ShopeePay|GoPay|OVO|DANA|LinkAja|Finpay|Midtrans|Telkomsel|Pulsa)\b)`)
+	wondrTopupWalletRe = regexp.MustCompile(`(?i)\b(ShopeePay|GoPay|OVO|DANA|LinkAja)\b`)
+	wondrDateRe       = regexp.MustCompile(`(?i)Tanggal\s+(?P<date>\d{1,2}[\s\-]\w+[\s\-]\d{4})`)
+	wondrTimeRe       = regexp.MustCompile(`(?i)Waktu\s+(?P<time>\d{2}:\d{2}(?::\d{2})?)`)
+)
+
+func (p *wondrParser) Matches(from, subject, combined string) bool {
+	return wondrFromRe.MatchString(strings.ToLower(from))
+}
+
+func (p *wondrParser) Parse(from, subject, combined string) ParseResult {
+	// Amount: Total (final) > Nominal > Rp fallback
+	amountStr := extractFirst(wondrAmountRe, combined)
+	if amountStr == "" {
+		amountStr = extractFirst(wondrAmountRe2, combined)
+	}
+	if amountStr == "" {
+		amountStr = extractFirst(wondrAmountRe3, combined)
+	}
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+
+	// Merchant from "Penerima" block.
+	// For top-up emails the "Penerima" name is a masked version of the user — use wallet name instead.
+	subjectLower := strings.ToLower(subject)
+	var merchant string
+	if strings.Contains(subjectLower, "top-up") || strings.Contains(subjectLower, "top up") {
+		if m := wondrTopupWalletRe.FindString(combined); m != "" {
+			merchant = m
+		}
+	}
+	if merchant == "" {
+		merchant = strings.TrimSpace(extractFirst(wondrMerchRe, combined))
+	}
+
+	// Date + Time extracted separately and combined.
+	dateStr := extractFirst(wondrDateRe, combined)
+	timeStr := extractFirst(wondrTimeRe, combined)
+	if dateStr != "" && timeStr != "" {
+		dateStr = dateStr + " " + timeStr
+	}
+	date := parseIDDate(dateStr)
+
+	// All Wondr notification emails (Transaksi/Transfer/Top-up berhasil) are
+	// outgoing from the user's BNI account, so always expense.
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank:        "BNI Wondr",
+		Type:        "expense",
+		Amount:      amount,
+		Merchant:    merchant,
+		Description: "BNI Wondr: " + subject,
+		Date:        date,
+		RawFields:   map[string]string{"subject": subject},
 	}}
 }
 
@@ -357,7 +753,7 @@ func (p *bniParser) Matches(from, subject, combined string) bool {
 func (p *bniParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if bniCrRe.MatchString(lower) {
+	if bniCrRe.MatchString(lower) && !bniTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(bniAmountRe, combined)
@@ -432,7 +828,7 @@ func (p *ovoParser) Matches(from, subject, combined string) bool {
 func (p *ovoParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if ovoCrRe.MatchString(lower) {
+	if ovoCrRe.MatchString(lower) && !ovoTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(ovoAmountRe, combined)
@@ -468,7 +864,7 @@ func (p *danaParser) Matches(from, subject, combined string) bool {
 func (p *danaParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if danaCrRe.MatchString(lower) {
+	if danaCrRe.MatchString(lower) && !danaTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(danaAmountRe, combined)
@@ -489,12 +885,17 @@ func (p *danaParser) Parse(from, subject, combined string) ParseResult {
 type shopeepayParser struct{}
 
 var (
-	shopeeFromRe    = regexp.MustCompile(`(?i)(@shopee\.co\.id|noreply.*shopee|spay)`)
+	shopeeFromRe    = regexp.MustCompile(`(?i)(shopee\.co\.id|noreply.*shopee|spay)`)
 	shopeeSubjectRe = regexp.MustCompile(`(?i)(shopeepay|shopee pay|pembayaran shopee|top.?up spay)`)
-	shopeeAmountRe  = regexp.MustCompile(`(?i)(?:Rp\.?|total|nominal)\s*(?P<amount>[\d.,]+)`)
+	// Prefer "Total Pembayaran" — the actual amount paid after discounts/vouchers.
+	// Shopee uses US-format commas ("62,395") — parseAmount handles this in the else branch.
+	shopeeTotalRe   = regexp.MustCompile(`(?i)Total\s+Pembayaran\s*[:\s]+Rp\s*(?P<amount>[\d.,]+)`)
+	shopeeAmountRe  = regexp.MustCompile(`(?i)(?:Rp\.?)\s*(?P<amount>[\d.,]+)`)
 	shopeeTypeRe    = regexp.MustCompile(`(?i)(pembayaran|bayar|digunakan|belanja)`)
 	shopeeCrRe      = regexp.MustCompile(`(?i)(top.?up|masuk|diterima|cashback|refund)`)
-	shopeeMerchRe   = regexp.MustCompile(`(?i)(?:di|ke|merchant)[:\s]+(?P<m>[^\n\r,;]{3,80})`)
+	// Only match labeled fields ("Nama Toko:", "merchant:") — bare prepositions
+	// "di"/"ke" are too generic and match mid-sentence text like "ke alamatmu pada...".
+	shopeeMerchRe   = regexp.MustCompile(`(?i)(?:Nama\s+Toko|Toko|merchant)[:\s]+(?P<m>[^\n\r,;.]{3,60})`)
 )
 
 func (p *shopeepayParser) Matches(from, subject, combined string) bool {
@@ -504,10 +905,15 @@ func (p *shopeepayParser) Matches(from, subject, combined string) bool {
 func (p *shopeepayParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if shopeeCrRe.MatchString(lower) {
+	if shopeeCrRe.MatchString(lower) && !shopeeTypeRe.MatchString(lower) {
 		txType = "income"
 	}
-	amountStr := extractFirst(shopeeAmountRe, combined)
+	// Try "Total Pembayaran" first — this is the actual amount paid after
+	// discounts/vouchers. Fall back to the first Rp amount only when absent.
+	amountStr := extractFirst(shopeeTotalRe, combined)
+	if amountStr == "" {
+		amountStr = extractFirst(shopeeAmountRe, combined)
+	}
 	amount, ok := parseAmount(amountStr)
 	if !ok || amount <= 0 {
 		return ParseResult{Matched: false}
@@ -540,7 +946,7 @@ func (p *jeniusParser) Matches(from, subject, combined string) bool {
 func (p *jeniusParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if jeniusCrRe.MatchString(lower) {
+	if jeniusCrRe.MatchString(lower) && !jeniusTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(jeniusAmountRe, combined)
@@ -557,12 +963,20 @@ func (p *jeniusParser) Parse(from, subject, combined string) ParseResult {
 }
 
 // ─── Livin' by Mandiri ────────────────────────────────────────────────────────
+// Emails come from noreply.livin@bankmandiri.co.id with HTML structure that uses
+// a "Penerima" block (not "ke:/keterangan:") and Indonesian date formats.
 
 type livinParser struct{}
 
 var (
-	livinFromRe    = regexp.MustCompile(`(?i)(livin|@bankmandiri\.co\.id)`)
-	livinSubjectRe = regexp.MustCompile(`(?i)(livin|mandiri online|notifikasi mandiri)`)
+	livinFromRe   = regexp.MustCompile(`(?i)(noreply\.livin@bankmandiri\.co\.id|livin[^@]*@bankmandiri\.co\.id)`)
+	livinAmountRe = regexp.MustCompile(`(?i)(?:Nominal\s+Transaksi|Nominal\s+Pembayaran|Nominal)\s+Rp\.?\s*(?P<amount>[\d.,]+)`)
+	livinAmountRe2 = regexp.MustCompile(`(?i)Rp\.?\s*(?P<amount>[\d.,]+)`)
+	// Merchant: text after "Penerima", stops before city code ("TANGSEL - ID"),
+	// bank name ("Bank Mandiri"), or long digit sequence (account number).
+	livinMerchRe  = regexp.MustCompile(`(?i)Penerima\s+(?P<m>[A-Za-z0-9][A-Za-z0-9 '&.,-]{1,50}?)\s+(?:Sumber|Tanggal|Bank\s+Mandiri|Bank\s+BCA|Bank\s+BRI|\d{6,}|[A-Z]{3,8}\s*-\s*ID\b)`)
+	livinDateRe   = regexp.MustCompile(`(?i)Tanggal\s+(?P<date>\d{1,2}[\s\-]\w+[\s\-]\d{4})`)
+	livinTimeRe   = regexp.MustCompile(`(?i)Jam\s+(?P<time>\d{2}:\d{2}(?::\d{2})?)`)
 )
 
 func (p *livinParser) Matches(from, subject, combined string) bool {
@@ -570,13 +984,37 @@ func (p *livinParser) Matches(from, subject, combined string) bool {
 }
 
 func (p *livinParser) Parse(from, subject, combined string) ParseResult {
-	// Re-use mandiri parser logic
-	m := &mandiriParser{}
-	result := m.Parse(from, subject, combined)
-	if result.Matched && result.Data != nil {
-		result.Data.Bank = "Mandiri Livin"
+	amountStr := extractFirst(livinAmountRe, combined)
+	if amountStr == "" {
+		amountStr = extractFirst(livinAmountRe2, combined)
 	}
-	return result
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+
+	merchant := strings.TrimSpace(extractFirst(livinMerchRe, combined))
+	// Discard QRIS technical noise (PAN / acquirer data) that occasionally leaks in
+	if strings.HasPrefix(strings.ToUpper(merchant), "PAN ") {
+		merchant = ""
+	}
+
+	dateStr := extractFirst(livinDateRe, combined)
+	timeStr := extractFirst(livinTimeRe, combined)
+	if dateStr != "" && timeStr != "" {
+		dateStr = dateStr + " " + timeStr
+	}
+	date := parseIDDate(dateStr)
+
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank:        "Mandiri Livin",
+		Type:        "expense",
+		Amount:      amount,
+		Merchant:    merchant,
+		Description: "Mandiri Livin: " + subject,
+		Date:        date,
+		RawFields:   map[string]string{"subject": subject},
+	}}
 }
 
 // ─── BSI Mobile ───────────────────────────────────────────────────────────────
@@ -598,7 +1036,7 @@ func (p *bsIParser) Matches(from, subject, combined string) bool {
 func (p *bsIParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if bsiCrRe.MatchString(lower) {
+	if bsiCrRe.MatchString(lower) && !bsiTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(bsiAmountRe, combined)
@@ -632,7 +1070,7 @@ func (p *cimbParser) Matches(from, subject, combined string) bool {
 func (p *cimbParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if cimbCrRe.MatchString(lower) {
+	if cimbCrRe.MatchString(lower) && !cimbTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(cimbAmountRe, combined)
@@ -691,7 +1129,9 @@ var (
 )
 
 func (p *flipParser) Matches(from, subject, combined string) bool {
-	return flipFromRe.MatchString(from)
+	// Flip emails are excluded per user preference — transfers via Flip
+	// are already captured as BRI debit notifications on the bank side.
+	return false
 }
 
 func (p *flipParser) Parse(from, subject, combined string) ParseResult {
@@ -728,7 +1168,7 @@ func (p *linkAjaParser) Matches(from, subject, combined string) bool {
 func (p *linkAjaParser) Parse(from, subject, combined string) ParseResult {
 	lower := strings.ToLower(combined)
 	txType := "expense"
-	if linkAjaCrRe.MatchString(lower) {
+	if linkAjaCrRe.MatchString(lower) && !linkAjaTypeRe.MatchString(lower) {
 		txType = "income"
 	}
 	amountStr := extractFirst(linkAjaAmountRe, combined)
@@ -812,6 +1252,44 @@ func (p *btnParser) Parse(from, subject, combined string) ParseResult {
 	return ParseResult{Matched: true, Data: &ParsedTransaction{
 		Bank: "BTN", Type: txType, Amount: amount,
 		Description: "BTN: " + subject,
+		RawFields:   map[string]string{"subject": subject},
+	}}
+}
+
+// ─── Alfagift ─────────────────────────────────────────────────────────────────
+
+type alfagiftParser struct{}
+
+var (
+	alfagiftFromRe   = regexp.MustCompile(`(?i)(@alfagift\.id|noreply.*alfagift|info.*alfagift)`)
+	alfagiftAmountRe = regexp.MustCompile(`(?i)(?:total\s*(?:belanja|pembayaran|transaksi)|nominal\s*transaksi)[:\s]*(?:Rp\.?\s*)?(?P<amount>[\d.,]+)`)
+	alfagiftAmountRe2 = regexp.MustCompile(`(?i)Rp\.?\s*(?P<amount>[\d.,]+)`)
+	alfagiftMerchRe  = regexp.MustCompile(`(?i)(?:toko|gerai|merchant|nama\s*toko)[:\s]+(?P<m>[^\n\r,;]{3,60})`)
+)
+
+func (p *alfagiftParser) Matches(from, subject, combined string) bool {
+	return alfagiftFromRe.MatchString(from)
+}
+
+func (p *alfagiftParser) Parse(from, subject, combined string) ParseResult {
+	amountStr := extractFirst(alfagiftAmountRe, combined)
+	if amountStr == "" {
+		amountStr = extractFirst(alfagiftAmountRe2, combined)
+	}
+	amount, ok := parseAmount(amountStr)
+	if !ok || amount <= 0 {
+		return ParseResult{Matched: false}
+	}
+	merchant := extractFirst(alfagiftMerchRe, combined)
+	if merchant == "" {
+		merchant = "Alfamart"
+	}
+	return ParseResult{Matched: true, Data: &ParsedTransaction{
+		Bank:        "Alfagift",
+		Type:        "expense",
+		Amount:      amount,
+		Merchant:    merchant,
+		Description: "Alfagift: " + subject,
 		RawFields:   map[string]string{"subject": subject},
 	}}
 }

@@ -1,296 +1,234 @@
 import React, { useState } from 'react'
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
+  View, Text, TextInput, TouchableOpacity,
+  ScrollView, Modal, ActivityIndicator, Platform,
 } from 'react-native'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { X, Check } from 'lucide-react'
 import { useCreateTransaction } from '../../src/hooks/useTransactions'
 import { useCategories } from '../../src/hooks/useCategories'
+import { resolveIcon } from '../../src/lib/iconMap'
 import { useAccounts } from '../../src/hooks/useAccounts'
 import { TransactionType, Category, Account } from '../../src/lib/api'
 import { format } from 'date-fns'
 
+// ── Saku tokens ────────────────────────────────────────────────
+const C = {
+  cream:       '#FAF7F2',
+  creamSunken: '#F4EEE3',
+  surface:     '#FFFFFF',
+  primary:     '#6B8E6B',
+  primarySoft: '#DEE8D7',
+  heroEnd:     '#41594F',
+  accent:      '#C97B5C',
+  accentSoft:  '#F4DDD0',
+  transfer:    '#6E97AE',
+  transferSoft:'#DEEAF1',
+  danger:      '#C66B6B',
+  dangerSoft:  '#F5D9D9',
+  fg1:         '#2D2A26',
+  fg2:         '#55504A',
+  fg3:         '#8E887F',
+  fg4:         '#A8A39B',
+  border:      '#E0DBD2',
+  divider:     '#ECE4D3',
+}
+
+function formatAmountInput(text: string): string {
+  const digits = text.replace(/\D/g, '')
+  if (!digits) return ''
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 const transactionSchema = z.object({
-  type: z.enum(['income', 'expense', 'transfer']),
-  amount: z
-    .string()
-    .min(1, 'Jumlah wajib diisi')
-    .refine((v) => !isNaN(Number(v.replace(/\./g, '').replace(',', '.'))) && Number(v.replace(/\./g, '').replace(',', '.')) > 0, {
-      message: 'Masukkan jumlah yang valid',
-    }),
-  categoryId: z.string().min(1, 'Pilih kategori'),
-  accountId: z.string().min(1, 'Pilih akun'),
-  merchant: z.string().optional(),
-  note: z.string().optional(),
-  date: z.string().min(1, 'Pilih tanggal'),
+  type:       z.enum(['income', 'expense', 'transfer']),
+  amount:     z.string().min(1, 'Jumlah wajib diisi')
+               .refine((v) => !isNaN(Number(v.replace(/\./g, ''))) && Number(v.replace(/\./g, '')) > 0, { message: 'Jumlah tidak valid' }),
+  categoryId: z.string().optional(),
+  accountId:  z.string().min(1, 'Pilih rekening'),
+  merchant:   z.string().optional(),
+  note:       z.string().optional(),
+  date:       z.string().min(1, 'Pilih tanggal'),
 })
 
 type TransactionFormData = z.infer<typeof transactionSchema>
 
-interface AddTransactionModalProps {
-  visible: boolean
-  onClose: () => void
-}
-
-const TYPE_OPTIONS: Array<{ value: TransactionType; label: string; color: string }> = [
-  { value: 'expense', label: 'Pengeluaran', color: '#EF4444' },
-  { value: 'income', label: 'Pemasukan', color: '#10B981' },
-  { value: 'transfer', label: 'Transfer', color: '#6366F1' },
+const TYPE_OPTIONS: Array<{ value: TransactionType; label: string; color: string; soft: string }> = [
+  { value: 'expense',  label: '↑ Keluar',    color: C.accent,   soft: C.accentSoft   },
+  { value: 'income',   label: '↓ Masuk',     color: C.primary,  soft: C.primarySoft  },
+  { value: 'transfer', label: '⇄ Transfer',  color: C.transfer, soft: C.transferSoft },
 ]
 
-export function AddTransactionModal({ visible, onClose }: AddTransactionModalProps) {
+interface Props { visible: boolean; onClose: () => void }
+
+export function AddTransactionModal({ visible, onClose }: Props) {
   const { data: categories = [] } = useCategories()
-  const { data: accounts = [] } = useAccounts()
-  const createMutation = useCreateTransaction()
+  const { data: accounts   = [] } = useAccounts()
+  const createMutation            = useCreateTransaction()
   const [serverError, setServerError] = useState('')
 
-  const {
-    control,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<TransactionFormData>({
+  const { control, handleSubmit, watch, reset, formState: { errors } } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: 'expense',
-      amount: '',
-      categoryId: '',
-      accountId: '',
-      merchant: '',
-      note: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
+      type: 'expense', amount: '', categoryId: '', accountId: '',
+      merchant: '', note: '', date: format(new Date(), 'yyyy-MM-dd'),
     },
   })
 
   const selectedType = watch('type')
-  const filteredCategories = categories.filter(
-    (c: Category) => c.type === selectedType || selectedType === 'transfer'
+  const typeOpt      = TYPE_OPTIONS.find((t) => t.value === selectedType)!
+  const filteredCats = (categories as Category[]).filter(
+    (c) => c.type === selectedType || selectedType === 'transfer'
   )
 
-  const handleClose = () => {
-    reset()
-    setServerError('')
-    onClose()
-  }
+  const handleClose = () => { reset(); setServerError(''); onClose() }
 
   const onSubmit = (data: TransactionFormData) => {
     setServerError('')
     const amount = parseFloat(data.amount.replace(/\./g, '').replace(',', '.'))
     createMutation.mutate(
+      { type: data.type, amount, categoryId: data.categoryId as string, accountId: data.accountId, merchant: data.merchant ?? undefined, note: data.note ?? undefined, date: data.date },
       {
-        type: data.type,
-        amount,
-        categoryId: data.categoryId,
-        accountId: data.accountId,
-        merchant: data.merchant || undefined,
-        note: data.note || undefined,
-        date: data.date,
-      },
-      {
-        onSuccess: () => {
-          handleClose()
-        },
-        onError: (err: any) => {
-          setServerError(err.response?.data?.message || 'Gagal menyimpan transaksi')
-        },
+        onSuccess: handleClose,
+        onError: (err: any) => setServerError(err.response?.data?.message || 'Gagal menyimpan transaksi'),
       }
     )
   }
 
   const content = (
-    <View className="flex-1 bg-white rounded-t-3xl">
-      {/* Handle bar */}
-      <View className="items-center pt-3 pb-1">
-        <View className="w-10 h-1 bg-slate-200 rounded-full" />
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
+      {/* Handle */}
+      <View style={{ alignItems: 'center', paddingTop: 12 }}>
+        <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
       </View>
 
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-5 py-3 border-b border-slate-100">
-        <Text className="text-lg font-bold text-slate-800">Tambah Transaksi</Text>
-        <TouchableOpacity
-          onPress={handleClose}
-          className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center"
-        >
-          <X size={16} color="#64748b" />
-        </TouchableOpacity>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: '85%' }}>
+        <View style={{ padding: 20, gap: 16 }}>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="py-4 gap-4">
-          {/* Type selector */}
-          <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Jenis Transaksi</Text>
-            <Controller
-              control={control}
-              name="type"
-              render={({ field: { value, onChange } }) => (
-                <View className="flex-row gap-2">
-                  {TYPE_OPTIONS.map((opt) => (
+          {/* Type toggle */}
+          <Controller
+            control={control} name="type"
+            render={({ field: { value, onChange } }) => (
+              <View style={{ flexDirection: 'row', backgroundColor: C.creamSunken, borderRadius: 14, padding: 4 }}>
+                {TYPE_OPTIONS.map((opt) => {
+                  const active = value === opt.value
+                  return (
                     <TouchableOpacity
                       key={opt.value}
                       onPress={() => onChange(opt.value)}
-                      className={`flex-1 py-2.5 rounded-xl items-center border-2 ${
-                        value === opt.value ? 'border-transparent' : 'border-slate-200 bg-slate-50'
-                      }`}
-                      style={
-                        value === opt.value
-                          ? { backgroundColor: opt.color, borderColor: opt.color }
-                          : {}
-                      }
+                      style={{ flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
                     >
-                      <Text
-                        className={`text-sm font-semibold ${
-                          value === opt.value ? 'text-white' : 'text-slate-500'
-                        }`}
-                      >
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }}>
                         {opt.label}
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                  )
+                })}
+              </View>
+            )}
+          />
+
+          {/* Big amount input */}
+          <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg3, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, fontFamily: 'Nunito_700Bold' }}>
+              Jumlah
+            </Text>
+            <Controller
+              control={control} name="amount"
+              render={({ field: { value, onChange } }) => (
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                  <Text style={{ fontSize: 22, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black' }}>Rp</Text>
+                  <TextInput
+                    style={{ fontSize: 42, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black', minWidth: 120, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
+                    placeholder="0"
+                    placeholderTextColor={typeOpt.color + '55'}
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={(text) => onChange(formatAmountInput(text))}
+                  />
                 </View>
               )}
             />
+            {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 6, fontFamily: 'Nunito_600SemiBold' }}>{errors.amount.message}</Text>}
           </View>
 
-          {/* Amount */}
+          {/* Category horizontal scroll */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Jumlah (Rp)</Text>
+            <Text style={labelStyle}>Kategori <Text style={{ color: C.fg4, fontWeight: '500' }}>(opsional)</Text></Text>
             <Controller
-              control={control}
-              name="amount"
-              render={({ field: { value, onChange } }) => (
-                <TextInput
-                  className={`bg-slate-50 border rounded-xl px-4 py-3.5 text-slate-900 text-lg font-mono ${
-                    errors.amount ? 'border-red-400' : 'border-slate-200'
-                  }`}
-                  placeholder="0"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="numeric"
-                  value={value}
-                  onChangeText={onChange}
-                />
-              )}
-            />
-            {errors.amount && (
-              <Text className="text-red-500 text-xs mt-1">{errors.amount.message}</Text>
-            )}
-          </View>
-
-          {/* Category */}
-          <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Kategori</Text>
-            <Controller
-              control={control}
-              name="categoryId"
+              control={control} name="categoryId"
               render={({ field: { value, onChange } }) => (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View className="flex-row gap-2 pb-1">
-                    {filteredCategories.length === 0 ? (
-                      <Text className="text-slate-400 text-sm italic py-2">
-                        Tidak ada kategori tersedia
-                      </Text>
-                    ) : (
-                      filteredCategories.map((cat: Category) => (
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => onChange('')}
+                      style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 2, backgroundColor: !value ? C.primary : C.creamSunken, borderColor: !value ? C.primary : C.border }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Tanpa Kategori</Text>
+                    </TouchableOpacity>
+                    {filteredCats.length === 0 ? (
+                      <View style={{ paddingVertical: 9, paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 13, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>Buat kategori dulu di Settings</Text>
+                      </View>
+                    ) : filteredCats.map((cat: Category) => {
+                      const active = value === cat.id
+                      return (
                         <TouchableOpacity
                           key={cat.id}
                           onPress={() => onChange(cat.id)}
-                          className={`flex-row items-center px-3 py-2 rounded-xl border-2 ${
-                            value === cat.id ? 'border-transparent' : 'border-slate-200 bg-slate-50'
-                          }`}
-                          style={
-                            value === cat.id
-                              ? { backgroundColor: cat.color, borderColor: cat.color }
-                              : {}
-                          }
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border, gap: 6 }}
                         >
-                          <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
-                          <Text
-                            className={`ml-1.5 text-sm font-medium ${
-                              value === cat.id ? 'text-white' : 'text-slate-600'
-                            }`}
-                          >
-                            {cat.name}
-                          </Text>
+                          <Text style={{ fontSize: 16 }}>{resolveIcon(cat.icon)}</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
                         </TouchableOpacity>
-                      ))
-                    )}
+                      )
+                    })}
                   </View>
                 </ScrollView>
               )}
             />
-            {errors.categoryId && (
-              <Text className="text-red-500 text-xs mt-1">{errors.categoryId.message}</Text>
-            )}
           </View>
 
           {/* Account */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Akun</Text>
+            <Text style={labelStyle}>Rekening</Text>
             <Controller
-              control={control}
-              name="accountId"
+              control={control} name="accountId"
               render={({ field: { value, onChange } }) => (
-                <View className="flex-row flex-wrap gap-2">
-                  {accounts.length === 0 ? (
-                    <Text className="text-slate-400 text-sm italic py-2">
-                      Tidak ada akun tersedia
-                    </Text>
-                  ) : (
-                    accounts.map((acc: Account) => (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {(accounts as Account[]).length === 0 ? (
+                    <Text style={{ fontSize: 13, color: C.fg4, fontFamily: 'Nunito_500Medium', paddingVertical: 8 }}>Buat rekening dulu di Settings</Text>
+                  ) : (accounts as Account[]).map((acc: Account) => {
+                    const active = value === acc.id
+                    return (
                       <TouchableOpacity
                         key={acc.id}
                         onPress={() => onChange(acc.id)}
-                        className={`flex-row items-center px-3 py-2 rounded-xl border-2 ${
-                          value === acc.id
-                            ? 'bg-primary border-primary'
-                            : 'border-slate-200 bg-slate-50'
-                        }`}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border, gap: 6 }}
                       >
-                        <Text style={{ fontSize: 14 }}>{acc.icon || '💳'}</Text>
-                        <Text
-                          className={`ml-1.5 text-sm font-medium ${
-                            value === acc.id ? 'text-white' : 'text-slate-600'
-                          }`}
-                        >
-                          {acc.name}
-                        </Text>
+                        <Text style={{ fontSize: 16 }}>{(acc as any).icon || '💳'}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{acc.name}</Text>
                       </TouchableOpacity>
-                    ))
-                  )}
+                    )
+                  })}
                 </View>
               )}
             />
-            {errors.accountId && (
-              <Text className="text-red-500 text-xs mt-1">{errors.accountId.message}</Text>
-            )}
+            {errors.accountId && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_600SemiBold' }}>{errors.accountId.message}</Text>}
           </View>
 
           {/* Merchant */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">
-              Merchant / Toko <Text className="text-slate-400 font-normal">(opsional)</Text>
-            </Text>
+            <Text style={labelStyle}>Merchant / Toko <Text style={{ color: C.fg4, fontWeight: '500' }}>(opsional)</Text></Text>
             <Controller
-              control={control}
-              name="merchant"
+              control={control} name="merchant"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900"
-                  placeholder="Contoh: Indomaret, Grab Food..."
-                  placeholderTextColor="#94a3b8"
-                  value={value}
-                  onChangeText={onChange}
+                  style={inputStyle}
+                  placeholder="Contoh: Warung Padang, Grab, Indomaret..."
+                  placeholderTextColor={C.fg4}
+                  value={value} onChangeText={onChange}
                 />
               )}
             />
@@ -298,22 +236,16 @@ export function AddTransactionModal({ visible, onClose }: AddTransactionModalPro
 
           {/* Note */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">
-              Catatan <Text className="text-slate-400 font-normal">(opsional)</Text>
-            </Text>
+            <Text style={labelStyle}>Catatan <Text style={{ color: C.fg4, fontWeight: '500' }}>(opsional)</Text></Text>
             <Controller
-              control={control}
-              name="note"
+              control={control} name="note"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900"
+                  style={{ ...inputStyle, minHeight: 72, textAlignVertical: 'top' }}
                   placeholder="Tambah catatan..."
-                  placeholderTextColor="#94a3b8"
-                  multiline
-                  numberOfLines={2}
-                  value={value}
-                  onChangeText={onChange}
-                  style={{ minHeight: 72, textAlignVertical: 'top' }}
+                  placeholderTextColor={C.fg4}
+                  multiline numberOfLines={2}
+                  value={value} onChangeText={onChange}
                 />
               )}
             />
@@ -321,35 +253,35 @@ export function AddTransactionModal({ visible, onClose }: AddTransactionModalPro
 
           {/* Date */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Tanggal</Text>
+            <Text style={labelStyle}>Tanggal</Text>
             <Controller
-              control={control}
-              name="date"
-              render={({ field: { value, onChange } }) => (
-                <TextInput
-                  className={`bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 ${
-                    errors.date ? 'border-red-400' : 'border-slate-200'
-                  }`}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#94a3b8"
-                  value={value}
-                  onChangeText={onChange}
-                  // On web, type=date via nativeID trick — handled via platform
-                  {...(Platform.OS === 'web'
-                    ? ({ type: 'date', max: format(new Date(), 'yyyy-MM-dd') } as any)
-                    : {})}
-                />
-              )}
+              control={control} name="date"
+              render={({ field: { value, onChange } }) =>
+                typeof window !== 'undefined' ? (
+                  <input
+                    type="date"
+                    value={value}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                    onChange={(e) => onChange(e.target.value)}
+                    style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${errors.date ? C.danger : C.border}`, borderRadius: 12, fontSize: 15, color: C.fg1, backgroundColor: C.creamSunken, fontFamily: 'Nunito, system-ui', outline: 'none' }}
+                  />
+                ) : (
+                  <TextInput
+                    style={{ ...inputStyle, borderColor: errors.date ? C.danger : C.border }}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={C.fg4}
+                    value={value} onChangeText={onChange}
+                  />
+                )
+              }
             />
-            {errors.date && (
-              <Text className="text-red-500 text-xs mt-1">{errors.date.message}</Text>
-            )}
+            {errors.date && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_600SemiBold' }}>{errors.date.message}</Text>}
           </View>
 
           {/* Server error */}
           {serverError ? (
-            <View className="bg-red-50 border border-red-200 rounded-xl p-3">
-              <Text className="text-red-600 text-sm text-center">{serverError}</Text>
+            <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>{serverError}</Text>
             </View>
           ) : null}
 
@@ -357,82 +289,38 @@ export function AddTransactionModal({ visible, onClose }: AddTransactionModalPro
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}
             disabled={createMutation.isPending}
-            className={`rounded-xl py-4 items-center flex-row justify-center gap-2 ${
-              createMutation.isPending ? 'bg-primary/60' : 'bg-primary'
-            }`}
+            style={{ backgroundColor: createMutation.isPending ? C.primary + '99' : C.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 4 }}
           >
-            {createMutation.isPending ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <>
-                <Check size={18} color="white" />
-                <Text className="text-white font-semibold text-base">Simpan Transaksi</Text>
-              </>
-            )}
+            {createMutation.isPending
+              ? <ActivityIndicator color="white" size="small" />
+              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>Simpan Transaksi</Text>}
           </TouchableOpacity>
 
-          <View className="h-8" />
+          <View style={{ height: 24 }} />
         </View>
       </ScrollView>
     </View>
   )
 
   if (Platform.OS === 'web') {
-    // On web, render as a bottom sheet overlay
     if (!visible) return null
     return (
-      <View
-        style={{
-          position: 'fixed' as any,
-          inset: 0,
-          zIndex: 1000,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'flex-end',
-          display: 'flex',
-        }}
-      >
-        <TouchableOpacity
-          style={{ position: 'absolute' as any, inset: 0 }}
-          onPress={handleClose}
-          activeOpacity={1}
-        />
-        <View
-          style={{
-            backgroundColor: 'white',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            maxHeight: '90vh' as any,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {content}
-        </View>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end' }}>
+        <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
+        {content}
       </View>
     )
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-      statusBarTranslucent
-    >
-      <View className="flex-1 justify-end bg-black/50">
-        <TouchableOpacity
-          className="absolute inset-0"
-          onPress={handleClose}
-          activeOpacity={1}
-        />
-        <KeyboardAvoidingView
-          behavior="padding"
-          style={{ maxHeight: '90%' }}
-        >
-          {content}
-        </KeyboardAvoidingView>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(45,42,38,0.5)' }}>
+        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClose} activeOpacity={1} />
+        <View style={{ maxHeight: '90%' }}>{content}</View>
       </View>
     </Modal>
   )
 }
+
+const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: '#8E887F', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 8, fontFamily: 'Nunito_700Bold' }
+const inputStyle = { backgroundColor: '#F4EEE3', borderWidth: 1.5, borderColor: '#E0DBD2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#2D2A26', fontFamily: 'Nunito_600SemiBold' }

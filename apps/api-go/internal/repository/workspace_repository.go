@@ -159,6 +159,7 @@ func (r *workspaceRepository) FindInviteByEmail(ctx context.Context, workspaceID
 func (r *workspaceRepository) FindPendingInvitesByEmail(ctx context.Context, email string) ([]entity.WorkspaceInvite, error) {
 	var invites []entity.WorkspaceInvite
 	err := r.db.WithContext(ctx).
+		Preload("Workspace").
 		Where("email = ? AND status = 'pending' AND expires_at > NOW()", email).
 		Order("created_at ASC").
 		Find(&invites).Error
@@ -203,4 +204,12 @@ func (r *workspaceRepository) ListActivity(ctx context.Context, workspaceID uuid
 		Limit(limit).
 		Find(&logs).Error
 	return logs, err
+}
+
+func (r *workspaceRepository) GetMemberUserIDs(ctx context.Context, workspaceID uuid.UUID) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).Model(&entity.WorkspaceMember{}).
+		Where("workspace_id = ?", workspaceID).
+		Pluck("user_id", &ids).Error
+	return ids, err
 }

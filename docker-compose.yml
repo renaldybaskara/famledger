@@ -37,9 +37,10 @@ x-api-env: &api-env
   JWT_REFRESH_SECRET:    ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
   JWT_EXPIRES_IN:        ${JWT_EXPIRES_IN:-15m}
   JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
-  GOOGLE_CLIENT_ID:      ${GOOGLE_CLIENT_ID:-}
-  GOOGLE_CLIENT_SECRET:  ${GOOGLE_CLIENT_SECRET:-}
-  GOOGLE_CALLBACK_URL:   ${GOOGLE_CALLBACK_URL:-}
+  GOOGLE_CLIENT_ID:           ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET:       ${GOOGLE_CLIENT_SECRET:-}
+  GOOGLE_CALLBACK_URL:        ${GOOGLE_CALLBACK_URL:-}
+  GOOGLE_GMAIL_CALLBACK_URL:  ${GOOGLE_GMAIL_CALLBACK_URL:-}
   MINIO_ENDPOINT:        minio
   MINIO_PORT:            "9000"
   MINIO_ACCESS_KEY:      ${MINIO_ACCESS_KEY:-minioadmin}
@@ -48,6 +49,9 @@ x-api-env: &api-env
   MINIO_USE_SSL:         "false"
   OLLAMA_BASE_URL:       http://ollama:11434
   OLLAMA_MODEL:          ${OLLAMA_MODEL:-llama3.2:3b}
+  OPENROUTER_API_KEY:    ${OPENROUTER_API_KEY:-}
+  OPENROUTER_MODEL:      ${OPENROUTER_MODEL:-google/gemini-2.0-flash-exp:free}
+  OCR_SERVICE_URL:       ${OCR_SERVICE_URL:-http://ocr:5000}
   SMTP_HOST:             ${SMTP_HOST:-}
   SMTP_PORT:             ${SMTP_PORT:-587}
   SMTP_USER:             ${SMTP_USER:-}
@@ -133,13 +137,14 @@ services:
     networks:
       - internal
       - public
+      - shared-db
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       minio:
         condition: service_healthy
+      ocr:
+        condition: service_started
     healthcheck:
       test:         ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
       interval:     30s
@@ -155,32 +160,24 @@ services:
   # ============================================================
   # worker: (removed â€” Go API handles requests synchronously)
 
+
   # ============================================================
-  # DATABASE â€” PostgreSQL 16 + pgvector
+  # OCR MICROSERVICE â€” PaddleOCR (Python 3.11 + FastAPI)
+  # Internal only â€” not exposed to host. CPU inference ~5-30s.
   # ============================================================
-  postgres:
-    image: pgvector/pgvector:pg16
+  ocr:
+    build:
+      context: apps/ocr-service
+      dockerfile: Dockerfile
+    image: fintrackr-ocr:${IMAGE_TAG:-latest}
     <<: *restart-policy
-    environment:
-      POSTGRES_USER:     ${POSTGRES_USER:-fintrackr}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB:       ${POSTGRES_DB:-fintrackr}
-      PGDATA:            /var/lib/postgresql/data/pgdata
-      TZ:                ${TZ:-Asia/Jakarta}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - paddle-models:/root/.paddleocr
     networks:
       - internal
-    # Never expose 5432 to the public network in production.
-    # Use docker-compose.dev.yml to expose it locally.
-    healthcheck:
-      test:     ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fintrackr} -d ${POSTGRES_DB:-fintrackr}"]
-      interval: 10s
-      timeout:  5s
-      retries:  5
+      - public   # needs egress to download PaddleOCR models on first start
     labels:
-      com.fintrackr.service: postgres
+      com.fintrackr.service: ocr
 
   # ============================================================
   # CACHE & QUEUE â€” Valkey (Redis-compatible, open-source)
@@ -397,9 +394,7 @@ services:
       DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-fintrackr}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-fintrackr}?sslmode=disable
     networks:
       - internal
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - shared-db
     labels:
       com.fintrackr.service: postgres-exporter
 
@@ -456,9 +451,8 @@ services:
       ENABLE_OPEN_USER_REGISTRATION: "false"
     networks:
       - internal
+      - shared-db
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -501,9 +495,7 @@ services:
       DISABLE_REGISTRATION: "invite_only"
     networks:
       - internal
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - shared-db
     healthcheck:
       test:         ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/health"]
       interval:     30s
@@ -542,8 +534,6 @@ services:
 # VOLUMES
 # ============================================================
 volumes:
-  postgres-data:
-    driver: local
   redis-data:
     driver: local
   minio-data:
@@ -562,6 +552,8 @@ volumes:
     driver: local
   uptime-kuma-data:
     driver: local
+  paddle-models:
+    driver: local
 
 # ============================================================
 # NETWORKS
@@ -575,3 +567,8 @@ networks:
   internal:
     driver:   bridge
     internal: true
+
+  # shared-db: managed by postgres-shared compose — external to this project
+  shared-db:
+    external: true
+    name: shared-db

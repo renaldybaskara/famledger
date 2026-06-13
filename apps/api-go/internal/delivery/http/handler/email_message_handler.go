@@ -53,6 +53,10 @@ func (h *EmailMessageHandler) List(c *gin.Context) {
 			q.IntegrationID = &uid
 		}
 	}
+	if v := c.Query("aiUsed"); v != "" {
+		b := v == "true"
+		q.AIUsed = &b
+	}
 
 	msgs, total, err := h.msgRepo.ListByUser(c.Request.Context(), userID, q)
 	if err != nil {

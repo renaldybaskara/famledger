@@ -194,10 +194,11 @@ func (w *IMAPWorker) poll(ctx context.Context, integ entity.EmailIntegration) er
 		return fmt.Errorf("select INBOX: %w", err)
 	}
 
-	// Search for unseen messages since `since`.
+	// Search for all messages since `since` — do NOT filter by unread/seen.
+	// Bank notification emails may already be read by the user in their inbox.
+	// Deduplication is handled via message_id in the DB (knownIDs check below).
 	criteria := imap.NewSearchCriteria()
 	criteria.Since = since
-	criteria.WithoutFlags = []string{imap.SeenFlag}
 
 	uids, err := c.Search(criteria)
 	if err != nil {
@@ -209,9 +210,10 @@ func (w *IMAPWorker) poll(ctx context.Context, integ entity.EmailIntegration) er
 		return nil
 	}
 
-	// Cap to avoid flooding.
+	// Cap to avoid flooding — take the oldest imapFetchLimit messages first
+	// so earlier unprocessed emails are not perpetually skipped.
 	if len(uids) > imapFetchLimit {
-		uids = uids[len(uids)-imapFetchLimit:]
+		uids = uids[:imapFetchLimit]
 	}
 
 	seqSet := new(imap.SeqSet)

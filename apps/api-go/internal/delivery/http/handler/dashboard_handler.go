@@ -12,57 +12,95 @@ import (
 
 type DashboardHandler struct {
 	txUC domainuc.TransactionUseCase
+	wsUC domainuc.WorkspaceUseCase
 }
 
-func NewDashboardHandler(txUC domainuc.TransactionUseCase) *DashboardHandler {
-	return &DashboardHandler{txUC: txUC}
+func NewDashboardHandler(txUC domainuc.TransactionUseCase, wsUC domainuc.WorkspaceUseCase) *DashboardHandler {
+	return &DashboardHandler{txUC: txUC, wsUC: wsUC}
+}
+
+// resolveUserIDs collects all user IDs for the requested scope:
+//   - "includePersonal=true" (default) → include the requesting user
+//   - "workspaceIds[]=<id>" → include all members of each workspace (membership verified)
+//
+// Returns deduplicated []uuid.UUID ready for *ByUserIDs queries.
+func (h *DashboardHandler) resolveUserIDs(c *gin.Context, currentUserID uuid.UUID) []uuid.UUID {
+	// Axios serializes arrays as workspaceIds[]=id1 (with brackets) — handle both forms.
+	wsIDStrs := c.QueryArray("workspaceIds[]")
+	if len(wsIDStrs) == 0 {
+		wsIDStrs = c.QueryArray("workspaceIds")
+	}
+	includePersonal := c.DefaultQuery("includePersonal", "true") != "false"
+
+	seen := make(map[uuid.UUID]struct{})
+	var ids []uuid.UUID
+
+	add := func(id uuid.UUID) {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			ids = append(ids, id)
+		}
+	}
+
+	if includePersonal {
+		add(currentUserID)
+	}
+
+	for _, idStr := range wsIDStrs {
+		wsID, err := uuid.Parse(idStr)
+		if err != nil {
+			continue
+		}
+		memberIDs, err := h.wsUC.GetMemberUserIDsForScope(c.Request.Context(), wsID, currentUserID)
+		if err != nil {
+			continue // skip workspaces where user is not a member
+		}
+		for _, mid := range memberIDs {
+			add(mid)
+		}
+	}
+
+	// Fallback: always include at least the current user
+	if len(ids) == 0 {
+		ids = []uuid.UUID{currentUserID}
+	}
+	return ids
 }
 
 // GET /api/dashboard/summary
-// Query params: startDate, endDate (optional — defaults to current month)
-// Returns current period + previous period for comparison
+// Query params: startDate, endDate, workspaceIds[], includePersonal
 func (h *DashboardHandler) Summary(c *gin.Context) {
 	userID := c.MustGet("currentUserID").(uuid.UUID)
 	start, end := parseOrCurrentMonth(c.Query("startDate"), c.Query("endDate"))
+	userIDs := h.resolveUserIDs(c, userID)
 
-	// Current period
-	summary, err := h.txUC.GetSummary(c.Request.Context(), userID, start, end)
+	sum, err := h.txUC.GetSummaryByUserIDs(c.Request.Context(), userIDs, start, end)
 	if err != nil {
 		httputil.InternalError(c, err)
 		return
 	}
 
-	// Previous period (same duration, shifted back)
 	duration := end.Sub(start)
 	prevEnd := start.Add(-time.Nanosecond)
 	prevStart := prevEnd.Add(-duration)
-
-	prevSummary, err := h.txUC.GetSummary(c.Request.Context(), userID, prevStart, prevEnd)
+	prevSum, err := h.txUC.GetSummaryByUserIDs(c.Request.Context(), userIDs, prevStart, prevEnd)
 	if err != nil {
 		httputil.InternalError(c, err)
 		return
 	}
 
 	httputil.OK(c, gin.H{
-		// Current period
-		"totalIncome":      summary.Income,
-		"totalExpense":     summary.Expense,
-		"totalTransfer":    summary.Transfer,
-		"netBalance":       summary.Net,
-		"transactionCount": summary.TransactionCount,
-		// Previous period
+		"totalIncome": sum.Income, "totalExpense": sum.Expense,
+		"totalTransfer": sum.Transfer, "netBalance": sum.Net,
+		"transactionCount": sum.TransactionCount,
 		"previousPeriod": gin.H{
-			"totalIncome":      prevSummary.Income,
-			"totalExpense":     prevSummary.Expense,
-			"totalTransfer":    prevSummary.Transfer,
-			"netBalance":       prevSummary.Net,
-			"transactionCount": prevSummary.TransactionCount,
+			"totalIncome": prevSum.Income, "totalExpense": prevSum.Expense,
+			"totalTransfer": prevSum.Transfer, "netBalance": prevSum.Net,
+			"transactionCount": prevSum.TransactionCount,
 		},
-		// % change helpers (null-safe)
-		"incomeChange":     percentChange(prevSummary.Income, summary.Income),
-		"expenseChange":    percentChange(prevSummary.Expense, summary.Expense),
-		"netBalanceChange": percentChange(prevSummary.Net, summary.Net),
-		// Period info
+		"incomeChange":     percentChange(prevSum.Income, sum.Income),
+		"expenseChange":    percentChange(prevSum.Expense, sum.Expense),
+		"netBalanceChange": percentChange(prevSum.Net, sum.Net),
 		"period": gin.H{
 			"startDate": start.Format("2006-01-02"),
 			"endDate":   end.Format("2006-01-02"),
@@ -75,8 +113,9 @@ func (h *DashboardHandler) CategoryBreakdown(c *gin.Context) {
 	userID := c.MustGet("currentUserID").(uuid.UUID)
 	txType := c.DefaultQuery("type", "expense")
 	start, end := parseOrCurrentMonth(c.Query("startDate"), c.Query("endDate"))
+	userIDs := h.resolveUserIDs(c, userID)
 
-	rows, err := h.txUC.GetCategoryBreakdown(c.Request.Context(), userID, txType, start, end)
+	rows, err := h.txUC.GetCategoryBreakdownByUserIDs(c.Request.Context(), userIDs, txType, start, end)
 	if err != nil {
 		httputil.InternalError(c, err)
 		return
@@ -91,8 +130,9 @@ func (h *DashboardHandler) MonthlyTrend(c *gin.Context) {
 	if months < 1 || months > 24 {
 		months = 6
 	}
+	userIDs := h.resolveUserIDs(c, userID)
 
-	rows, err := h.txUC.GetMonthlyTrend(c.Request.Context(), userID, months)
+	rows, err := h.txUC.GetMonthlyTrendByUserIDs(c.Request.Context(), userIDs, months)
 	if err != nil {
 		httputil.InternalError(c, err)
 		return
@@ -128,12 +168,26 @@ func (h *DashboardHandler) MonthlyTrend(c *gin.Context) {
 	httputil.OK(c, result)
 }
 
-// parseOrCurrentMonth parses date strings or falls back to current month
+// wibLoc is Asia/Jakarta (UTC+7) — used for date-only string parsing so that
+// "2026-05-25" means midnight WIB, not midnight UTC.
+var wibLoc = func() *time.Location {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}()
+
+// parseOrCurrentMonth parses date strings or falls back to current month.
+// Date-only strings (YYYY-MM-DD) are interpreted in WIB (Asia/Jakarta) so that
+// a filter for "25 May" covers the full Indonesian day, including email-imported
+// transactions received in early-morning WIB hours that are stored near UTC midnight.
 func parseOrCurrentMonth(startStr, endStr string) (start, end time.Time) {
+	loc := wibLoc
 	now := time.Now()
 
 	if startStr != "" {
-		t, err := time.Parse("2006-01-02", startStr)
+		t, err := time.ParseInLocation("2006-01-02", startStr, loc)
 		if err == nil {
 			start = t
 		} else {
@@ -144,11 +198,11 @@ func parseOrCurrentMonth(startStr, endStr string) (start, end time.Time) {
 		}
 	}
 	if start.IsZero() {
-		start = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		start = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
 	}
 
 	if endStr != "" {
-		t, err := time.Parse("2006-01-02", endStr)
+		t, err := time.ParseInLocation("2006-01-02", endStr, loc)
 		if err == nil {
 			end = t.Add(24*time.Hour - time.Nanosecond)
 		} else {

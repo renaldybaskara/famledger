@@ -2,91 +2,101 @@ import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import { Transaction } from '../../src/lib/api'
 import { formatCurrency, formatDateShort } from '../../src/lib/format'
+import { resolveIcon } from '../../src/lib/iconMap'
+
+// ── Saku tokens ───────────────────────────────────────────────
+const C = {
+  surface:  '#FFFFFF',
+  income:   '#6B8E6B',
+  expense:  '#C97B5C',
+  transfer: '#6E97AE',
+  fg1:      '#2D2A26',
+  fg2:      '#55504A',
+  fg3:      '#8E887F',
+  fg4:      '#A8A39B',
+  divider:  '#ECE4D3',
+}
 
 interface TransactionItemProps {
   transaction: Transaction
   onPress?: () => void
   onLongPress?: () => void
   showDate?: boolean
+  memberName?: string
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  income: 'Pemasukan',
-  expense: 'Pengeluaran',
+  income:   'Pemasukan',
+  expense:  'Pengeluaran',
   transfer: 'Transfer',
 }
 
-// Map icon name to simple emoji/symbol for native fallback
-function CategoryDot({ color, icon }: { color: string; icon: string }) {
+function CategoryBubble({ color, icon }: { color: string; icon: string }) {
+  const bg = color ? color + '22' : '#6B8E6B22'
   return (
-    <View
-      className="w-10 h-10 rounded-xl items-center justify-center"
-      style={{ backgroundColor: color ? `${color}20` : '#1A2B4A20' }}
-    >
-      <Text style={{ fontSize: 18 }}>{icon || '💰'}</Text>
+    <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 20 }}>{icon || '💰'}</Text>
     </View>
   )
 }
 
-export function TransactionItem({
-  transaction,
-  onPress,
-  onLongPress,
-  showDate = true,
-}: TransactionItemProps) {
-  const isIncome = transaction.type === 'income'
+export function TransactionItem({ transaction, onPress, onLongPress, showDate = true, memberName }: TransactionItemProps) {
+  const isIncome   = transaction.type === 'income'
   const isTransfer = transaction.type === 'transfer'
-  const amountColor = isIncome
-    ? 'text-income'
-    : isTransfer
-    ? 'text-transfer'
-    : 'text-expense'
-  const amountPrefix = isIncome ? '+' : isTransfer ? '' : '-'
+  const amountColor = isIncome ? C.income : isTransfer ? C.transfer : C.expense
+  const amountPrefix = isIncome ? '+' : isTransfer ? '' : '−'
 
   return (
     <TouchableOpacity
       onPress={onPress}
       onLongPress={onLongPress}
-      activeOpacity={0.7}
-      className="flex-row items-center px-4 py-3 bg-white"
+      activeOpacity={0.85}
+      style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.surface }}
     >
-      {/* Category icon */}
-      <CategoryDot
-        color={transaction.category?.color ?? '#1A2B4A'}
-        icon={transaction.category?.icon ?? '💰'}
+      <CategoryBubble
+        color={transaction.category?.color ?? '#6B8E6B'}
+        icon={resolveIcon(transaction.category?.icon ?? '', '💰')}
       />
 
-      {/* Details */}
-      <View className="flex-1 ml-3 min-w-0">
-        <Text className="text-slate-800 font-medium text-sm" numberOfLines={1}>
+      <View style={{ flex: 1, marginLeft: 12, minWidth: 0 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }} numberOfLines={1}>
           {transaction.merchant || transaction.category?.name || TYPE_LABELS[transaction.type]}
         </Text>
-        <View className="flex-row items-center mt-0.5">
-          <Text className="text-slate-400 text-xs">
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 4 }}>
+          <Text style={{ fontSize: 12, fontWeight: '500', color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
             {transaction.category?.name ?? TYPE_LABELS[transaction.type]}
           </Text>
           {showDate && transaction.date && (
             <>
-              <Text className="text-slate-300 text-xs mx-1">·</Text>
-              <Text className="text-slate-400 text-xs">{formatDateShort(transaction.date)}</Text>
+              <Text style={{ fontSize: 12, color: C.fg4 }}>·</Text>
+              <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+                {formatDateShort(transaction.date)}
+              </Text>
             </>
           )}
         </View>
-        {transaction.note ? (
-          <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>
-            {transaction.note}
+        {(transaction as any).note ? (
+          <Text style={{ fontSize: 12, color: C.fg4, marginTop: 1, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>
+            {(transaction as any).note}
           </Text>
+        ) : null}
+        {memberName ? (
+          <View style={{ flexDirection: 'row', marginTop: 3 }}>
+            <View style={{ backgroundColor: '#DEE8D7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+              <Text style={{ fontSize: 11, color: '#41594F', fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+                {memberName}
+              </Text>
+            </View>
+          </View>
         ) : null}
       </View>
 
-      {/* Amount */}
-      <View className="ml-3 items-end">
-        <Text className={`font-bold text-sm font-mono ${amountColor}`}>
-          {amountPrefix}
-          {formatCurrency(transaction.amount)}
+      <View style={{ marginLeft: 12, alignItems: 'flex-end' }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: amountColor, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+          {amountPrefix}{formatCurrency(transaction.amount)}
         </Text>
         {transaction.account && (
-          <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>
+          <Text style={{ fontSize: 11, color: C.fg4, marginTop: 2, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>
             {transaction.account.name}
           </Text>
         )}
@@ -95,51 +105,30 @@ export function TransactionItem({
   )
 }
 
-interface TransactionGroupProps {
-  date: string
-  transactions: Transaction[]
-  onPressItem?: (t: Transaction) => void
-}
-
-export function TransactionGroup({ date, transactions, onPressItem }: TransactionGroupProps) {
-  const totalIncome = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((s, t) => s + t.amount, 0)
-  const totalExpense = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0)
+// TransactionGroup kept for potential reuse
+export function TransactionGroup({ date, transactions, onPressItem }: {
+  date: string; transactions: Transaction[]; onPressItem?: (t: Transaction) => void
+}) {
+  const totalIn  = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const totalOut = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   return (
-    <View className="mb-2">
-      {/* Date header */}
-      <View className="flex-row items-center justify-between px-4 py-2 bg-slate-50">
-        <Text className="text-slate-500 text-xs font-medium">{formatDateShort(date)}</Text>
-        <View className="flex-row gap-3">
-          {totalIncome > 0 && (
-            <Text className="text-income text-xs font-mono">
-              +{formatCurrency(totalIncome)}
-            </Text>
-          )}
-          {totalExpense > 0 && (
-            <Text className="text-expense text-xs font-mono">
-              -{formatCurrency(totalExpense)}
-            </Text>
-          )}
+    <View style={{ marginBottom: 4 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 20, paddingVertical: 8 }}>
+        <Text style={{ fontSize: 12, fontWeight: '800', color: C.fg3, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_800ExtraBold' }}>
+          {formatDateShort(date)}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {totalIn  > 0 && <Text style={{ fontSize: 12, fontWeight: '800', color: C.income,  fontFamily: 'Nunito_800ExtraBold' }}>+{fmt(totalIn)}</Text>}
+          {totalOut > 0 && <Text style={{ fontSize: 12, fontWeight: '800', color: C.expense, fontFamily: 'Nunito_800ExtraBold' }}>−{fmt(totalOut)}</Text>}
         </View>
       </View>
-
-      {/* Transactions */}
-      <View className="bg-white">
+      <View style={{ marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden' }}>
         {transactions.map((t, idx) => (
           <View key={t.id}>
-            <TransactionItem
-              transaction={t}
-              onPress={() => onPressItem?.(t)}
-              showDate={false}
-            />
-            {idx < transactions.length - 1 && (
-              <View className="h-px bg-slate-50 ml-17" />
-            )}
+            <TransactionItem transaction={t} showDate={false} onPress={() => onPressItem?.(t)} />
+            {idx < transactions.length - 1 && <View style={{ height: 1, backgroundColor: C.divider, marginLeft: 70 }} />}
           </View>
         ))}
       </View>

@@ -80,7 +80,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size={ss.indicator}
-          color={variant === 'primary' || variant === 'danger' ? 'white' : '#1A2B4A'}
+          color={variant === 'primary' || variant === 'danger' ? 'white' : '#2D2A26'}
         />
       ) : (
         <>

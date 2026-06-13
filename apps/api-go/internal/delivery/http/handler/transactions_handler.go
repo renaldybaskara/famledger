@@ -59,18 +59,27 @@ func (h *TransactionsHandler) FindAll(c *gin.Context) {
 	}
 
 	if s := c.Query("startDate"); s != "" {
-		t, err := time.Parse(time.RFC3339, s)
+		t, err := time.ParseInLocation("2006-01-02", s, wibLoc)
 		if err != nil {
-			t, _ = time.Parse("2006-01-02", s)
+			t, err = time.Parse(time.RFC3339, s)
 		}
-		q.StartDate = &t
+		if err == nil {
+			q.StartDate = &t
+		}
 	}
 	if s := c.Query("endDate"); s != "" {
-		t, err := time.Parse(time.RFC3339, s)
-		if err != nil {
-			t, _ = time.Parse("2006-01-02", s)
+		t, err := time.ParseInLocation("2006-01-02", s, wibLoc)
+		if err == nil {
+			t = t.Add(24*time.Hour - time.Nanosecond)
+		} else {
+			t, err = time.Parse(time.RFC3339, s)
+			if err != nil {
+				t = time.Time{}
+			}
 		}
-		q.EndDate = &t
+		if !t.IsZero() {
+			q.EndDate = &t
+		}
 	}
 	if s := c.Query("categoryId"); s != "" {
 		if id, err := uuid.Parse(s); err == nil {

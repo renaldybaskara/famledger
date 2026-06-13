@@ -1,0 +1,14 @@
+{
+  "name": "saku-design-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Saku Paper Design — serves UI mockups and exposes design tokens",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.23.8"
+  }
+}

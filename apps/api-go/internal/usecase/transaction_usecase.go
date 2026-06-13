@@ -146,3 +146,15 @@ func (uc *transactionUseCase) GetCategoryBreakdown(ctx context.Context, userID u
 func (uc *transactionUseCase) GetMonthlyTrend(ctx context.Context, userID uuid.UUID, months int) ([]domainrepo.MonthlyTrendRow, error) {
 	return uc.repo.GetMonthlyTrend(ctx, userID, months)
 }
+
+func (uc *transactionUseCase) GetSummaryByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) (*domainrepo.TransactionSummary, error) {
+	return uc.repo.GetSummaryByUserIDs(ctx, userIDs, start, end)
+}
+
+func (uc *transactionUseCase) GetCategoryBreakdownByUserIDs(ctx context.Context, userIDs []uuid.UUID, txType string, start, end time.Time) ([]domainrepo.CategoryBreakdownRow, error) {
+	return uc.repo.GetCategoryBreakdownByUserIDs(ctx, userIDs, txType, start, end)
+}
+
+func (uc *transactionUseCase) GetMonthlyTrendByUserIDs(ctx context.Context, userIDs []uuid.UUID, months int) ([]domainrepo.MonthlyTrendRow, error) {
+	return uc.repo.GetMonthlyTrendByUserIDs(ctx, userIDs, months)
+}

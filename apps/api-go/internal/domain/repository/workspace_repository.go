@@ -36,4 +36,9 @@ type WorkspaceRepository interface {
 	// Activity log
 	LogActivity(ctx context.Context, log *entity.WorkspaceActivityLog) error
 	ListActivity(ctx context.Context, workspaceID uuid.UUID, limit int) ([]entity.WorkspaceActivityLog, error)
+
+	// GetMemberUserIDs returns the user IDs of all members in a workspace.
+	// Used by workspace and dashboard handlers to collect IDs for multi-user queries
+	// without needing a subquery JOIN on the transactions table.
+	GetMemberUserIDs(ctx context.Context, workspaceID uuid.UUID) ([]uuid.UUID, error)
 }

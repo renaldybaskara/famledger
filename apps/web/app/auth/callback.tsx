@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator, Platform } from 'react-native'
 import { router } from 'expo-router'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
@@ -9,6 +9,11 @@ export default function AuthCallbackScreen() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // On Android/iOS the OAuth callback is handled in login.tsx via WebBrowser
+    if (Platform.OS !== 'web') {
+      router.replace('/(auth)/login' as any)
+      return
+    }
     if (typeof window === 'undefined') return
 
     const params = new URLSearchParams(window.location.search)

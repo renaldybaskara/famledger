@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/fintrackr/api/internal/delivery/http/handler"
 	"github.com/fintrackr/api/internal/delivery/http/middleware"
 	httpdelivery "github.com/fintrackr/api/internal/delivery/http"
 	"github.com/fintrackr/api/internal/infrastructure/config"
 	"github.com/fintrackr/api/internal/infrastructure/database"
-	emailsvc "github.com/fintrackr/api/internal/infrastructure/email"
+	aisvc      "github.com/fintrackr/api/internal/infrastructure/ai"
+	emailsvc   "github.com/fintrackr/api/internal/infrastructure/email"
+	ocrsvc     "github.com/fintrackr/api/internal/infrastructure/ocr"
+	paymentsvc "github.com/fintrackr/api/internal/infrastructure/payment"
 	"github.com/fintrackr/api/internal/infrastructure/tokenstore"
 	"github.com/fintrackr/api/internal/infrastructure/worker"
 	"github.com/fintrackr/api/internal/repository"
@@ -54,6 +58,7 @@ func main() {
 	// ── Repositories ────────────────────────────────────────
 	userRepo             := repository.NewUserRepository(db)
 	rtRepo               := repository.NewRefreshTokenRepository(db)
+	subscriptionRepo     := repository.NewSubscriptionRepository(db)
 	accountRepo          := repository.NewAccountRepository(db)
 	categoryRepo         := repository.NewCategoryRepository(db)
 	transactionRepo      := repository.NewTransactionRepository(db)
@@ -63,6 +68,28 @@ func main() {
 	settingRepo          := repository.NewSystemSettingRepository(db)
 	emailMsgRepo         := repository.NewEmailMessageRepository(db)
 	parserRuleRepo       := repository.NewBankParserRuleRepository(db)
+
+	// ── Payment Service (Midtrans — optional) ───────────────────────────────────
+	midtransService := paymentsvc.NewMidtransService(
+		cfg.MidtransServerKey, cfg.MidtransClientKey, cfg.MidtransIsProduction,
+	)
+	if midtransService.Enabled() {
+		log.Printf("✅ Midtrans enabled (production=%v)", cfg.MidtransIsProduction)
+	} else {
+		log.Println("ℹ️  Midtrans disabled — set MIDTRANS_SERVER_KEY to enable payments")
+	}
+
+	// ── AI Service (OpenRouter — optional, for ambiguous email parsing) ──────────
+	aiService := aisvc.New(cfg.OpenRouterAPIKey, cfg.OpenRouterModel)
+	if aiService.Enabled() {
+		log.Printf("✅ OpenRouter AI enabled (model: %s)", cfg.OpenRouterModel)
+	} else {
+		log.Println("ℹ️  OpenRouter AI disabled — set OPENROUTER_API_KEY to enable")
+	}
+
+	// ── OCR Service (PaddleOCR Python microservice) ──────────────────────────────
+	ocrClient := ocrsvc.NewClient(cfg.OCRServiceURL)
+	log.Printf("ℹ️  OCR service URL: %s", cfg.OCRServiceURL)
 
 	// ── Email Service (dynamic — reads SMTP config from DB, falls back to env) ──
 	emailService := emailsvc.NewDynamicSMTPService(settingRepo, cfg)
@@ -82,8 +109,13 @@ func main() {
 	categoryUC          := usecase.NewCategoryUseCase(categoryRepo)
 	transactionUC       := usecase.NewTransactionUseCase(transactionRepo)
 	budgetUC            := usecase.NewBudgetUseCase(budgetRepo)
-	workspaceUC         := usecase.NewWorkspaceUseCase(workspaceRepo, userRepo, emailService)
+	workspaceUC         := usecase.NewWorkspaceUseCase(workspaceRepo, userRepo, transactionRepo, emailService)
 	settingsUC          := usecase.NewSettingsUseCase(settingRepo, emailService, cfg)
+	subscriptionUC      := usecase.NewSubscriptionUseCase(subscriptionRepo, userRepo, midtransService, cfg.DisableTierLimits)
+	// Inject subscription UC so Register/GoogleLogin can start a 14-day trial.
+	if as, ok := authUC.(usecase.AuthWithSubscription); ok {
+		as.WithSubscriptionUC(subscriptionUC)
+	}
 	// Gmail integration uses a dedicated callback URL separate from auth login
 	gmailCallbackURL := cfg.GoogleGmailCallbackURL
 	if gmailCallbackURL == "" {
@@ -102,6 +134,7 @@ func main() {
 		accountRepo,
 		categoryRepo,
 		parserRuleRepo,
+		aiService,
 	)
 
 	// ── Token store (Redis) — secure OAuth token exchange, tokens never in URLs ──
@@ -124,12 +157,15 @@ func main() {
 	categoriesHandler       := handler.NewCategoriesHandler(categoryUC)
 	transactionsHandler     := handler.NewTransactionsHandler(transactionUC)
 	budgetsHandler          := handler.NewBudgetsHandler(budgetUC)
-	dashboardHandler        := handler.NewDashboardHandler(transactionUC)
+	dashboardHandler        := handler.NewDashboardHandler(transactionUC, workspaceUC)
 	workspaceHandler        := handler.NewWorkspaceHandler(workspaceUC)
 	settingsHandler         := handler.NewSettingsHandler(settingsUC)
 	emailIntegrationHandler := handler.NewEmailIntegrationHandler(emailIntegrationUC)
 	emailMessageHandler     := handler.NewEmailMessageHandler(emailMsgRepo, emailImportSvc)
 	bankParserRuleHandler   := handler.NewBankParserRuleHandler(parserRuleRepo)
+	paymentSlipUC           := usecase.NewPaymentSlipUseCase(ocrClient)
+	paymentSlipHandler      := handler.NewPaymentSlipHandler(paymentSlipUC)
+	subscriptionHandler     := handler.NewSubscriptionHandler(subscriptionUC)
 
 	// ── Gin Engine ───────────────────────────────────────────
 	r := gin.New()
@@ -152,9 +188,12 @@ func main() {
 		EmailIntegrationHandler: emailIntegrationHandler,
 		EmailMessageHandler:     emailMessageHandler,
 		BankParserRuleHandler:   bankParserRuleHandler,
+		PaymentSlipHandler:      paymentSlipHandler,
+		SubscriptionHandler:     subscriptionHandler,
 		JWTSecret:               cfg.JWTSecret,
 		AppURL:                  cfg.AppURL,
 		UserRepo:                userRepo,
+		SubscriptionUC:          subscriptionUC,
 	})
 
 	// ── Background Workers ───────────────────────────────────
@@ -166,9 +205,29 @@ func main() {
 
 	gmailWorker := worker.NewGmailWorker(
 		emailIntegrationRepo, emailMsgRepo, emailImportSvc,
-		cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleCallbackURL,
+		cfg.GoogleClientID, cfg.GoogleClientSecret, gmailCallbackURL,
 	)
 	go gmailWorker.Start(workerCtx)
+
+	// Purge expired refresh tokens once a day to prevent unbounded table growth.
+	// Revoked tokens are kept until their natural expiry so token-reuse detection still works.
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-workerCtx.Done():
+				return
+			case <-ticker.C:
+				n, err := rtRepo.DeleteExpired(workerCtx)
+				if err != nil {
+					log.Printf("⚠️  refresh token cleanup: %v", err)
+				} else if n > 0 {
+					log.Printf("🗑️  deleted %d expired refresh token(s)", n)
+				}
+			}
+		}
+	}()
 
 	log.Println("✅ Background email workers started")
 

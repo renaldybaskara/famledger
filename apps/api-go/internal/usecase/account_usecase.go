@@ -89,6 +89,9 @@ func (uc *accountUseCase) Update(ctx context.Context, userID, id uuid.UUID, in d
 	if in.IsDefault != nil {
 		data["is_default"] = *in.IsDefault
 	}
+	if in.Balance != nil {
+		data["balance"] = *in.Balance
+	}
 
 	return uc.repo.Update(ctx, userID, id, data)
 }

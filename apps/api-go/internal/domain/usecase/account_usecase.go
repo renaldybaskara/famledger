@@ -26,6 +26,7 @@ type UpdateAccountInput struct {
 	Color         *string
 	Icon          *string
 	IsDefault     *bool
+	Balance       *float64
 }
 
 type AccountUseCase interface {

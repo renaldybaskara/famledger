@@ -70,3 +70,10 @@ func (r *refreshTokenRepository) ReplaceToken(ctx context.Context, userID uuid.U
 		return tx.Create(newRT).Error
 	})
 }
+
+func (r *refreshTokenRepository) DeleteExpired(ctx context.Context) (int64, error) {
+	result := r.db.WithContext(ctx).
+		Where("expires_at < ?", time.Now()).
+		Delete(&entity.RefreshToken{})
+	return result.RowsAffected, result.Error
+}

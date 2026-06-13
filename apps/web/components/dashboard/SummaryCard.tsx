@@ -11,21 +11,21 @@ interface SummaryCardProps {
 
 const variantConfig = {
   income: {
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
-    titleColor: 'text-emerald-700',
-    amountColor: 'text-emerald-600',
-    dotColor: 'bg-emerald-500',
-    iconBg: 'bg-emerald-100',
+    bg: 'bg-primary-50',
+    border: 'border-primary-100',
+    titleColor: 'text-primary-700',
+    amountColor: 'text-primary-600',
+    dotColor: 'bg-primary-500',
+    iconBg: 'bg-primary-100',
     prefix: '+',
   },
   expense: {
-    bg: 'bg-red-50',
-    border: 'border-red-100',
-    titleColor: 'text-red-700',
-    amountColor: 'text-red-600',
-    dotColor: 'bg-red-500',
-    iconBg: 'bg-red-100',
+    bg: 'bg-accent-50',
+    border: 'border-accent-100',
+    titleColor: 'text-accent-700',
+    amountColor: 'text-accent-600',
+    dotColor: 'bg-accent',
+    iconBg: 'bg-accent-100',
     prefix: '-',
   },
   balance: {
@@ -57,7 +57,8 @@ export function SummaryCard({ title, amount, variant, subtitle }: SummaryCardPro
 
       {/* Amount */}
       <Text
-        className={`text-lg font-bold ${isNegative ? 'text-red-600' : cfg.amountColor} font-mono`}
+        className={`text-lg font-bold ${isNegative ? '' : cfg.amountColor} font-mono`}
+        style={isNegative ? { color: '#C66B6B' } : undefined}
         numberOfLines={1}
         adjustsFontSizeToFit
       >
@@ -68,7 +69,7 @@ export function SummaryCard({ title, amount, variant, subtitle }: SummaryCardPro
 
       {/* Subtitle */}
       {subtitle && (
-        <Text className="text-slate-400 text-xs mt-1">{subtitle}</Text>
+        <Text className="text-ink-400 text-xs mt-1">{subtitle}</Text>
       )}
     </View>
   )

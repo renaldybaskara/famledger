@@ -1,19 +1,11 @@
 import { useState, useCallback } from 'react'
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Modal,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-  Platform,
+  View, Text, ScrollView, TouchableOpacity,
+  RefreshControl, Modal, TextInput, ActivityIndicator,
+  Alert, Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
-import { Plus, X, Trash2, TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,380 +13,266 @@ import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useBudgets, useCreateBudget, useDeleteBudget } from '../../src/hooks/useBudgets'
 import { useCategories } from '../../src/hooks/useCategories'
 import { Budget, Category } from '../../src/lib/api'
-import { formatCurrency, formatCurrencyCompact, formatPercent } from '../../src/lib/format'
-import { Card } from '../../components/ui/Card'
+import { formatCurrencyCompact, formatPercent } from '../../src/lib/format'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
-import { EmptyState } from '../../components/ui/EmptyState'
 
-// Form schema
+// ── Saku tokens ───────────────────────────────────────────────
+const C = {
+  cream:        '#FAF7F2',
+  creamSunken:  '#F4EEE3',
+  surface:      '#FFFFFF',
+  primary:      '#6B8E6B',
+  primarySoft:  '#DEE8D7',
+  heroStart:    '#6B8E6B',
+  heroEnd:      '#41594F',
+  accent:       '#C97B5C',
+  mustard:      '#D9A441',
+  mustardSoft:  '#FBEFD2',
+  danger:       '#C66B6B',
+  dangerSoft:   '#F5D9D9',
+  fg1:          '#2D2A26',
+  fg2:          '#55504A',
+  fg3:          '#8E887F',
+  fg4:          '#A8A39B',
+  border:       '#E0DBD2',
+  divider:      '#ECE4D3',
+}
+
+// ── Budget form ───────────────────────────────────────────────
 const budgetSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter'),
-  amount: z
-    .string()
-    .min(1, 'Jumlah wajib diisi')
-    .refine(
-      (v) => !isNaN(Number(v)) && Number(v) > 0,
-      { message: 'Masukkan jumlah yang valid' }
-    ),
+  name:       z.string().min(2, 'Nama minimal 2 karakter'),
+  amount:     z.string().min(1, 'Jumlah wajib diisi')
+                .refine((v) => !isNaN(Number(v)) && Number(v) > 0, { message: 'Masukkan jumlah valid' }),
   categoryId: z.string().optional(),
-  period: z.enum(['monthly', 'weekly', 'yearly']),
+  period:     z.enum(['monthly', 'weekly', 'yearly']),
 })
 type BudgetFormData = z.infer<typeof budgetSchema>
 
 const PERIOD_OPTIONS = [
   { value: 'monthly', label: 'Bulanan' },
-  { value: 'weekly', label: 'Mingguan' },
-  { value: 'yearly', label: 'Tahunan' },
+  { value: 'weekly',  label: 'Mingguan' },
+  { value: 'yearly',  label: 'Tahunan'  },
 ] as const
 
 function getBudgetStatus(spent: number, total: number) {
   const pct = total > 0 ? (spent / total) * 100 : 0
-  if (pct > 100) return { color: '#EF4444', bg: 'bg-red-500', label: 'Melebihi', icon: 'over' }
-  if (pct >= 80) return { color: '#F59E0B', bg: 'bg-amber-400', label: 'Hampir habis', icon: 'warn' }
-  return { color: '#10B981', bg: 'bg-emerald-500', label: 'Aman', icon: 'ok' }
+  if (pct > 100) return { color: C.danger,   barColor: C.danger,   bg: C.dangerSoft,  label: 'Melebihi' }
+  if (pct >= 80) return { color: C.mustard,  barColor: C.mustard,  bg: C.mustardSoft, label: 'Hampir habis' }
+  return              { color: C.primary,   barColor: C.primary,  bg: C.primarySoft, label: 'Aman' }
 }
 
-interface BudgetCardProps {
-  budget: Budget
-  onDelete: () => void
-}
-
-function BudgetCard({ budget, onDelete }: BudgetCardProps) {
-  const spent = budget.spent ?? 0
-  const total = budget.amount
-  const pct = total > 0 ? Math.min((spent / total) * 100, 100) : 0
-  const overPct = total > 0 ? Math.max(((spent - total) / total) * 100, 0) : 0
-  const status = getBudgetStatus(spent, total)
+// ── Budget card ───────────────────────────────────────────────
+function BudgetCard({ budget, onDelete }: { budget: Budget; onDelete: () => void }) {
+  const spent     = budget.spent ?? 0
+  const total     = budget.amount
+  const pct       = total > 0 ? Math.min((spent / total) * 100, 100) : 0
   const remaining = total - spent
+  const status    = getBudgetStatus(spent, total)
 
   return (
-    <Card padding="md" className="mb-3">
+    <View style={{
+      backgroundColor: C.surface, borderRadius: 18, padding: 16, marginBottom: 12,
+      shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+    }}>
       {/* Header */}
-      <View className="flex-row items-start justify-between mb-3">
-        <View className="flex-1 mr-3">
-          <Text className="text-slate-800 font-bold text-base">{budget.name}</Text>
-          <View className="flex-row items-center mt-1 gap-2">
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        <View style={{ flex: 1, marginRight: 10 }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>{budget.name}</Text>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
             {budget.category && (
-              <View
-                className="flex-row items-center px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: `${budget.category.color}20` }}
-              >
-                <Text style={{ fontSize: 12 }}>{budget.category.icon}</Text>
-                <Text
-                  className="text-xs font-medium ml-1"
-                  style={{ color: budget.category.color }}
-                >
+              <View style={{
+                flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999,
+                backgroundColor: (budget.category.color ?? C.primary) + '22',
+              }}>
+                <Text style={{ fontSize: 11 }}>{budget.category.icon}</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: budget.category.color ?? C.primary, marginLeft: 4, fontFamily: 'Nunito_700Bold' }}>
                   {budget.category.name}
                 </Text>
               </View>
             )}
-            <View className="bg-slate-100 px-2 py-0.5 rounded-full">
-              <Text className="text-slate-500 text-xs">
+            <View style={{ backgroundColor: C.creamSunken, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: C.fg3, fontFamily: 'Nunito_600SemiBold' }}>
                 {PERIOD_OPTIONS.find((p) => p.value === budget.period)?.label ?? 'Bulanan'}
               </Text>
             </View>
           </View>
         </View>
-
-        <View className="flex-row items-center gap-2">
-          {/* Status badge */}
-          <View
-            className="flex-row items-center px-2 py-1 rounded-lg gap-1"
-            style={{
-              backgroundColor:
-                status.icon === 'over'
-                  ? '#FEE2E2'
-                  : status.icon === 'warn'
-                  ? '#FEF3C7'
-                  : '#D1FAE5',
-            }}
-          >
-            {status.icon === 'over' ? (
-              <AlertTriangle size={12} color={status.color} />
-            ) : status.icon === 'warn' ? (
-              <AlertTriangle size={12} color={status.color} />
-            ) : (
-              <CheckCircle size={12} color={status.color} />
-            )}
-            <Text className="text-xs font-medium" style={{ color: status.color }}>
-              {status.label}
-            </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: status.bg }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: status.color, fontFamily: 'Nunito_700Bold' }}>{status.label}</Text>
           </View>
-
           <TouchableOpacity
             onPress={onDelete}
-            className="w-8 h-8 bg-slate-100 rounded-lg items-center justify-center"
+            style={{ width: 32, height: 32, backgroundColor: C.creamSunken, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Trash2 size={14} color="#94a3b8" />
+            <Text style={{ fontSize: 14, color: C.danger }}>🗑</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Progress bar */}
-      <View className="mb-3">
-        <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
-          <View
-            className={`h-full rounded-full ${status.bg}`}
-            style={{ width: `${pct}%` }}
-          />
+      <View style={{ marginBottom: 12 }}>
+        <View style={{ height: 8, backgroundColor: C.creamSunken, borderRadius: 999, overflow: 'hidden' }}>
+          <View style={{ width: `${pct}%` as any, height: '100%', backgroundColor: status.barColor, borderRadius: 999 }} />
         </View>
         {spent > total && (
-          <Text className="text-red-500 text-xs mt-1">
-            Melebihi {formatPercent(overPct)} dari anggaran
+          <Text style={{ fontSize: 12, color: C.danger, marginTop: 4, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
+            Melebihi {formatPercent(((spent - total) / total) * 100)} dari anggaran
           </Text>
         )}
       </View>
 
-      {/* Amount details */}
-      <View className="flex-row justify-between items-center">
-        <View>
-          <Text className="text-slate-400 text-xs">Terpakai</Text>
-          <Text className="text-slate-800 font-bold font-mono text-sm">
-            {formatCurrencyCompact(spent)}
-          </Text>
-        </View>
-        <View className="items-center">
-          <Text className="text-slate-400 text-xs">Progress</Text>
-          <Text
-            className="font-bold text-sm font-mono"
-            style={{ color: status.color }}
-          >
-            {formatPercent((spent / total) * 100)}
-          </Text>
-        </View>
-        <View className="items-end">
-          <Text className="text-slate-400 text-xs">
-            {remaining >= 0 ? 'Sisa' : 'Lebih'}
-          </Text>
-          <Text
-            className={`font-bold font-mono text-sm ${
-              remaining >= 0 ? 'text-slate-800' : 'text-red-500'
-            }`}
-          >
-            {formatCurrencyCompact(Math.abs(remaining))}
-          </Text>
-        </View>
-        <View className="items-end">
-          <Text className="text-slate-400 text-xs">Anggaran</Text>
-          <Text className="text-slate-600 font-mono text-sm">
-            {formatCurrencyCompact(total)}
-          </Text>
-        </View>
+      {/* Stats row */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        {[
+          { label: 'Terpakai',  value: formatCurrencyCompact(spent),         color: C.fg1 },
+          { label: 'Progress',  value: formatPercent((spent / total) * 100),  color: status.color },
+          { label: remaining >= 0 ? 'Sisa' : 'Lebih', value: formatCurrencyCompact(Math.abs(remaining)), color: remaining >= 0 ? C.fg1 : C.danger },
+          { label: 'Anggaran',  value: formatCurrencyCompact(total),          color: C.fg3 },
+        ].map(({ label, value, color }) => (
+          <View key={label}>
+            <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>{label}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>{value}</Text>
+          </View>
+        ))}
       </View>
-    </Card>
+    </View>
   )
 }
 
-function AddBudgetModal({
-  visible,
-  onClose,
-}: {
-  visible: boolean
-  onClose: () => void
-}) {
+// ── Add Budget Modal ──────────────────────────────────────────
+function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { data: categories = [] } = useCategories()
-  const createMutation = useCreateBudget()
+  const createMutation            = useCreateBudget()
   const [serverError, setServerError] = useState('')
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<BudgetFormData>({
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<BudgetFormData>({
     resolver: zodResolver(budgetSchema),
-    defaultValues: {
-      name: '',
-      amount: '',
-      categoryId: '',
-      period: 'monthly',
-    },
+    defaultValues: { name: '', amount: '', categoryId: '', period: 'monthly' },
   })
 
-  const handleClose = () => {
-    reset()
-    setServerError('')
-    onClose()
-  }
+  const handleClose = () => { reset(); setServerError(''); onClose() }
 
   const onSubmit = (data: BudgetFormData) => {
     setServerError('')
     const now = new Date()
     createMutation.mutate(
-      {
-        name: data.name,
-        amount: parseFloat(data.amount),
-        categoryId: data.categoryId || undefined,
-        period: data.period,
-        startDate: format(startOfMonth(now), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
-      },
-      {
-        onSuccess: handleClose,
-        onError: (err: any) => {
-          setServerError(err.response?.data?.message || 'Gagal membuat anggaran')
-        },
-      }
+      { name: data.name, amount: parseFloat(data.amount), categoryId: data.categoryId || undefined, period: data.period, startDate: format(startOfMonth(now), 'yyyy-MM-dd'), endDate: format(endOfMonth(now), 'yyyy-MM-dd') },
+      { onSuccess: handleClose, onError: (err: any) => setServerError(err.response?.data?.message || 'Gagal membuat anggaran') }
     )
   }
 
-  const expenseCategories = categories.filter((c: Category) => c.type === 'expense')
+  const expenseCats = (categories as Category[]).filter((c) => c.type === 'expense')
 
   const content = (
-    <View className="bg-white rounded-t-3xl flex-1">
-      <View className="items-center pt-3 pb-1">
-        <View className="w-10 h-1 bg-slate-200 rounded-full" />
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
+      {/* Handle */}
+      <View style={{ alignItems: 'center', paddingTop: 12 }}>
+        <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
       </View>
 
-      <View className="flex-row items-center justify-between px-5 py-3 border-b border-slate-100">
-        <Text className="text-lg font-bold text-slate-800">Tambah Anggaran</Text>
-        <TouchableOpacity
-          onPress={handleClose}
-          className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center"
-        >
-          <X size={16} color="#64748b" />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderColor: C.divider }}>
+        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Tambah Anggaran</Text>
+        <TouchableOpacity onPress={handleClose} style={{ width: 32, height: 32, backgroundColor: C.creamSunken, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 18, color: C.fg2 }}>✕</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="py-4 gap-4">
+      <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+        <View style={{ padding: 20, gap: 16 }}>
           {serverError ? (
-            <View className="bg-red-50 border border-red-200 rounded-xl p-3">
-              <Text className="text-red-600 text-sm text-center">{serverError}</Text>
+            <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>{serverError}</Text>
             </View>
           ) : null}
 
           {/* Name */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Nama Anggaran</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Nama Anggaran</Text>
             <Controller
-              control={control}
-              name="name"
+              control={control} name="name"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  className={`bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 ${
-                    errors.name ? 'border-red-400' : 'border-slate-200'
-                  }`}
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.name ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}
                   placeholder="Contoh: Makan & Minum"
-                  placeholderTextColor="#94a3b8"
-                  value={value}
-                  onChangeText={onChange}
+                  placeholderTextColor={C.fg4}
+                  value={value} onChangeText={onChange}
                 />
               )}
             />
-            {errors.name && (
-              <Text className="text-red-500 text-xs mt-1">{errors.name.message}</Text>
-            )}
+            {errors.name && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4 }}>{errors.name.message}</Text>}
           </View>
 
           {/* Amount */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Batas Anggaran (Rp)</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Batas Anggaran (Rp)</Text>
             <Controller
-              control={control}
-              name="amount"
+              control={control} name="amount"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  className={`bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-lg font-mono ${
-                    errors.amount ? 'border-red-400' : 'border-slate-200'
-                  }`}
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.amount ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}
                   placeholder="0"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={C.fg4}
                   keyboardType="numeric"
-                  value={value}
-                  onChangeText={onChange}
+                  value={value} onChangeText={onChange}
                 />
               )}
             />
-            {errors.amount && (
-              <Text className="text-red-500 text-xs mt-1">{errors.amount.message}</Text>
-            )}
+            {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4 }}>{errors.amount.message}</Text>}
           </View>
 
           {/* Period */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">Periode</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Periode</Text>
             <Controller
-              control={control}
-              name="period"
+              control={control} name="period"
               render={({ field: { value, onChange } }) => (
-                <View className="flex-row gap-2">
-                  {PERIOD_OPTIONS.map((opt) => (
-                    <TouchableOpacity
-                      key={opt.value}
-                      onPress={() => onChange(opt.value)}
-                      className={`flex-1 py-2.5 rounded-xl items-center border-2 ${
-                        value === opt.value
-                          ? 'bg-primary border-primary'
-                          : 'border-slate-200 bg-slate-50'
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm font-semibold ${
-                          value === opt.value ? 'text-white' : 'text-slate-500'
-                        }`}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {PERIOD_OPTIONS.map((opt) => {
+                    const active = value === opt.value
+                    return (
+                      <TouchableOpacity
+                        key={opt.value} onPress={() => onChange(opt.value)}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border }}
                       >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{opt.label}</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
                 </View>
               )}
             />
           </View>
 
-          {/* Category (optional) */}
+          {/* Category */}
           <View>
-            <Text className="text-slate-600 text-sm font-medium mb-2">
-              Kategori <Text className="text-slate-400 font-normal">(opsional)</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>
+              Kategori <Text style={{ fontWeight: '500', color: C.fg3 }}>(opsional)</Text>
             </Text>
             <Controller
-              control={control}
-              name="categoryId"
+              control={control} name="categoryId"
               render={({ field: { value, onChange } }) => (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View className="flex-row gap-2">
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity
                       onPress={() => onChange('')}
-                      className={`px-3 py-2 rounded-xl border-2 ${
-                        !value
-                          ? 'bg-primary border-primary'
-                          : 'border-slate-200 bg-slate-50'
-                      }`}
+                      style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: !value ? C.primary : C.creamSunken, borderColor: !value ? C.primary : C.border }}
                     >
-                      <Text
-                        className={`text-sm font-medium ${
-                          !value ? 'text-white' : 'text-slate-600'
-                        }`}
-                      >
-                        Semua
-                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Semua</Text>
                     </TouchableOpacity>
-                    {expenseCategories.map((cat: Category) => (
-                      <TouchableOpacity
-                        key={cat.id}
-                        onPress={() => onChange(cat.id)}
-                        className={`flex-row items-center px-3 py-2 rounded-xl border-2 ${
-                          value === cat.id
-                            ? 'border-transparent'
-                            : 'border-slate-200 bg-slate-50'
-                        }`}
-                        style={
-                          value === cat.id
-                            ? { backgroundColor: cat.color, borderColor: cat.color }
-                            : {}
-                        }
-                      >
-                        <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
-                        <Text
-                          className={`ml-1.5 text-sm font-medium ${
-                            value === cat.id ? 'text-white' : 'text-slate-600'
-                          }`}
+                    {expenseCats.map((cat) => {
+                      const active = value === cat.id
+                      return (
+                        <TouchableOpacity
+                          key={cat.id} onPress={() => onChange(cat.id)}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
                         >
-                          {cat.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                        </TouchableOpacity>
+                      )
+                    })}
                   </View>
                 </ScrollView>
               )}
@@ -405,17 +283,13 @@ function AddBudgetModal({
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}
             disabled={createMutation.isPending}
-            className={`rounded-xl py-4 items-center ${
-              createMutation.isPending ? 'bg-primary/60' : 'bg-primary'
-            }`}
+            style={{ backgroundColor: createMutation.isPending ? C.primary + '99' : C.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 4 }}
           >
-            {createMutation.isPending ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text className="text-white font-semibold text-base">Simpan Anggaran</Text>
-            )}
+            {createMutation.isPending
+              ? <ActivityIndicator color="white" size="small" />
+              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>Simpan Anggaran</Text>}
           </TouchableOpacity>
-          <View className="h-8" />
+          <View style={{ height: 16 }} />
         </View>
       </ScrollView>
     </View>
@@ -424,49 +298,25 @@ function AddBudgetModal({
   if (Platform.OS === 'web') {
     if (!visible) return null
     return (
-      <View
-        style={{
-          position: 'fixed' as any,
-          inset: 0,
-          zIndex: 1000,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'flex-end',
-          display: 'flex',
-        }}
-      >
-        <TouchableOpacity
-          style={{ position: 'absolute' as any, inset: 0 }}
-          onPress={handleClose}
-          activeOpacity={1}
-        />
-        <View
-          style={{
-            backgroundColor: 'white',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            maxHeight: '85vh' as any,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {content}
-        </View>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
+        <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
+        <View style={{ maxHeight: '90%' }}>{content}</View>
       </View>
     )
   }
-
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View className="flex-1 justify-end bg-black/50">
-        <TouchableOpacity className="absolute inset-0" onPress={handleClose} activeOpacity={1} />
-        <View style={{ maxHeight: '85%' }}>{content}</View>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(45,42,38,0.45)' }}>
+        <TouchableOpacity style={{ position: 'absolute', inset: 0 } as any} onPress={handleClose} activeOpacity={1} />
+        <View style={{ maxHeight: '90%' }}>{content}</View>
       </View>
     </Modal>
   )
 }
 
+// ── Budget Screen ─────────────────────────────────────────────
 export default function BudgetScreen() {
-  const queryClient = useQueryClient()
+  const queryClient               = useQueryClient()
   const [addModalVisible, setAddModalVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const { data: budgets = [], isLoading } = useBudgets()
@@ -479,160 +329,115 @@ export default function BudgetScreen() {
   }, [queryClient])
 
   const handleDelete = (budget: Budget) => {
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Hapus anggaran "${budget.name}"?`)) {
-        deleteMutation.mutate(budget.id)
-      }
-    } else {
-      Alert.alert('Hapus Anggaran', `Yakin ingin menghapus anggaran "${budget.name}"?`, [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: () => deleteMutation.mutate(budget.id),
-        },
-      ])
-    }
+    Alert.alert('Hapus Anggaran', `Hapus "${budget.name}"?`, [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: () => deleteMutation.mutate(budget.id) },
+    ])
   }
 
-  // Summary stats
-  const totalBudget = budgets.reduce((s: number, b: Budget) => s + b.amount, 0)
-  const totalSpent = budgets.reduce((s: number, b: Budget) => s + (b.spent ?? 0), 0)
-  const overBudgetCount = budgets.filter(
-    (b: Budget) => (b.spent ?? 0) > b.amount
-  ).length
+  const totalBudget   = (budgets as Budget[]).reduce((s, b) => s + b.amount, 0)
+  const totalSpent    = (budgets as Budget[]).reduce((s, b) => s + (b.spent ?? 0), 0)
+  const overCount     = (budgets as Budget[]).filter((b) => (b.spent ?? 0) > b.amount).length
+  const overallPct    = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0
+  const overallStatus = totalSpent > totalBudget ? C.danger : totalSpent / totalBudget >= 0.8 ? C.mustard : C.primary
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
       {/* Header */}
-      <View className="bg-white px-4 pt-4 pb-4 border-b border-slate-100">
-        <View className="flex-row items-center justify-between">
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
-            <Text className="text-xl font-bold text-slate-800">Anggaran</Text>
-            <Text className="text-slate-400 text-xs mt-0.5">
-              {budgets.length} anggaran aktif
+            <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>Anggaran</Text>
+            <Text style={{ fontSize: 13, color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+              {(budgets as Budget[]).length} anggaran aktif
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => setAddModalVisible(true)}
-            className="flex-row items-center bg-primary px-3 py-2 rounded-xl gap-1.5"
+            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, gap: 6 }}
           >
-            <Plus size={16} color="white" />
-            <Text className="text-white font-semibold text-sm">Tambah</Text>
+            <Text style={{ color: '#fff', fontSize: 18, lineHeight: 20 }}>+</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, fontFamily: 'Nunito_800ExtraBold' }}>Tambah</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView
-        className="flex-1 px-4"
+        style={{ flex: 1, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#1A2B4A"
-            colors={['#1A2B4A']}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} colors={[C.primary]} />}
       >
-        <View className="pt-4 gap-3">
-          {/* Summary overview */}
-          {budgets.length > 0 && (
-            <Card padding="md" className="mb-1">
-              <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-3">
+        <View style={{ paddingTop: 4, paddingBottom: 100 }}>
+
+          {/* Summary card — sage→mustard gradient */}
+          {(budgets as Budget[]).length > 0 && (
+            <View style={{
+              borderRadius: 20, padding: 18, marginBottom: 16, overflow: 'hidden',
+              backgroundColor: C.heroStart,
+              ...({ background: `linear-gradient(135deg, ${C.heroStart} 0%, ${C.mustard} 100%)` } as any),
+            }}>
+              {/* Blob */}
+              <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, fontFamily: 'Nunito_800ExtraBold' }}>
                 Ringkasan Anggaran
               </Text>
-              <View className="flex-row justify-between">
-                <View>
-                  <Text className="text-slate-400 text-xs">Total Anggaran</Text>
-                  <Text className="text-primary font-bold font-mono text-base">
-                    {formatCurrencyCompact(totalBudget)}
-                  </Text>
-                </View>
-                <View className="items-center">
-                  <Text className="text-slate-400 text-xs">Terpakai</Text>
-                  <Text className="text-slate-800 font-bold font-mono text-base">
-                    {formatCurrencyCompact(totalSpent)}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text className="text-slate-400 text-xs">Melebihi</Text>
-                  <Text
-                    className={`font-bold text-base ${
-                      overBudgetCount > 0 ? 'text-red-500' : 'text-emerald-500'
-                    }`}
-                  >
-                    {overBudgetCount} kategori
-                  </Text>
-                </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+                {[
+                  { label: 'Total', value: formatCurrencyCompact(totalBudget) },
+                  { label: 'Terpakai', value: formatCurrencyCompact(totalSpent) },
+                  { label: 'Melebihi', value: `${overCount} kategori`, highlight: overCount > 0 },
+                ].map(({ label, value, highlight }) => (
+                  <View key={label}>
+                    <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>{label}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: highlight ? '#FFD4D4' : '#fff', fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+                      {value}
+                    </Text>
+                  </View>
+                ))}
               </View>
-
               {/* Overall progress */}
-              <View className="mt-3">
-                <View className="flex-row justify-between mb-1">
-                  <Text className="text-slate-400 text-xs">Total progress</Text>
-                  <Text className="text-slate-600 text-xs font-mono">
-                    {totalBudget > 0
-                      ? formatPercent((totalSpent / totalBudget) * 100)
-                      : '0%'}
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_600SemiBold' }}>Total progress</Text>
+                  <Text style={{ fontSize: 12, color: '#fff', fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+                    {formatPercent(overallPct)}
                   </Text>
                 </View>
-                <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <View
-                    className={`h-full rounded-full ${
-                      totalSpent > totalBudget
-                        ? 'bg-red-500'
-                        : totalSpent / totalBudget >= 0.8
-                        ? 'bg-amber-400'
-                        : 'bg-emerald-500'
-                    }`}
-                    style={{
-                      width: `${
-                        totalBudget > 0
-                          ? Math.min((totalSpent / totalBudget) * 100, 100)
-                          : 0
-                      }%`,
-                    }}
-                  />
+                <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 999, overflow: 'hidden' }}>
+                  <View style={{ width: `${overallPct}%` as any, height: '100%', backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 999 }} />
                 </View>
               </View>
-            </Card>
+            </View>
           )}
 
           {isLoading ? (
-            <LoadingSpinner fullScreen message="Memuat anggaran..." />
-          ) : budgets.length === 0 ? (
-            <EmptyState
-              title="Belum ada anggaran"
-              description="Buat anggaran untuk mengontrol pengeluaranmu setiap bulan."
-              action={
-                <TouchableOpacity
-                  onPress={() => setAddModalVisible(true)}
-                  className="flex-row items-center bg-primary px-5 py-3 rounded-xl gap-2"
-                >
-                  <Plus size={18} color="white" />
-                  <Text className="text-white font-semibold">Tambah Anggaran</Text>
-                </TouchableOpacity>
-              }
-            />
+            <View style={{ paddingVertical: 48, alignItems: 'center' }}>
+              <LoadingSpinner />
+            </View>
+          ) : (budgets as Budget[]).length === 0 ? (
+            <View style={{ paddingVertical: 48, alignItems: 'center' }}>
+              <Text style={{ fontSize: 52, marginBottom: 16 }}>🎯</Text>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg2, fontFamily: 'Nunito_900Black' }}>Belum ada anggaran</Text>
+              <Text style={{ fontSize: 14, color: C.fg3, marginTop: 6, textAlign: 'center', fontFamily: 'Nunito_500Medium', lineHeight: 20 }}>
+                Buat anggaran untuk kontrol{'\n'}pengeluaran bulan ini.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setAddModalVisible(true)}
+                style={{ marginTop: 20, backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              >
+                <Text style={{ color: '#fff', fontSize: 18 }}>+</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Tambah Anggaran</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            budgets.map((budget: Budget) => (
-              <BudgetCard
-                key={budget.id}
-                budget={budget}
-                onDelete={() => handleDelete(budget)}
-              />
+            (budgets as Budget[]).map((budget) => (
+              <BudgetCard key={budget.id} budget={budget} onDelete={() => handleDelete(budget)} />
             ))
           )}
-
-          <View className="h-6" />
         </View>
       </ScrollView>
 
-      <AddBudgetModal
-        visible={addModalVisible}
-        onClose={() => setAddModalVisible(false)}
-      />
+      <AddBudgetModal visible={addModalVisible} onClose={() => setAddModalVisible(false)} />
     </SafeAreaView>
   )
 }

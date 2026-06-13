@@ -57,6 +57,17 @@ func (r *emailIntegrationRepository) FindByUserIDAndEmail(ctx context.Context, u
 	return &e, nil
 }
 
+func (r *emailIntegrationRepository) FindAnyByUserIDAndEmail(ctx context.Context, userID uuid.UUID, email string) (*entity.EmailIntegration, error) {
+	var e entity.EmailIntegration
+	err := r.db.WithContext(ctx).Unscoped().
+		Where("user_id = ? AND email = ?", userID, email).
+		First(&e).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &e, err
+}
+
 func (r *emailIntegrationRepository) FindAllActive(ctx context.Context) ([]entity.EmailIntegration, error) {
 	var integrations []entity.EmailIntegration
 	err := r.db.WithContext(ctx).
@@ -68,6 +79,16 @@ func (r *emailIntegrationRepository) FindAllActive(ctx context.Context) ([]entit
 
 func (r *emailIntegrationRepository) Update(ctx context.Context, id uuid.UUID, data map[string]interface{}) (*entity.EmailIntegration, error) {
 	err := r.db.WithContext(ctx).Model(&entity.EmailIntegration{}).
+		Where("id = ?", id).
+		Updates(data).Error
+	if err != nil {
+		return nil, err
+	}
+	return r.FindByID(ctx, id)
+}
+
+func (r *emailIntegrationRepository) Restore(ctx context.Context, id uuid.UUID, data map[string]interface{}) (*entity.EmailIntegration, error) {
+	err := r.db.WithContext(ctx).Unscoped().Model(&entity.EmailIntegration{}).
 		Where("id = ?", id).
 		Updates(data).Error
 	if err != nil {

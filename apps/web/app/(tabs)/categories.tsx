@@ -4,9 +4,10 @@ import {
   ActivityIndicator, Modal,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Plus, Edit2, Trash2, X, Check } from 'lucide-react'
+import { router } from 'expo-router'
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../../src/hooks/useCategories'
 import type { Category, TransactionType } from '../../src/lib/api'
+import { resolveIcon } from '../../src/lib/iconMap'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const CATEGORY_ICONS = [
@@ -16,8 +17,8 @@ const CATEGORY_ICONS = [
 ]
 
 const COLORS = [
-  '#EF4444','#F97316','#EAB308','#22C55E','#14B8A6',
-  '#3B82F6','#8B5CF6','#EC4899','#64748B','#1A2B4A',
+  '#C97B5C', '#6B8E6B', '#D9A441', '#6E97AE',
+  '#C66B6B', '#7E4F94', '#41594F', '#A8624A',
 ]
 
 const TX_TYPES: { value: TransactionType; label: string }[] = [
@@ -37,7 +38,7 @@ function CategoryFormModal({
   const isEdit = !!category
   const [name, setName] = useState(category?.name ?? '')
   const [icon, setIcon] = useState(category?.icon ?? '💰')
-  const [color, setColor] = useState(category?.color ?? '#3B82F6')
+  const [color, setColor] = useState(category?.color ?? '#6B8E6B')
   const [type, setType] = useState<TransactionType>(
     (category?.type as TransactionType) ?? 'expense'
   )
@@ -69,17 +70,17 @@ function CategoryFormModal({
           <ScrollView keyboardShouldPersistTaps="handled">
             <View className="p-6">
               <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-xl font-bold text-slate-900">
+                <Text className="text-xl font-bold text-ink-900">
                   {isEdit ? 'Edit Kategori' : 'Tambah Kategori'}
                 </Text>
-                <TouchableOpacity onPress={onClose}>
-                  <X size={22} color="#94a3b8" />
+                <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={{ fontSize: 20, color: '#A8A39B', lineHeight: 24 }}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               {error ? (
-                <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                  <Text className="text-red-600 text-sm text-center">{error}</Text>
+                <View style={{ backgroundColor: 'rgba(198,107,107,0.1)', borderWidth: 1, borderColor: '#C66B6B', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+                  <Text style={{ color: '#C66B6B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
                 </View>
               ) : null}
 
@@ -89,26 +90,26 @@ function CategoryFormModal({
                   className="w-16 h-16 rounded-2xl items-center justify-center mb-2"
                   style={{ backgroundColor: color + '25' }}
                 >
-                  <Text style={{ fontSize: 28 }}>{icon}</Text>
+                  <Text style={{ fontSize: 28 }}>{resolveIcon(icon)}</Text>
                 </View>
-                <Text className="font-semibold text-slate-700">{name || 'Nama Kategori'}</Text>
+                <Text className="font-semibold text-ink-700">{name || 'Nama Kategori'}</Text>
               </View>
 
               {/* Type (only for new category) */}
               {!isEdit && (
                 <>
-                  <Text className="text-sm font-semibold text-slate-700 mb-2">Jenis Transaksi</Text>
+                  <Text className="text-sm font-semibold text-ink-700 mb-2">Jenis Transaksi</Text>
                   <View className="flex-row gap-2 mb-4">
                     {TX_TYPES.map((t) => (
                       <TouchableOpacity
                         key={t.value}
                         onPress={() => setType(t.value)}
                         className={`flex-1 py-2.5 rounded-xl items-center border ${
-                          type === t.value ? 'bg-primary border-primary' : 'bg-slate-50 border-slate-200'
+                          type === t.value ? 'bg-primary border-primary' : 'bg-canvas-200 border-border'
                         }`}
                       >
                         <Text className={`text-xs font-semibold ${
-                          type === t.value ? 'text-white' : 'text-slate-500'
+                          type === t.value ? 'text-white' : 'text-ink-500'
                         }`}>{t.label}</Text>
                       </TouchableOpacity>
                     ))}
@@ -117,33 +118,33 @@ function CategoryFormModal({
               )}
 
               {/* Name */}
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Nama Kategori</Text>
+              <Text className="text-sm font-semibold text-ink-700 mb-2">Nama Kategori</Text>
               <TextInput
-                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 mb-4"
+                className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-4"
                 placeholder="Contoh: Makan & Minum"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#A8A39B"
                 value={name}
                 onChangeText={setName}
               />
 
               {/* Icon picker */}
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Ikon</Text>
+              <Text className="text-sm font-semibold text-ink-700 mb-2">Ikon</Text>
               <View className="flex-row flex-wrap gap-2 mb-4">
                 {CATEGORY_ICONS.map((ic) => (
                   <TouchableOpacity
                     key={ic}
                     onPress={() => setIcon(ic)}
                     className={`w-11 h-11 rounded-xl items-center justify-center ${
-                      icon === ic ? 'bg-primary/10 border-2 border-primary' : 'bg-slate-50'
+                      icon === ic ? 'bg-primary/10 border-2 border-primary' : 'bg-canvas-200'
                     }`}
                   >
-                    <Text style={{ fontSize: 20 }}>{ic}</Text>
+                    <Text style={{ fontSize: 20 }}>{resolveIcon(ic)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {/* Color picker */}
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Warna</Text>
+              <Text className="text-sm font-semibold text-ink-700 mb-2">Warna</Text>
               <View className="flex-row gap-2 mb-6 flex-wrap">
                 {COLORS.map((c) => (
                   <TouchableOpacity
@@ -152,13 +153,12 @@ function CategoryFormModal({
                     style={{
                       backgroundColor: c, width: 36, height: 36, borderRadius: 18,
                       borderWidth: color === c ? 3 : 0, borderColor: 'white',
-                      shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4,
+                      shadowColor: '#2D2A26', shadowOpacity: 0.12, shadowRadius: 4,
+                      alignItems: 'center', justifyContent: 'center',
                     }}
                   >
                     {color === c && (
-                      <View className="flex-1 items-center justify-center">
-                        <Check size={14} color="white" />
-                      </View>
+                      <Text style={{ color: 'white', fontSize: 13, fontWeight: '700', lineHeight: 16 }}>✓</Text>
                     )}
                   </TouchableOpacity>
                 ))}
@@ -203,29 +203,38 @@ export default function CategoriesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-5">
+          {/* Back button */}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="flex-row items-center mb-4 self-start"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={{ fontSize: 22, color: '#6B8E6B', lineHeight: 26 }}>‹</Text>
+            <Text className="text-primary text-sm font-semibold ml-0.5">Kembali</Text>
+          </TouchableOpacity>
           <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-2xl font-bold text-slate-900">Kategori</Text>
+            <Text className="text-2xl font-bold text-ink-900">Kategori</Text>
             <TouchableOpacity
               onPress={() => setShowForm(true)}
               className="flex-row items-center bg-primary rounded-xl px-4 py-2.5"
             >
-              <Plus size={16} color="white" />
-              <Text className="text-white font-semibold text-sm ml-1.5">Tambah</Text>
+              <Text style={{ fontSize: 16, color: 'white', lineHeight: 20, marginRight: 4 }}>+</Text>
+              <Text className="text-white font-semibold text-sm">Tambah</Text>
             </TouchableOpacity>
           </View>
 
           {/* Filter tabs */}
-          <View className="flex-row bg-slate-100 rounded-xl p-1 mb-5">
+          <View className="flex-row bg-canvas-200 rounded-xl p-1 mb-5">
             {(['all', 'expense', 'income', 'transfer'] as const).map((f) => (
               <TouchableOpacity
                 key={f}
                 onPress={() => setFilter(f)}
                 className={`flex-1 py-2 rounded-lg items-center ${filter === f ? 'bg-white shadow-sm' : ''}`}
               >
-                <Text className={`text-xs font-semibold ${filter === f ? 'text-primary' : 'text-slate-400'}`}>
+                <Text className={`text-xs font-semibold ${filter === f ? 'text-primary' : 'text-ink-400'}`}>
                   {f === 'all' ? 'Semua' : f === 'expense' ? 'Keluar' : f === 'income' ? 'Masuk' : 'Transfer'}
                 </Text>
               </TouchableOpacity>
@@ -234,7 +243,7 @@ export default function CategoriesScreen() {
 
           {isLoading ? (
             <View className="py-10 items-center">
-              <ActivityIndicator color="#1A2B4A" />
+              <ActivityIndicator color="#6B8E6B" />
             </View>
           ) : (
             <>
@@ -244,7 +253,7 @@ export default function CategoriesScreen() {
                 const labels = { expense: 'Pengeluaran', income: 'Pemasukan', transfer: 'Transfer' }
                 return (
                   <View key={type} className="mb-5">
-                    <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 ml-1">
+                    <Text className="text-xs font-semibold text-ink-400 uppercase tracking-wide mb-2 ml-1">
                       {labels[type]}
                     </Text>
                     <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
@@ -255,28 +264,29 @@ export default function CategoriesScreen() {
                               className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                               style={{ backgroundColor: cat.color + '20' }}
                             >
-                              <Text style={{ fontSize: 20 }}>{cat.icon}</Text>
+                              <Text style={{ fontSize: 20 }}>{resolveIcon(cat.icon)}</Text>
                             </View>
                             <View className="flex-1">
-                              <Text className="text-slate-800 font-medium">{cat.name}</Text>
+                              <Text className="text-ink-800 font-medium">{cat.name}</Text>
                             </View>
                             <View className="flex-row gap-2">
                               <TouchableOpacity
                                 onPress={() => { setEditCat(cat); setShowForm(true) }}
-                                className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center"
+                                className="w-8 h-8 bg-primary/10 rounded-lg items-center justify-center"
                               >
-                                <Edit2 size={13} color="#3b82f6" />
+                                <Text style={{ fontSize: 13, color: '#6B8E6B' }}>✎</Text>
                               </TouchableOpacity>
                               <TouchableOpacity
                                 onPress={() => setConfirmDelete(cat)}
-                                className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center"
+                                className="w-8 h-8 rounded-lg items-center justify-center"
+                                style={{ backgroundColor: 'rgba(198,107,107,0.1)' }}
                               >
-                                <Trash2 size={13} color="#ef4444" />
+                                <Text style={{ fontSize: 13, color: '#C66B6B' }}>🗑</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
                           {idx < items.length - 1 && (
-                            <View className="h-px bg-slate-50 ml-16" />
+                            <View className="h-px bg-canvas-200 ml-16" />
                           )}
                         </View>
                       ))}
@@ -287,7 +297,7 @@ export default function CategoriesScreen() {
 
               {filtered.length === 0 && (
                 <View className="py-10 items-center">
-                  <Text className="text-slate-400">Tidak ada kategori</Text>
+                  <Text className="text-ink-400">Tidak ada kategori</Text>
                 </View>
               )}
             </>
@@ -303,21 +313,20 @@ export default function CategoriesScreen() {
         onClose={() => { setShowForm(false); setEditCat(null) }}
       />
 
-      {/* Delete confirm */}
       <Modal visible={!!confirmDelete} transparent animationType="fade" onRequestClose={() => setConfirmDelete(null)}>
         <View className="flex-1 bg-black/40 items-center justify-center px-6">
           <View className="bg-white rounded-2xl p-6 w-full">
-            <Text className="text-lg font-bold text-slate-900 mb-2">Hapus Kategori?</Text>
-            <Text className="text-slate-500 text-sm mb-6">
+            <Text className="text-lg font-bold text-ink-900 mb-2">Hapus Kategori?</Text>
+            <Text className="text-ink-500 text-sm mb-6">
               Kategori <Text className="font-semibold">{confirmDelete?.name}</Text> akan dihapus.
               Transaksi yang terkait tidak ikut terhapus.
             </Text>
             <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={() => setConfirmDelete(null)}
-                className="flex-1 py-3 rounded-xl border border-slate-200 items-center"
+                className="flex-1 py-3 rounded-xl border border-border items-center"
               >
-                <Text className="text-slate-600 font-medium">Batal</Text>
+                <Text className="text-ink-600 font-medium">Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={async () => {
@@ -327,7 +336,8 @@ export default function CategoriesScreen() {
                   }
                 }}
                 disabled={deleteMutation.isPending}
-                className="flex-1 py-3 rounded-xl bg-red-500 items-center"
+                className="flex-1 py-3 rounded-xl items-center"
+                style={{ backgroundColor: '#C66B6B' }}
               >
                 {deleteMutation.isPending
                   ? <ActivityIndicator color="white" size="small" />

@@ -1,18 +1,46 @@
 import { Tabs, Redirect } from 'expo-router'
-import { View, Platform } from 'react-native'
-import { Home, List, PieChart, Mail, Settings, Users } from 'lucide-react'
-// accounts and categories are accessible via Settings, not as tabs
+import { View, Text, Platform, TouchableOpacity } from 'react-native'
 import { useAuthStore } from '../../src/store/auth.store'
 
-function TabBarIcon({ Icon, color, focused }: { Icon: any; color: string; focused: boolean }) {
+// Saku colors
+const C = {
+  primary:  '#6B8E6B',
+  inactive: '#A8A39B',
+  bg:       '#FFFFFF',
+  border:   '#ECE4D3',
+  fabBg:    '#6B8E6B',
+}
+
+// Tab icons using emoji-style text or minimal unicode
+// (avoids dependency on icon lib for reliability)
+function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
   return (
-    <View
-      className={`items-center justify-center ${
-        focused ? 'bg-primary/10 rounded-xl' : ''
-      }`}
-      style={{ width: 40, height: 36 }}
-    >
-      <Icon size={22} color={color} strokeWidth={focused ? 2.5 : 1.8} />
+    <View style={{
+      alignItems: 'center', justifyContent: 'center',
+      width: 44, height: 32,
+      backgroundColor: focused ? 'rgba(107,142,107,0.12)' : 'transparent',
+      borderRadius: 12,
+    }}>
+      <Text style={{ fontSize: 20, lineHeight: 24 }}>{icon}</Text>
+    </View>
+  )
+}
+
+function FABIcon() {
+  return (
+    <View style={{
+      width: 52, height: 52,
+      borderRadius: 18,
+      backgroundColor: C.fabBg,
+      alignItems: 'center', justifyContent: 'center',
+      marginBottom: Platform.OS === 'ios' ? 12 : 4,
+      shadowColor: '#2D2A26',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 8,
+    }}>
+      <Text style={{ color: '#fff', fontSize: 28, lineHeight: 32, marginTop: -2 }}>+</Text>
     </View>
   )
 }
@@ -25,28 +53,29 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#1A2B4A',
-        tabBarInactiveTintColor: '#94a3b8',
+        tabBarActiveTintColor:   C.primary,
+        tabBarInactiveTintColor: C.inactive,
         tabBarStyle: {
-          backgroundColor: 'white',
+          backgroundColor: C.bg,
           borderTopWidth: 1,
-          borderTopColor: '#f1f5f9',
-          height: Platform.OS === 'ios' ? 85 : 68,
+          borderTopColor: C.border,
+          height: Platform.OS === 'ios' ? 88 : 68,
           paddingBottom: Platform.OS === 'ios' ? 28 : 10,
           paddingTop: 8,
           elevation: 0,
-          shadowColor: '#000',
+          shadowColor: '#2D2A26',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.06,
-          shadowRadius: 12,
+          shadowRadius: 16,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontFamily: 'Nunito_700Bold',
+          fontWeight: '700',
           marginTop: 2,
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: 2,
         },
       }}
     >
@@ -54,39 +83,31 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Beranda',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon Icon={Home} color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
           title: 'Transaksi',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon Icon={List} color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon icon="📋" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="budget"
         options={{
           title: 'Anggaran',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon Icon={PieChart} color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon icon="🎯" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Lainnya',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon Icon={Settings} color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
         }}
       />
-      {/* Hidden screens — accessible via router.push / Settings menu */}
+      {/* Hidden screens */}
       <Tabs.Screen name="email-integration" options={{ href: null }} />
       <Tabs.Screen name="workspace"         options={{ href: null }} />
       <Tabs.Screen name="accounts"          options={{ href: null }} />

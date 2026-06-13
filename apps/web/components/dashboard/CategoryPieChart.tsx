@@ -16,32 +16,28 @@ interface CategoryPieChartProps {
   title?: string
 }
 
-// Fallback colors if category color is not set
 const FALLBACK_COLORS = [
-  '#1A2B4A', '#10B981', '#EF4444', '#6366F1',
-  '#F59E0B', '#EC4899', '#14B8A6', '#8B5CF6',
+  '#C97B5C', '#6B8E6B', '#D9A441', '#6E97AE',
+  '#C66B6B', '#7E4F94', '#41594F', '#A8624A',
 ]
 
 export function CategoryPieChart({ data, title = 'Pengeluaran per Kategori' }: CategoryPieChartProps) {
   if (!data || data.length === 0) {
     return (
       <View className="items-center justify-center py-10">
-        <Text className="text-slate-400 text-sm">Tidak ada data</Text>
+        <Text className="text-ink-400 text-sm">Tidak ada data</Text>
       </View>
     )
   }
 
-  // On web, use Recharts
   if (Platform.OS === 'web') {
     return <WebPieChart data={data} title={title} />
   }
 
-  // Native fallback: horizontal bar list
   return <NativeCategoryList data={data} title={title} />
 }
 
 function WebPieChart({ data, title }: CategoryPieChartProps) {
-  // Dynamic import for web-only recharts
   const [RechartsComponents, setComponents] = React.useState<any>(null)
 
   React.useEffect(() => {
@@ -60,7 +56,7 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
   if (!RechartsComponents) {
     return (
       <View className="items-center justify-center h-48">
-        <Text className="text-slate-400 text-sm">Memuat grafik...</Text>
+        <Text className="text-ink-400 text-sm">Memuat grafik...</Text>
       </View>
     )
   }
@@ -81,19 +77,19 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
         <div
           style={{
             background: 'white',
-            border: '1px solid #e2e8f0',
+            border: '1px solid #E0DBD2',
             borderRadius: 12,
             padding: '8px 12px',
-            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 6px -1px rgba(45,42,38,0.08)',
           }}
         >
-          <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: 2 }}>
+          <div style={{ fontWeight: 600, color: '#2D2A26', marginBottom: 2 }}>
             {item.name}
           </div>
           <div style={{ color: item.payload.color, fontFamily: 'monospace', fontSize: 14 }}>
             {formatCurrencyCompact(item.value)}
           </div>
-          <div style={{ color: '#94a3b8', fontSize: 12 }}>
+          <div style={{ color: '#A8A39B', fontSize: 12 }}>
             {formatPercent(item.payload.percentage)}
           </div>
         </div>
@@ -146,7 +142,7 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
             iconType="circle"
             iconSize={8}
             formatter={(value: string) => (
-              <span style={{ color: '#475569', fontSize: 12 }}>{value}</span>
+              <span style={{ color: '#55504A', fontSize: 12 }}>{value}</span>
             )}
           />
         </PieChart>
@@ -164,9 +160,9 @@ function NativeCategoryList({ data, title }: CategoryPieChartProps) {
             className="w-3 h-3 rounded-full mr-3"
             style={{ backgroundColor: item.categoryColor || FALLBACK_COLORS[idx % FALLBACK_COLORS.length] }}
           />
-          <Text className="flex-1 text-slate-700 text-sm">{item.categoryName}</Text>
-          <Text className="text-slate-500 text-xs mr-2">{formatPercent(item.percentage)}</Text>
-          <Text className="text-slate-800 text-sm font-medium font-mono">
+          <Text className="flex-1 text-ink-700 text-sm">{item.categoryName}</Text>
+          <Text className="text-ink-500 text-xs mr-2">{formatPercent(item.percentage)}</Text>
+          <Text className="text-ink-800 text-sm font-medium font-mono">
             {formatCurrencyCompact(item.total)}
           </Text>
         </View>

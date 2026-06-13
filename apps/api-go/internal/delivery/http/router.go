@@ -4,6 +4,7 @@ import (
 	"github.com/fintrackr/api/internal/delivery/http/handler"
 	"github.com/fintrackr/api/internal/delivery/http/middleware"
 	"github.com/fintrackr/api/internal/domain/repository"
+	domainuc "github.com/fintrackr/api/internal/domain/usecase"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,10 +22,13 @@ type Dependencies struct {
 	EmailMessageHandler     *handler.EmailMessageHandler
 	SettingsHandler         *handler.SettingsHandler
 	BankParserRuleHandler   *handler.BankParserRuleHandler
+	PaymentSlipHandler      *handler.PaymentSlipHandler
+	SubscriptionHandler     *handler.SubscriptionHandler
 
-	JWTSecret  string
-	AppURL     string
-	UserRepo   repository.UserRepository
+	JWTSecret       string
+	AppURL          string
+	UserRepo        repository.UserRepository
+	SubscriptionUC  domainuc.SubscriptionUseCase
 }
 
 func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
@@ -146,17 +150,23 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		workspaces.DELETE("/:id/members/:userId", deps.WorkspaceHandler.RemoveMember)
 		workspaces.DELETE("/:id/leave", deps.WorkspaceHandler.Leave)
 
-		// Invites
+		// Static invite routes MUST be registered before /:id dynamic routes.
+		// Gin's httprouter resolves segments greedily — registering /:id/invites first
+		// causes POST /invites/accept to be captured as id="invites", returning 400.
+		workspaces.POST("/invites/accept", deps.WorkspaceHandler.AcceptInvite)
+		workspaces.POST("/invites/decline", deps.WorkspaceHandler.DeclineInvite)
+		workspaces.GET("/invites/pending", deps.WorkspaceHandler.GetMyPendingInvites)
+
+		// Dynamic invite routes (require workspace ID)
 		workspaces.POST("/:id/invites", deps.WorkspaceHandler.InviteMember)
 		workspaces.GET("/:id/invites", deps.WorkspaceHandler.ListInvites)
 		workspaces.DELETE("/:id/invites/:inviteId", deps.WorkspaceHandler.RevokeInvite)
 
-		// Accept/decline (token-based, still requires auth)
-		workspaces.POST("/invites/accept", deps.WorkspaceHandler.AcceptInvite)
-		workspaces.POST("/invites/decline", deps.WorkspaceHandler.DeclineInvite)
-
 		// Activity log
-		workspaces.GET("/:id/activity", deps.WorkspaceHandler.ListActivity)
+		workspaces.GET("/:id/activity",           deps.WorkspaceHandler.ListActivity)
+		workspaces.GET("/:id/transactions",       deps.WorkspaceHandler.GetWorkspaceTransactions)
+		workspaces.GET("/:id/summary",            deps.WorkspaceHandler.GetWorkspaceSummary)
+		workspaces.GET("/:id/category-breakdown", deps.WorkspaceHandler.GetWorkspaceCategoryBreakdown)
 	}
 
 	// Settings (all authenticated users can read; all can save for self-hosted mode)
@@ -175,12 +185,33 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		settings.DELETE("/parser-rules/:id", deps.BankParserRuleHandler.Delete)
 	}
 
+	// Subscription
+	subscription := protected.Group("/subscription")
+	{
+		subscription.GET("", deps.SubscriptionHandler.GetStatus)
+		subscription.POST("/checkout", deps.SubscriptionHandler.Checkout)
+		subscription.POST("/cancel", deps.SubscriptionHandler.Cancel)
+		subscription.GET("/history", deps.SubscriptionHandler.History)
+	}
+
+	// Midtrans webhook — public, no JWT
+	api.POST("/webhooks/midtrans", deps.SubscriptionHandler.MidtransWebhook)
+
 	// Email Integrations — public routes (no JWT)
 	// Must be registered on `api` group BEFORE protected group to avoid /:id matching
 	api.GET("/email-integrations/gmail/callback", deps.EmailIntegrationHandler.GmailCallback)
 
-	// Email Integrations — protected routes
+	// tierGate applied only when SubscriptionUC is wired (non-nil)
+	var tierGate gin.HandlerFunc
+	if deps.SubscriptionUC != nil {
+		tierGate = middleware.TierGate(deps.SubscriptionUC)
+	} else {
+		tierGate = func(c *gin.Context) { c.Next() }
+	}
+
+	// Email Integrations — protected routes (Pro feature)
 	emailIntegrations := protected.Group("/email-integrations")
+	emailIntegrations.Use(tierGate)
 	{
 		emailIntegrations.GET("", deps.EmailIntegrationHandler.List)
 		emailIntegrations.POST("/imap", deps.EmailIntegrationHandler.ConnectIMAP)
@@ -190,6 +221,12 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		emailIntegrations.DELETE("/:id", deps.EmailIntegrationHandler.Disconnect)
 		emailIntegrations.PATCH("/:id/toggle", deps.EmailIntegrationHandler.Toggle)
 		emailIntegrations.POST("/:id/sync", deps.EmailIntegrationHandler.Sync)
+	}
+
+	// Payment Slip OCR — stateless, image processed in-memory and discarded
+	paymentSlips := protected.Group("/payment-slips")
+	{
+		paymentSlips.POST("/scan", deps.PaymentSlipHandler.Scan)
 	}
 
 	// Email Messages (parsed email inbox)

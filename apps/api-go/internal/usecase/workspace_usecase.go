@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/fintrackr/api/internal/domain/entity"
@@ -25,11 +26,12 @@ var (
 type workspaceUseCase struct {
 	repo     domainrepo.WorkspaceRepository
 	userRepo domainrepo.UserRepository
+	txRepo   domainrepo.TransactionRepository
 	emailSvc emailsvc.EmailService
 }
 
-func NewWorkspaceUseCase(repo domainrepo.WorkspaceRepository, userRepo domainrepo.UserRepository, emailSvc emailsvc.EmailService) domainuc.WorkspaceUseCase {
-	return &workspaceUseCase{repo: repo, userRepo: userRepo, emailSvc: emailSvc}
+func NewWorkspaceUseCase(repo domainrepo.WorkspaceRepository, userRepo domainrepo.UserRepository, txRepo domainrepo.TransactionRepository, emailSvc emailsvc.EmailService) domainuc.WorkspaceUseCase {
+	return &workspaceUseCase{repo: repo, userRepo: userRepo, txRepo: txRepo, emailSvc: emailSvc}
 }
 
 func (uc *workspaceUseCase) Create(ctx context.Context, ownerID uuid.UUID, in domainuc.CreateWorkspaceInput) (*entity.Workspace, error) {
@@ -225,13 +227,15 @@ func (uc *workspaceUseCase) InviteMember(ctx context.Context, workspaceID, invit
 		}
 	}
 
-	// Check for pending invite
+	// Check for existing pending invite (may be expired but never cleaned up).
+	// If found: invalidate the old token and fall through to create a fresh invite.
+	// Accepted invites are unreachable here — the member check above already caught them.
 	existingInvite, err := uc.repo.FindInviteByEmail(ctx, workspaceID, in.Email)
 	if err != nil {
 		return nil, err
 	}
 	if existingInvite != nil {
-		return nil, ErrInviteAlreadySent
+		_ = uc.repo.UpdateInviteStatus(ctx, existingInvite.ID, entity.WorkspaceInviteExpired, nil)
 	}
 
 	token, err := generateSecureToken(32)
@@ -261,7 +265,9 @@ func (uc *workspaceUseCase) InviteMember(ctx context.Context, workspaceID, invit
 	}
 
 	go func() {
-		_ = uc.emailSvc.SendWorkspaceInviteEmail(in.Email, inviterName, ws.Name, token)
+		if err := uc.emailSvc.SendWorkspaceInviteEmail(in.Email, inviterName, ws.Name, token); err != nil {
+			log.Printf("[Workspace] invite email failed to %s: %v", in.Email, err)
+		}
 	}()
 
 	uc.logActivity(ctx, workspaceID, inviterID, "invite.sent", "workspace_invite", &invite.ID, nil)
@@ -347,6 +353,10 @@ func (uc *workspaceUseCase) ListActivity(ctx context.Context, workspaceID, userI
 	return uc.repo.ListActivity(ctx, workspaceID, limit)
 }
 
+func (uc *workspaceUseCase) GetMyPendingInvites(ctx context.Context, userEmail string) ([]entity.WorkspaceInvite, error) {
+	return uc.repo.FindPendingInvitesByEmail(ctx, userEmail)
+}
+
 // --- helpers ---
 
 func (uc *workspaceUseCase) requireMembership(ctx context.Context, workspaceID, userID uuid.UUID) (*entity.WorkspaceMember, error) {
@@ -393,4 +403,76 @@ func (uc *workspaceUseCase) logActivity(ctx context.Context, workspaceID, userID
 		}
 		_ = uc.repo.LogActivity(ctx, log)
 	}()
+}
+
+// --- Shared finance data (two-query, no subquery JOIN) ---
+
+func (uc *workspaceUseCase) GetMemberUserIDsForScope(ctx context.Context, workspaceID, requestingUserID uuid.UUID) ([]uuid.UUID, error) {
+	if _, err := uc.requireMembership(ctx, workspaceID, requestingUserID); err != nil {
+		return nil, err
+	}
+	return uc.repo.GetMemberUserIDs(ctx, workspaceID)
+}
+
+func (uc *workspaceUseCase) GetWorkspaceTransactions(ctx context.Context, workspaceID, requestingUserID uuid.UUID, q domainrepo.ListTransactionsQuery) ([]domainuc.WorkspaceTxRow, int64, error) {
+	members, err := uc.repo.ListMembers(ctx, workspaceID)
+	if err != nil {
+		return nil, 0, err
+	}
+	isMember := false
+	nameByID := make(map[uuid.UUID]string, len(members))
+	for _, m := range members {
+		nameByID[m.UserID] = ""
+		if m.UserID == requestingUserID {
+			isMember = true
+		}
+	}
+	if !isMember {
+		return nil, 0, ErrNotWorkspaceMember
+	}
+
+	// Enrich member names via user repo
+	for uid := range nameByID {
+		if u, err := uc.userRepo.FindByID(ctx, uid); err == nil && u != nil {
+			nameByID[uid] = u.Name
+		}
+	}
+
+	// Query 1: member IDs (already have from members slice above)
+	userIDs := make([]uuid.UUID, 0, len(members))
+	for _, m := range members {
+		userIDs = append(userIDs, m.UserID)
+	}
+
+	// Query 2: transactions WHERE user_id IN (literal IDs)
+	txs, total, err := uc.txRepo.FindAllByUserIDs(ctx, userIDs, q)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows := make([]domainuc.WorkspaceTxRow, len(txs))
+	for i, tx := range txs {
+		rows[i] = domainuc.WorkspaceTxRow{
+			Transaction: tx,
+			MemberName:  nameByID[tx.UserID],
+			MemberID:    tx.UserID,
+		}
+	}
+	return rows, total, nil
+}
+
+func (uc *workspaceUseCase) GetWorkspaceSummary(ctx context.Context, workspaceID, requestingUserID uuid.UUID, start, end time.Time) (*domainrepo.TransactionSummary, error) {
+	userIDs, err := uc.GetMemberUserIDsForScope(ctx, workspaceID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+	return uc.txRepo.GetSummaryByUserIDs(ctx, userIDs, start, end)
+}
+
+func (uc *workspaceUseCase) GetWorkspaceCategoryBreakdown(ctx context.Context, workspaceID, requestingUserID uuid.UUID, txType string, start, end time.Time) ([]domainrepo.CategoryBreakdownRow, error) {
+	userIDs, err := uc.GetMemberUserIDsForScope(ctx, workspaceID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+	return uc.txRepo.GetCategoryBreakdownByUserIDs(ctx, userIDs, txType, start, end)
 }

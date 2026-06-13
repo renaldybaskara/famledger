@@ -29,7 +29,8 @@ var (
 type authUseCase struct {
 	userRepo            domainrepo.UserRepository
 	rtRepo              domainrepo.RefreshTokenRepository
-	workspaceRepo       domainrepo.WorkspaceRepository // optional — for auto-join on register
+	workspaceRepo       domainrepo.WorkspaceRepository  // optional — for auto-join on register
+	subscriptionUC      domainuc.SubscriptionUseCase    // optional — for 14-day trial creation
 	emailSvc            emailsvc.EmailService
 	jwtSecret           string
 	jwtRefreshSecret    string
@@ -66,6 +67,18 @@ type AuthWithWorkspace interface {
 // WithWorkspaceRepo injects the workspace repo so auth can auto-join invites on register.
 func (uc *authUseCase) WithWorkspaceRepo(repo domainrepo.WorkspaceRepository) {
 	uc.workspaceRepo = repo
+}
+
+// AuthWithSubscription is an optional interface implemented by authUseCase.
+// It allows main.go to inject subscriptionUC after both usecases are constructed.
+type AuthWithSubscription interface {
+	domainuc.AuthUseCase
+	WithSubscriptionUC(uc domainuc.SubscriptionUseCase)
+}
+
+// WithSubscriptionUC injects the subscription usecase so Register/GoogleLogin can start a trial.
+func (uc *authUseCase) WithSubscriptionUC(sub domainuc.SubscriptionUseCase) {
+	uc.subscriptionUC = sub
 }
 
 func (uc *authUseCase) Register(ctx context.Context, in domainuc.RegisterInput) (*domainuc.AuthOutput, error) {
@@ -111,6 +124,11 @@ func (uc *authUseCase) Register(ctx context.Context, in domainuc.RegisterInput) 
 	// Auto-join any pending workspace invites for this email address (non-blocking).
 	if uc.workspaceRepo != nil {
 		go uc.autoJoinWorkspaces(context.Background(), user)
+	}
+
+	// Start 14-day Pro trial for new users (non-blocking).
+	if uc.subscriptionUC != nil {
+		go func() { _ = uc.subscriptionUC.CreateTrial(context.Background(), user.ID) }()
 	}
 
 	return uc.buildAuthOutput(ctx, user)
@@ -210,6 +228,14 @@ func (uc *authUseCase) GoogleLogin(ctx context.Context, googleUser domainuc.Goog
 		}
 		if err := uc.userRepo.Create(ctx, user); err != nil {
 			return nil, err
+		}
+		// New user — auto-join any pending workspace invites sent before registration.
+		if uc.workspaceRepo != nil {
+			go uc.autoJoinWorkspaces(context.Background(), user)
+		}
+		// Start 14-day Pro trial (non-blocking).
+		if uc.subscriptionUC != nil {
+			go func() { _ = uc.subscriptionUC.CreateTrial(context.Background(), user.ID) }()
 		}
 	} else if user.GoogleID == nil {
 		// Link Google to existing account

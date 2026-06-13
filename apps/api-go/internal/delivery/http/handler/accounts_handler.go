@@ -29,13 +29,14 @@ type createAccountRequest struct {
 }
 
 type updateAccountRequest struct {
-	Name          *string `json:"name"`
-	Type          *string `json:"type"`
-	BankCode      *string `json:"bankCode"`
-	AccountNumber *string `json:"accountNumber"`
-	Color         *string `json:"color"`
-	Icon          *string `json:"icon"`
-	IsDefault     *bool   `json:"isDefault"`
+	Name          *string  `json:"name"`
+	Type          *string  `json:"type"`
+	BankCode      *string  `json:"bankCode"`
+	AccountNumber *string  `json:"accountNumber"`
+	Color         *string  `json:"color"`
+	Icon          *string  `json:"icon"`
+	IsDefault     *bool    `json:"isDefault"`
+	Balance       *float64 `json:"balance"`
 }
 
 // GET /api/accounts
@@ -99,6 +100,7 @@ func (h *AccountsHandler) Update(c *gin.Context) {
 		Color:         req.Color,
 		Icon:          req.Icon,
 		IsDefault:     req.IsDefault,
+		Balance:       req.Balance,
 	})
 	if err != nil {
 		if err.Error() == "account not found" {

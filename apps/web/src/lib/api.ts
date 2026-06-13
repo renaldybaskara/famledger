@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { router } from 'expo-router'
 import { useAuthStore } from '../store/auth.store'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api'
@@ -38,9 +39,7 @@ api.interceptors.response.use(
 
       // Clear session and redirect to login
       logout()
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
-      }
+      router.replace('/(auth)/login' as any)
       return Promise.reject(error)
     }
     return Promise.reject(error)
@@ -137,7 +136,7 @@ export const transactionsApi = {
 }
 
 export const dashboardApi = {
-  summary: (params?: { startDate?: string; endDate?: string }) =>
+  summary: (params?: { startDate?: string; endDate?: string; workspaceIds?: string[]; includePersonal?: boolean }) =>
     api.get<{
       totalIncome: number
       totalExpense: number
@@ -148,6 +147,8 @@ export const dashboardApi = {
     startDate?: string
     endDate?: string
     type?: string
+    workspaceIds?: string[]
+    includePersonal?: boolean
   }) =>
     api.get<
       Array<{
@@ -191,6 +192,106 @@ export const budgetsApi = {
   update: (id: string, data: Partial<Budget>) =>
     api.patch<Budget>(`/budgets/${id}`, data),
   delete: (id: string) => api.delete(`/budgets/${id}`),
+}
+
+export interface SmtpConfig {
+  host: string
+  port: string
+  user: string
+  from: string
+  enabled: boolean
+}
+
+export interface BankParserRule {
+  id: number
+  name: string
+  fromPatterns: string
+  subjectPatterns: string
+  expenseKeywords: string
+  incomeKeywords: string
+  bodyConfirmKeywords: string
+  amountRegex: string
+  defaultType: 'expense' | 'income'
+  priority: number
+  isActive: boolean
+  isGlobal: boolean
+  note: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const settingsApi = {
+  getSmtp: () =>
+    api.get<SmtpConfig>('/settings/smtp'),
+  saveSmtp: (d: { host: string; port: string; user: string; pass?: string; from: string; enabled: boolean }) =>
+    api.put('/settings/smtp', d),
+  testSmtp: (email: string) =>
+    api.post('/settings/smtp/test', { email }),
+  listParserRules: () =>
+    api.get<BankParserRule[]>('/settings/parser-rules'),
+  createParserRule: (d: Partial<BankParserRule>) =>
+    api.post<BankParserRule>('/settings/parser-rules', d),
+  updateParserRule: (id: number, d: Partial<BankParserRule>) =>
+    api.patch<BankParserRule>(`/settings/parser-rules/${id}`, d),
+  toggleParserRule: (id: number) =>
+    api.patch<BankParserRule>(`/settings/parser-rules/${id}/toggle`),
+  deleteParserRule: (id: number) =>
+    api.delete(`/settings/parser-rules/${id}`),
+}
+
+export interface ParsedSlip {
+  amount: number
+  merchant: string
+  date: string | null
+  bank: string
+  type: 'expense' | 'income' | ''
+  accountNumber: string
+  rawText: string
+  confidence: number
+}
+
+export const paymentSlipsApi = {
+  scan: (formData: FormData) =>
+    api.post<ParsedSlip>('/payment-slips/scan', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60_000,
+    }),
+}
+
+// ── Subscription ─────────────────────────────────────────────
+export interface UserSubscription {
+  id: string
+  userId: string
+  plan: 'free' | 'pro'
+  period: 'monthly' | 'annual' | ''
+  status: 'free' | 'trialing' | 'active' | 'past_due' | 'canceled'
+  trialEndsAt?: string
+  currentPeriodStart?: string
+  currentPeriodEnd?: string
+  canceledAt?: string
+  gracePeriodEndsAt?: string
+}
+
+export interface PaymentOrder {
+  id: string
+  midtransOrderId: string
+  plan: string
+  period: string
+  amount: number
+  status: string
+  paidAt?: string
+  createdAt: string
+}
+
+export const subscriptionApi = {
+  getStatus: () =>
+    api.get<UserSubscription>('/subscription'),
+  checkout: (data: { plan: 'pro'; period: 'monthly' | 'annual' }) =>
+    api.post<{ snapToken: string; midtransOrderId: string; amount: number; redirectUrl?: string }>('/subscription/checkout', data),
+  cancel: () =>
+    api.post('/subscription/cancel'),
+  getHistory: () =>
+    api.get<PaymentOrder[]>('/subscription/history'),
 }
 
 export const accountsApi = {

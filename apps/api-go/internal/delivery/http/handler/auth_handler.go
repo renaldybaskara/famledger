@@ -174,7 +174,12 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 		httputil.BadRequest(c, "Google OAuth not configured")
 		return
 	}
-	authURL := h.oauth2Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	// ?mobile=1 → encode in state so callback can redirect to deep link
+	state := "state"
+	if c.Query("mobile") == "1" {
+		state = "mobile"
+	}
+	authURL := h.oauth2Config.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	c.Redirect(http.StatusTemporaryRedirect, authURL)
 }
 
@@ -229,6 +234,8 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
+	isMobile := c.Query("state") == "mobile"
+
 	// Store tokens in Redis, redirect only with a short one-time code.
 	// Tokens never appear in the URL, browser history, or server logs.
 	if h.tokenStore != nil {
@@ -241,10 +248,20 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 			c.Redirect(http.StatusTemporaryRedirect, "/?error=server_error")
 			return
 		}
+		if isMobile {
+			// Deep link for Android/iOS — fintrackr://auth/callback?code=...
+			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("fintrackr://auth/callback?code=%s", code))
+			return
+		}
 		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/auth/callback?code=%s", code))
 		return
 	}
 	// Fallback if Redis not available — use fragment (tokens not sent to server)
+	if isMobile {
+		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("fintrackr://#t=%s&r=%s",
+			out.AccessToken, out.RefreshToken))
+		return
+	}
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/#t=%s&r=%s",
 		out.AccessToken, out.RefreshToken))
 }
