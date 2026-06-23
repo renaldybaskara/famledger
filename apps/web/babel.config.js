@@ -1,19 +1,12 @@
 module.exports = function (api) {
   api.cache(true);
-  // hermes-v0 profile is only needed when running a local Android release build on Windows
-  // (Windows ships a debug hermesc that can't compile ES6 classes). EAS Build on Linux
-  // uses a proper release hermesc so no profile override is needed.
-  const isEASBuild = !!process.env.EAS_BUILD_ID;
-  const transformProfile = isEASBuild ? undefined : 'hermes-v0';
+  // hermesc bundled with react-native 0.76.9 (both Windows and Linux) does not support
+  // private class fields (#x, #y …) in AOT compilation. Force hermes-v0 profile so
+  // babel-preset-expo compiles those to ES5-compatible WeakMap-backed fields everywhere.
+  // On web, isModernEngine=true so this option is ignored; web builds are unaffected.
   return {
     presets: [
-      [
-        'babel-preset-expo',
-        {
-          jsxImportSource: 'nativewind',
-          ...(transformProfile ? { unstable_transformProfile: transformProfile } : {}),
-        },
-      ],
+      ['babel-preset-expo', { jsxImportSource: 'nativewind', unstable_transformProfile: 'hermes-v0' }],
       'nativewind/babel',
     ],
   };
