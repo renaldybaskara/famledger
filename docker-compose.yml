@@ -51,6 +51,10 @@ x-api-env: &api-env
   OLLAMA_MODEL:          ${OLLAMA_MODEL:-llama3.2:3b}
   OPENROUTER_API_KEY:    ${OPENROUTER_API_KEY:-}
   OPENROUTER_MODEL:      ${OPENROUTER_MODEL:-google/gemini-2.0-flash-exp:free}
+  MIDTRANS_SERVER_KEY:   ${MIDTRANS_SERVER_KEY:-}
+  MIDTRANS_CLIENT_KEY:   ${MIDTRANS_CLIENT_KEY:-}
+  MIDTRANS_MERCHANT_ID:  ${MIDTRANS_MERCHANT_ID:-}
+  MIDTRANS_IS_PRODUCTION: ${MIDTRANS_IS_PRODUCTION:-false}
   OCR_SERVICE_URL:       ${OCR_SERVICE_URL:-http://ocr:5000}
   SMTP_HOST:             ${SMTP_HOST:-}
   SMTP_PORT:             ${SMTP_PORT:-587}
@@ -109,7 +113,7 @@ services:
       context:    apps/web
       dockerfile: Dockerfile
       args:
-        EXPO_PUBLIC_API_URL: ${API_URL:-http://localhost/api}
+        EXPO_PUBLIC_API_URL: ${API_URL:-/api}
     image: fintrackr-web:${IMAGE_TAG:-latest}
     <<: *restart-policy
     networks:
@@ -132,6 +136,10 @@ services:
       dockerfile: Dockerfile
     image: fintrackr-api:${IMAGE_TAG:-latest}
     <<: *restart-policy
+    dns:
+      - 172.29.0.254
+    extra_hosts:
+      - "redis:172.29.0.50"
     environment:
       <<: *api-env
     networks:
@@ -139,6 +147,8 @@ services:
       - public
       - shared-db
     depends_on:
+      cloudflared:
+        condition: service_started
       redis:
         condition: service_healthy
       minio:
@@ -155,10 +165,25 @@ services:
       com.fintrackr.service: api
 
   # ============================================================
-  # WORKER â€” (Go API is monolithic; background workers TBD)
-  # Disabled â€” uncomment when async job processing is needed
+  # DNS-over-HTTPS PROXY — cloudflared
+  # Resolves external names via HTTPS (port 443) because Docker
+  # Desktop for Windows/WSL2 blocks UDP/TCP port 53 egress.
   # ============================================================
-  # worker: (removed â€” Go API handles requests synchronously)
+  cloudflared:
+    image: adguard/dnsproxy:latest
+    command: -l 0.0.0.0 -p 53 -u https://1.1.1.1/dns-query -u https://8.8.8.8/dns-query
+    <<: *restart-policy
+    networks:
+      internal:
+        ipv4_address: 172.29.0.254
+    labels:
+      com.fintrackr.service: cloudflared
+
+  # ============================================================
+  # WORKER — (Go API is monolithic; background workers TBD)
+  # Disabled — uncomment when async job processing is needed
+  # ============================================================
+  # worker: (removed — Go API handles requests synchronously)
 
 
   # ============================================================
@@ -198,7 +223,8 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - internal
+      internal:
+        ipv4_address: 172.29.0.50
     healthcheck:
       test:     ["CMD", "valkey-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
       interval: 10s
@@ -563,10 +589,12 @@ networks:
   public:
     driver: bridge
 
-  # internal: fully isolated â€” no direct host access
+  # internal: service-to-service network (Caddy is the real security perimeter)
   internal:
-    driver:   bridge
-    internal: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
 
   # shared-db: managed by postgres-shared compose — external to this project
   shared-db:

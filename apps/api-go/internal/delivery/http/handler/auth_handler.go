@@ -25,16 +25,10 @@ import (
 type AuthHandler struct {
 	uc           domainuc.AuthUseCase
 	oauth2Config *oauth2.Config
-	tokenStore   tokenStore
+	tokenStore   *tokenstore.Store
 }
 
-// tokenStore is the minimal interface needed from tokenstore.Store.
-type tokenStore interface {
-	Save(ctx context.Context, pair tokenstore.TokenPair) (string, error)
-	Exchange(ctx context.Context, code string) (*tokenstore.TokenPair, error)
-}
-
-func NewAuthHandler(uc domainuc.AuthUseCase, clientID, clientSecret, callbackURL string, ts tokenStore) *AuthHandler {
+func NewAuthHandler(uc domainuc.AuthUseCase, clientID, clientSecret, callbackURL string, ts *tokenstore.Store) *AuthHandler {
 	var oauthCfg *oauth2.Config
 	if clientID != "" {
 		oauthCfg = &oauth2.Config{
@@ -249,7 +243,6 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 			return
 		}
 		if isMobile {
-			// Deep link for Android/iOS — fintrackr://auth/callback?code=...
 			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("fintrackr://auth/callback?code=%s", code))
 			return
 		}
@@ -258,11 +251,11 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	}
 	// Fallback if Redis not available — use fragment (tokens not sent to server)
 	if isMobile {
-		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("fintrackr://#t=%s&r=%s",
+		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("fintrackr://#access_token=%s&refresh_token=%s",
 			out.AccessToken, out.RefreshToken))
 		return
 	}
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/#t=%s&r=%s",
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/#access_token=%s&refresh_token=%s",
 		out.AccessToken, out.RefreshToken))
 }
 

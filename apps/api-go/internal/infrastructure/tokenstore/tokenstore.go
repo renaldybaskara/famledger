@@ -29,19 +29,13 @@ type Store struct {
 }
 
 // New creates a Store connected to the given Redis URL.
+// Connection is established lazily on first use.
 func New(redisURL string) (*Store, error) {
 	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
 		return nil, fmt.Errorf("tokenstore: parse redis URL: %w", err)
 	}
-	rdb := redis.NewClient(opts)
-	// Ping to verify connectivity
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("tokenstore: redis ping: %w", err)
-	}
-	return &Store{rdb: rdb}, nil
+	return &Store{rdb: redis.NewClient(opts)}, nil
 }
 
 // Save stores the token pair and returns a random one-time code.
