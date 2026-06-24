@@ -336,6 +336,14 @@ var categoryKeywords = []struct {
 	keyword  string
 	category string
 }{
+	// ── Income ───────────────────────────────────────────────────────────────
+	{"gaji", "gaji"}, {"salary", "gaji"}, {"payroll", "gaji"},
+	{"thr", "bonus"}, {"bonus", "bonus"}, {"insentif", "bonus"},
+	{"freelance", "freelance"}, {"honorarium", "freelance"},
+	{"dividen", "investasi"}, {"bunga deposito", "investasi"},
+	// ── Transfer ─────────────────────────────────────────────────────────────
+	{"tabungan", "tabungan"},
+	{"top up", "transfer"}, {"topup", "transfer"},
 	// ── Makanan & Minuman ────────────────────────────────────────────────────
 	{"warung makan", "makanan"}, {"rumah makan", "makanan"},
 	{"restoran", "makanan"}, {"restaurant", "makanan"},
@@ -465,11 +473,6 @@ func (s *EmailImportService) matchCategory(
 	userID uuid.UUID,
 	parsed *emailparser.ParsedTransaction,
 ) (*uuid.UUID, error) {
-	// Only attempt for expense transactions — income/transfer stay uncategorised.
-	if parsed.Type != "expense" {
-		return nil, nil
-	}
-
 	categories, err := s.categoryRepo.FindAllForUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -516,6 +519,26 @@ func (s *EmailImportService) matchCategory(
 		if strings.Contains(target, strings.ToLower(cat.Name)) {
 			id := cat.ID
 			return &id, nil
+		}
+	}
+
+	// Step 5: NLP fallback — ask AI for a category when all keyword steps fail
+	if s.aiSvc != nil && s.aiSvc.Enabled() && target != "" {
+		aiCat, err := s.aiSvc.CategorizeTransaction(ctx, parsed.Merchant, parsed.Description, parsed.Type)
+		if err != nil {
+			log.Printf("[AI-Cat] categorize error: %v", err)
+		} else if aiCat != "" {
+			log.Printf("[AI-Cat] merchant=%q type=%q → category=%q", parsed.Merchant, parsed.Type, aiCat)
+			fragment := aiCat
+			if normalised, found := aiCategoryAliases[fragment]; found {
+				fragment = normalised
+			}
+			for _, cat := range categories {
+				if strings.Contains(strings.ToLower(cat.Name), fragment) {
+					id := cat.ID
+					return &id, nil
+				}
+			}
 		}
 	}
 

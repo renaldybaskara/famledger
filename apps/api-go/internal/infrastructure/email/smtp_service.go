@@ -95,14 +95,14 @@ func (s *smtpService) SendVerificationEmail(to, name, token string) error {
 	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", s.appURL, token)
 	body := emailTemplate("Verifikasi Email Kamu", fmt.Sprintf(`
 		<p>Halo <strong>%s</strong>,</p>
-		<p>Terima kasih sudah mendaftar di Saku! Klik tombol di bawah untuk memverifikasi email kamu.</p>
+		<p>Terima kasih sudah mendaftar di FamLedger! Klik tombol di bawah untuk memverifikasi email kamu.</p>
 		<p style="text-align:center; margin: 32px 0;">
 			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Verifikasi Email</a>
 		</p>
 		<p>Link berlaku selama <strong>24 jam</strong>. Jika kamu tidak mendaftar, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
 	`, name, verifyURL, verifyURL, verifyURL))
-	return s.send(to, "Verifikasi Email Saku", body)
+	return s.send(to, "Verifikasi Email FamLedger", body)
 }
 
 func (s *smtpService) SendPasswordResetEmail(to, name, token string) error {
@@ -116,7 +116,7 @@ func (s *smtpService) SendPasswordResetEmail(to, name, token string) error {
 		<p>Link berlaku selama <strong>1 jam</strong>. Jika kamu tidak meminta reset password, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
 	`, name, resetURL, resetURL, resetURL))
-	return s.send(to, "Reset Password Saku", body)
+	return s.send(to, "Reset Password FamLedger", body)
 }
 
 func (s *smtpService) SendWelcomeEmail(to, name string) error {
@@ -134,20 +134,20 @@ func (s *smtpService) SendWelcomeEmail(to, name string) error {
 			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Buka FinTrackr</a>
 		</p>
 	`, name, s.appURL))
-	return s.send(to, "Selamat Datang di Saku! 🌿", body)
+	return s.send(to, "Selamat Datang di FamLedger! 🌿", body)
 }
 
 func (s *smtpService) SendWorkspaceInviteEmail(to, inviterName, workspaceName, token string) error {
 	acceptURL := fmt.Sprintf("%s/workspace/accept-invite?token=%s", s.appURL, token)
 	body := emailTemplate("Undangan Workspace", fmt.Sprintf(`
 		<p>Halo,</p>
-		<p><strong>%s</strong> mengundang kamu untuk bergabung ke workspace <strong>%s</strong> di Saku.</p>
+		<p><strong>%s</strong> mengundang kamu untuk bergabung ke workspace <strong>%s</strong> di FamLedger.</p>
 		<p style="text-align:center; margin: 32px 0;">
 			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Terima Undangan</a>
 		</p>
 		<p>Link berlaku selama <strong>7 hari</strong>. Jika kamu tidak mengenal pengirim, abaikan email ini.</p>
 	`, inviterName, workspaceName, acceptURL))
-	return s.send(to, fmt.Sprintf("Undangan Workspace %s - Saku 🌿", workspaceName), body)
+	return s.send(to, fmt.Sprintf("Undangan Workspace %s - FamLedger 🌿", workspaceName), body)
 }
 
 func emailTemplate(title, content string) string {
@@ -163,7 +163,7 @@ func emailTemplate(title, content string) string {
       <div style="position:relative;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:24px;">🌿</span>
-          <span style="color:#ffffff;font-size:22px;font-weight:900;letter-spacing:-0.5px;">Saku.</span>
+          <span style="color:#ffffff;font-size:22px;font-weight:900;letter-spacing:-0.5px;">FamLedger.</span>
         </div>
         <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:13px;font-weight:600;letter-spacing:0.3px;">%s</p>
       </div>
@@ -174,7 +174,7 @@ func emailTemplate(title, content string) string {
     </div>
     <!-- Footer -->
     <div style="padding:16px 32px;background:#F4EEE3;text-align:center;font-size:12px;color:#8E887F;border-top:1px solid #ECE4D3;">
-      Saku · Self-Hosted Family Finance Tracker 🌿<br>
+      FamLedger · Self-Hosted Family Finance Tracker 🌿<br>
       Email ini dikirim otomatis, jangan dibalas.
     </div>
   </div>

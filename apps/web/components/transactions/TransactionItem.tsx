@@ -6,10 +6,13 @@ import { resolveIcon } from '../../src/lib/iconMap'
 
 // ── Saku tokens ───────────────────────────────────────────────
 const C = {
-  surface:  '#FFFFFF',
-  income:   '#6B8E6B',
-  expense:  '#C97B5C',
-  transfer: '#6E97AE',
+  surface:       '#FFFFFF',
+  incomeBg:      '#F0FAF4',
+  expenseBg:     '#FDF2EE',
+  transferBg:    '#F3F7FA',
+  income:        '#3D7A56',
+  expense:       '#D4704A',
+  transfer:      '#6E97AE',
   fg1:      '#2D2A26',
   fg2:      '#55504A',
   fg3:      '#8E887F',
@@ -51,7 +54,7 @@ export function TransactionItem({ transaction, onPress, onLongPress, showDate = 
       onPress={onPress}
       onLongPress={onLongPress}
       activeOpacity={0.85}
-      style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.surface }}
+      style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: isIncome ? C.incomeBg : isTransfer ? C.transferBg : C.expenseBg }}
     >
       <CategoryBubble
         color={transaction.category?.color ?? '#6B8E6B'}

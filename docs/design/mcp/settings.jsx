@@ -1,0 +1,1 @@
+﻿Weekly MCP limit reached. It resets in 2 days. Upgrade to Paper Pro to continue. You can upgrade in Paper or visit https://paper.design/pricing. If you just upgraded and still see this, try closing and reopening Paper.

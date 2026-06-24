@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, Modal, ActivityIndicator, Platform,
+  ScrollView, Modal, ActivityIndicator, Platform, Image,
 } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -101,24 +102,15 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
     setScanError('')
     setServerError('')
     if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl)
+      if (Platform.OS === 'web') URL.revokeObjectURL(imagePreviewUrl)
       setImagePreviewUrl(null)
     }
     onClose()
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Show local preview immediately (no server round-trip needed)
-    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
-    setImagePreviewUrl(URL.createObjectURL(file))
+  const uploadSlip = async (fd: FormData) => {
     setScanError('')
     setStep('loading')
-
-    const fd = new FormData()
-    fd.append('file', file, file.name)
 
     try {
       const { data } = await paymentSlipsApi.scan(fd)
@@ -138,9 +130,54 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
       )
       setStep('pick')
     }
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Show local preview immediately (no server round-trip needed)
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
+    setImagePreviewUrl(URL.createObjectURL(file))
+
+    const fd = new FormData()
+    fd.append('file', file, file.name)
+    await uploadSlip(fd)
 
     // Reset file input so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const pickNativeImage = async (source: 'camera' | 'gallery') => {
+    const permission = source === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+    if (!permission.granted) {
+      setScanError(
+        source === 'camera'
+          ? 'Izin kamera ditolak. Aktifkan di Settings untuk memfoto slip.'
+          : 'Izin galeri ditolak. Aktifkan di Settings untuk memilih foto.'
+      )
+      return
+    }
+
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 })
+
+    if (result.canceled || !result.assets?.[0]) return
+
+    const asset = result.assets[0]
+    setImagePreviewUrl(asset.uri)
+
+    const filename = asset.fileName || asset.uri.split('/').pop() || 'slip.jpg'
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const mimeType = asset.mimeType || (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg')
+
+    const fd = new FormData()
+    fd.append('file', { uri: asset.uri, name: filename, type: mimeType } as any)
+    await uploadSlip(fd)
   }
 
   const onSubmit = (data: SlipFormData) => {
@@ -182,32 +219,68 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
         </View>
       ) : null}
 
-      <TouchableOpacity
-        onPress={() => fileInputRef.current?.click()}
-        style={{
-          width: '100%', paddingVertical: 40, borderRadius: 18,
-          borderWidth: 2, borderStyle: 'dashed' as any, borderColor: C.border,
-          backgroundColor: C.creamSunken, alignItems: 'center', gap: 10,
-        }}
-      >
-        <Text style={{ fontSize: 40 }}>📷</Text>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
-          Pilih Foto Slip
-        </Text>
-        <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
-          JPEG, PNG, atau WebP — maks 10 MB
-        </Text>
-      </TouchableOpacity>
+      {Platform.OS === 'web' ? (
+        <>
+          <TouchableOpacity
+            onPress={() => fileInputRef.current?.click()}
+            style={{
+              width: '100%', paddingVertical: 40, borderRadius: 18,
+              borderWidth: 2, borderStyle: 'dashed' as any, borderColor: C.border,
+              backgroundColor: C.creamSunken, alignItems: 'center', gap: 10,
+            }}
+          >
+            <Text style={{ fontSize: 40 }}>📷</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+              Pilih Foto Slip
+            </Text>
+            <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+              JPEG, PNG, atau WebP — maks 10 MB
+            </Text>
+          </TouchableOpacity>
 
-      {/* Hidden native file input — web only */}
-      {typeof window !== 'undefined' && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+          {/* Hidden native file input — web only */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+        </>
+      ) : (
+        <View style={{ width: '100%', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => pickNativeImage('camera')}
+            style={{
+              width: '100%', paddingVertical: 28, borderRadius: 18,
+              borderWidth: 2, borderStyle: 'dashed' as any, borderColor: C.border,
+              backgroundColor: C.creamSunken, alignItems: 'center', gap: 8,
+            }}
+          >
+            <Text style={{ fontSize: 36 }}>📷</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+              Ambil Foto
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => pickNativeImage('gallery')}
+            style={{
+              width: '100%', paddingVertical: 28, borderRadius: 18,
+              borderWidth: 2, borderStyle: 'dashed' as any, borderColor: C.border,
+              backgroundColor: C.creamSunken, alignItems: 'center', gap: 8,
+            }}
+          >
+            <Text style={{ fontSize: 36 }}>🖼️</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+              Pilih dari Galeri
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium', textAlign: 'center' }}>
+            JPEG, PNG, atau WebP — maks 10 MB
+          </Text>
+        </View>
       )}
     </View>
   )
@@ -216,10 +289,10 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
   const loadingContent = (
     <View style={{ padding: 40, alignItems: 'center', gap: 20 }}>
       {imagePreviewUrl && (
-        <img
-          src={imagePreviewUrl}
-          alt="slip preview"
-          style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 16, border: `1.5px solid ${C.border}` }}
+        <Image
+          source={{ uri: imagePreviewUrl }}
+          resizeMode="cover"
+          style={{ width: 120, height: 120, borderRadius: 16, borderWidth: 1.5, borderColor: C.border }}
         />
       )}
       <ActivityIndicator size="large" color={C.primary} />
@@ -240,10 +313,10 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
         {/* Slip thumbnail + meta */}
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           {imagePreviewUrl && (
-            <img
-              src={imagePreviewUrl}
-              alt="slip"
-              style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12, border: `1.5px solid ${C.border}`, flexShrink: 0 }}
+            <Image
+              source={{ uri: imagePreviewUrl }}
+              resizeMode="cover"
+              style={{ width: 56, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, flexShrink: 0 }}
             />
           )}
           <View style={{ flex: 1, gap: 4 }}>
@@ -394,7 +467,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
           <Controller
             control={control} name="date"
             render={({ field: { value, onChange } }) =>
-              typeof window !== 'undefined' ? (
+              Platform.OS === 'web' ? (
                 <input
                   type="date"
                   value={value}

@@ -18,6 +18,7 @@ import (
 
 	"github.com/fintrackr/api/internal/domain/entity"
 	domainrepo "github.com/fintrackr/api/internal/domain/repository"
+	domainuc "github.com/fintrackr/api/internal/domain/usecase"
 	"github.com/fintrackr/api/internal/usecase"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -36,6 +37,7 @@ type GmailWorker struct {
 	integrationRepo domainrepo.EmailIntegrationRepository
 	msgRepo         domainrepo.EmailMessageRepository
 	importSvc       *usecase.EmailImportService
+	subUC           domainuc.SubscriptionUseCase
 	oauthCfg        *oauth2.Config
 	mu              sync.Mutex
 	cancels         map[uuid.UUID]context.CancelFunc
@@ -46,6 +48,7 @@ func NewGmailWorker(
 	integrationRepo domainrepo.EmailIntegrationRepository,
 	msgRepo domainrepo.EmailMessageRepository,
 	importSvc *usecase.EmailImportService,
+	subUC domainuc.SubscriptionUseCase,
 	googleClientID, googleSecret, callbackURL string,
 ) *GmailWorker {
 	cfg := &oauth2.Config{
@@ -62,6 +65,7 @@ func NewGmailWorker(
 		integrationRepo: integrationRepo,
 		msgRepo:         msgRepo,
 		importSvc:       importSvc,
+		subUC:           subUC,
 		oauthCfg:        cfg,
 		cancels:         make(map[uuid.UUID]context.CancelFunc),
 	}
@@ -95,6 +99,11 @@ func (w *GmailWorker) syncIntegrations(ctx context.Context) {
 	newCount := 0
 	for _, integ := range integrations {
 		if integ.Provider != "gmail" {
+			continue
+		}
+		if !w.subUC.IsProActive(ctx, integ.UserID) {
+			w.StopIntegration(integ.ID)
+			log.Printf("[GmailWorker] skipping integration %s (%s) — user no longer Pro", integ.ID, integ.Email)
 			continue
 		}
 		w.mu.Lock()

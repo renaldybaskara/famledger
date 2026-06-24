@@ -4,16 +4,27 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "env": {
         "EXPO_PUBLIC_API_URL": "http://10.0.2.2:4000/api"
       }
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "channel": "preview",
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": false },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://account-subarctic-outrank.ngrok-free.dev/api"
+      }
     },
     "production": {
-      "android": { "buildType": "app-bundle" }
+      "channel": "production",
+      "android": { "buildType": "app-bundle" },
+      "ios": { "buildConfiguration": "Release" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://account-subarctic-outrank.ngrok-free.dev/api"
+      }
     }
   },
   "submit": {

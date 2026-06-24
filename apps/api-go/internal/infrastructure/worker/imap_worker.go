@@ -17,6 +17,7 @@ import (
 	"github.com/emersion/go-message/mail"
 	"github.com/fintrackr/api/internal/domain/entity"
 	domainrepo "github.com/fintrackr/api/internal/domain/repository"
+	domainuc "github.com/fintrackr/api/internal/domain/usecase"
 	"github.com/fintrackr/api/internal/usecase"
 	"github.com/google/uuid"
 )
@@ -33,6 +34,7 @@ type IMAPWorker struct {
 	integrationRepo domainrepo.EmailIntegrationRepository
 	msgRepo         domainrepo.EmailMessageRepository
 	importSvc       *usecase.EmailImportService
+	subUC           domainuc.SubscriptionUseCase
 	mu              sync.Mutex
 	cancels         map[uuid.UUID]context.CancelFunc
 }
@@ -42,11 +44,13 @@ func NewIMAPWorker(
 	integrationRepo domainrepo.EmailIntegrationRepository,
 	msgRepo domainrepo.EmailMessageRepository,
 	importSvc *usecase.EmailImportService,
+	subUC domainuc.SubscriptionUseCase,
 ) *IMAPWorker {
 	return &IMAPWorker{
 		integrationRepo: integrationRepo,
 		msgRepo:         msgRepo,
 		importSvc:       importSvc,
+		subUC:           subUC,
 		cancels:         make(map[uuid.UUID]context.CancelFunc),
 	}
 }
@@ -77,6 +81,11 @@ func (w *IMAPWorker) syncIntegrations(ctx context.Context) {
 	newCount := 0
 	for _, integ := range integrations {
 		if integ.Provider != "imap" {
+			continue
+		}
+		if !w.subUC.IsProActive(ctx, integ.UserID) {
+			w.StopIntegration(integ.ID)
+			log.Printf("[IMAPWorker] skipping integration %s (%s) — user no longer Pro", integ.ID, integ.Email)
 			continue
 		}
 		w.mu.Lock()

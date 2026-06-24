@@ -32,9 +32,12 @@ type Config struct {
 	// Rate limiting
 	RateLimitRequests int
 	RateLimitWindow   int // seconds
-	// Midtrans payment gateway (optional)
+	// RevenueCat (webhook authorization secret — set in RevenueCat dashboard)
+	RevenueCatWebhookSecret string
+	// Midtrans (web payment gateway)
 	MidtransServerKey    string
 	MidtransClientKey    string
+	MidtransMerchantID   string
 	MidtransIsProduction bool
 	// Tier enforcement bypass (self-hosted / dev)
 	DisableTierLimits bool
@@ -67,10 +70,12 @@ func Load() *Config {
 		OCRServiceURL:        getEnv("OCR_SERVICE_URL", "http://ocr:5000"),
 		RateLimitRequests:    rateLimitRequests,
 		RateLimitWindow:      rateLimitWindow,
-		MidtransServerKey:    getEnv("MIDTRANS_SERVER_KEY", ""),
-		MidtransClientKey:    getEnv("MIDTRANS_CLIENT_KEY", ""),
-		MidtransIsProduction: getEnv("MIDTRANS_IS_PRODUCTION", "false") == "true",
-		DisableTierLimits:    getEnv("DISABLE_TIER_LIMITS", "false") == "true" || getEnv("SELF_HOSTED_MODE", "false") == "true",
+		RevenueCatWebhookSecret: getEnv("REVENUECAT_WEBHOOK_SECRET", ""),
+		MidtransServerKey:       getEnv("MIDTRANS_SERVER_KEY", ""),
+		MidtransClientKey:       getEnv("MIDTRANS_CLIENT_KEY", ""),
+		MidtransMerchantID:      getEnv("MIDTRANS_MERCHANT_ID", ""),
+		MidtransIsProduction:    getEnv("MIDTRANS_IS_PRODUCTION", "false") == "true",
+		DisableTierLimits:       getEnv("DISABLE_TIER_LIMITS", "false") == "true" || getEnv("SELF_HOSTED_MODE", "false") == "true",
 	}
 }
 

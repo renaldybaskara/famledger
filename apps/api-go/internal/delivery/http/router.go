@@ -189,12 +189,13 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 	subscription := protected.Group("/subscription")
 	{
 		subscription.GET("", deps.SubscriptionHandler.GetStatus)
-		subscription.POST("/checkout", deps.SubscriptionHandler.Checkout)
 		subscription.POST("/cancel", deps.SubscriptionHandler.Cancel)
-		subscription.GET("/history", deps.SubscriptionHandler.History)
+		subscription.POST("/midtrans/create-payment", deps.SubscriptionHandler.CreateMidtransPayment)
+		subscription.POST("/midtrans/confirm", deps.SubscriptionHandler.ConfirmMidtransPayment)
 	}
 
-	// Midtrans webhook — public, no JWT
+	// Payment webhooks — public, no JWT
+	api.POST("/webhooks/revenuecat", deps.SubscriptionHandler.RevenueCatWebhook)
 	api.POST("/webhooks/midtrans", deps.SubscriptionHandler.MidtransWebhook)
 
 	// Email Integrations — public routes (no JWT)

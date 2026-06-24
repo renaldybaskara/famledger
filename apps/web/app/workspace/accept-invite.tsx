@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
-import { router } from 'expo-router'
+import { View, Text, TouchableOpacity, ActivityIndicator, Platform } from 'react-native'
+import { router, useLocalSearchParams } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
 
-// Saku colors
+const PENDING_INVITE_KEY = 'pending_invite_token'
+
 const C = {
   cream:       '#FAF7F2',
   heroStart:   '#6B8E6B',
@@ -22,17 +24,36 @@ const C = {
 
 type State = 'loading' | 'success' | 'error' | 'need-login'
 
+async function savePendingToken(token: string) {
+  if (Platform.OS === 'web') {
+    sessionStorage.setItem(PENDING_INVITE_KEY, token)
+  } else {
+    await AsyncStorage.setItem(PENDING_INVITE_KEY, token)
+  }
+}
+
+async function popPendingToken(): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    const t = sessionStorage.getItem(PENDING_INVITE_KEY)
+    if (t) sessionStorage.removeItem(PENDING_INVITE_KEY)
+    return t
+  }
+  const t = await AsyncStorage.getItem(PENDING_INVITE_KEY)
+  if (t) await AsyncStorage.removeItem(PENDING_INVITE_KEY)
+  return t
+}
+
 export default function AcceptInviteScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [state, setState] = useState<State>('loading')
   const [message, setMessage] = useState('')
   const [workspaceName, setWorkspaceName] = useState('')
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
+  // Works on both web (?token=...) and native (deep link fintrackr://workspace/accept-invite?token=...)
+  const { token: routeToken } = useLocalSearchParams<{ token?: string }>()
 
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
+  useEffect(() => {
+    const token = routeToken ?? null
 
     if (!token) {
       setState('error')
@@ -41,27 +62,24 @@ export default function AcceptInviteScreen() {
     }
 
     if (!isAuthenticated) {
-      // Simpan token di sessionStorage, redirect ke login
-      sessionStorage.setItem('invite_token', token)
+      savePendingToken(token)
       setState('need-login')
       return
     }
 
-    // Sudah login — langsung accept
     acceptInvite(token)
-  }, [isAuthenticated])
+  }, [routeToken, isAuthenticated])
 
-  // Setelah login, cek apakah ada pending invite token
+  // After login, pick up any saved pending token
   useEffect(() => {
     if (!isAuthenticated) return
-    if (typeof window === 'undefined') return
 
-    const pending = sessionStorage.getItem('invite_token')
-    if (pending) {
-      sessionStorage.removeItem('invite_token')
-      setState('loading')
-      acceptInvite(pending)
-    }
+    popPendingToken().then((pending) => {
+      if (pending) {
+        setState('loading')
+        acceptInvite(pending)
+      }
+    })
   }, [isAuthenticated])
 
   const acceptInvite = async (token: string) => {
@@ -128,7 +146,7 @@ export default function AcceptInviteScreen() {
               Login dulu yuk!
             </Text>
             <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Nunito_500Medium' }}>
-              Kamu diundang untuk bergabung ke workspace Saku.{'\n'}
+              Kamu diundang untuk bergabung ke workspace FamLedger.{'\n'}
               Login dengan Google untuk menerima undangan.
             </Text>
             <TouchableOpacity

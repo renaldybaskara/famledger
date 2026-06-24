@@ -19,8 +19,8 @@
 }
 
 # ── Main application — HTTP only for local dev ───────────────
-# Listen on both IPv4 and IPv6 so localhost works regardless of OS resolution order
-http://{$DOMAIN:localhost}, http://[::1] {
+# Listen on all hostnames (works with localhost, LAN IP, or ngrok)
+:80 {
 
     # ── Web frontend (nginx serving Expo static export) ──
     handle / {
@@ -34,12 +34,18 @@ http://{$DOMAIN:localhost}, http://[::1] {
 
     # ── REST API ─────────────────────────────────────────
     handle /api/* {
-        reverse_proxy api:4000
+        reverse_proxy api:4000 {
+            # Forward the original scheme from ngrok so the Go API
+            # sees X-Forwarded-Proto: https instead of Caddy rewriting it to http
+            header_up X-Forwarded-Proto {http.request.header.X-Forwarded-Proto}
+        }
     }
 
     # ── Socket.io WebSocket ───────────────────────────────
     handle /socket.io/* {
-        reverse_proxy api:4000
+        reverse_proxy api:4000 {
+            header_up X-Forwarded-Proto {http.request.header.X-Forwarded-Proto}
+        }
     }
 
     # ── MinIO S3 API ──────────────────────────────────────
@@ -66,9 +72,10 @@ http://{$DOMAIN:localhost}, http://[::1] {
     # ── Security headers ──────────────────────────────────
     header {
         -Server
-        X-Frame-Options        "SAMEORIGIN"
-        X-Content-Type-Options "nosniff"
-        Referrer-Policy        "strict-origin-when-cross-origin"
+        X-Frame-Options               "SAMEORIGIN"
+        X-Content-Type-Options        "nosniff"
+        Referrer-Policy               "strict-origin-when-cross-origin"
+        ngrok-skip-browser-warning    "true"
     }
 }
 

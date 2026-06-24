@@ -75,6 +75,5 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.BankParserRule{},
 		// Subscription billing
 		&entity.UserSubscription{},
-		&entity.PaymentOrder{},
 	)
 }

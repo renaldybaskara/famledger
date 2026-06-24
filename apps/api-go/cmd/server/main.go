@@ -11,10 +11,10 @@ import (
 	httpdelivery "github.com/fintrackr/api/internal/delivery/http"
 	"github.com/fintrackr/api/internal/infrastructure/config"
 	"github.com/fintrackr/api/internal/infrastructure/database"
-	aisvc      "github.com/fintrackr/api/internal/infrastructure/ai"
-	emailsvc   "github.com/fintrackr/api/internal/infrastructure/email"
-	ocrsvc     "github.com/fintrackr/api/internal/infrastructure/ocr"
-	paymentsvc "github.com/fintrackr/api/internal/infrastructure/payment"
+	aisvc    "github.com/fintrackr/api/internal/infrastructure/ai"
+	emailsvc "github.com/fintrackr/api/internal/infrastructure/email"
+	ocrsvc   "github.com/fintrackr/api/internal/infrastructure/ocr"
+	"github.com/fintrackr/api/internal/infrastructure/payment"
 	"github.com/fintrackr/api/internal/infrastructure/tokenstore"
 	"github.com/fintrackr/api/internal/infrastructure/worker"
 	"github.com/fintrackr/api/internal/repository"
@@ -69,22 +69,20 @@ func main() {
 	emailMsgRepo         := repository.NewEmailMessageRepository(db)
 	parserRuleRepo       := repository.NewBankParserRuleRepository(db)
 
-	// ── Payment Service (Midtrans — optional) ───────────────────────────────────
-	midtransService := paymentsvc.NewMidtransService(
-		cfg.MidtransServerKey, cfg.MidtransClientKey, cfg.MidtransIsProduction,
-	)
-	if midtransService.Enabled() {
-		log.Printf("✅ Midtrans enabled (production=%v)", cfg.MidtransIsProduction)
-	} else {
-		log.Println("ℹ️  Midtrans disabled — set MIDTRANS_SERVER_KEY to enable payments")
-	}
-
 	// ── AI Service (OpenRouter — optional, for ambiguous email parsing) ──────────
 	aiService := aisvc.New(cfg.OpenRouterAPIKey, cfg.OpenRouterModel)
 	if aiService.Enabled() {
 		log.Printf("✅ OpenRouter AI enabled (model: %s)", cfg.OpenRouterModel)
 	} else {
 		log.Println("ℹ️  OpenRouter AI disabled — set OPENROUTER_API_KEY to enable")
+	}
+
+	// ── Midtrans (web payment gateway) ───────────────────────────────────────────
+	midtransSvc := payment.NewMidtransService(cfg.MidtransServerKey, cfg.MidtransClientKey, cfg.MidtransMerchantID, cfg.MidtransIsProduction)
+	if midtransSvc.Enabled() {
+		log.Println("✅ Midtrans payment gateway enabled")
+	} else {
+		log.Println("ℹ️  Midtrans disabled — set MIDTRANS_SERVER_KEY to enable")
 	}
 
 	// ── OCR Service (PaddleOCR Python microservice) ──────────────────────────────
@@ -111,7 +109,7 @@ func main() {
 	budgetUC            := usecase.NewBudgetUseCase(budgetRepo)
 	workspaceUC         := usecase.NewWorkspaceUseCase(workspaceRepo, userRepo, transactionRepo, emailService)
 	settingsUC          := usecase.NewSettingsUseCase(settingRepo, emailService, cfg)
-	subscriptionUC      := usecase.NewSubscriptionUseCase(subscriptionRepo, userRepo, midtransService, cfg.DisableTierLimits)
+	subscriptionUC      := usecase.NewSubscriptionUseCase(subscriptionRepo, userRepo, midtransSvc, cfg.DisableTierLimits)
 	// Inject subscription UC so Register/GoogleLogin can start a 14-day trial.
 	if as, ok := authUC.(usecase.AuthWithSubscription); ok {
 		as.WithSubscriptionUC(subscriptionUC)
@@ -165,12 +163,15 @@ func main() {
 	bankParserRuleHandler   := handler.NewBankParserRuleHandler(parserRuleRepo)
 	paymentSlipUC           := usecase.NewPaymentSlipUseCase(ocrClient)
 	paymentSlipHandler      := handler.NewPaymentSlipHandler(paymentSlipUC)
-	subscriptionHandler     := handler.NewSubscriptionHandler(subscriptionUC)
+	subscriptionHandler     := handler.NewSubscriptionHandler(subscriptionUC, cfg.RevenueCatWebhookSecret)
 
 	// ── Gin Engine ───────────────────────────────────────────
 	r := gin.New()
+	// Trust all proxies — safe behind Caddy/ngrok in a private Docker network.
+	r.SetTrustedProxies(nil)
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
+	r.Use(middleware.ForwardedProto())
 	r.Use(middleware.CORS(cfg.AppURL))
 
 	// ── Routes ───────────────────────────────────────────────
@@ -200,11 +201,11 @@ func main() {
 	// Workers start in the background — they don't block server startup.
 	workerCtx := context.Background()
 
-	imapWorker := worker.NewIMAPWorker(emailIntegrationRepo, emailMsgRepo, emailImportSvc)
+	imapWorker := worker.NewIMAPWorker(emailIntegrationRepo, emailMsgRepo, emailImportSvc, subscriptionUC)
 	go imapWorker.Start(workerCtx)
 
 	gmailWorker := worker.NewGmailWorker(
-		emailIntegrationRepo, emailMsgRepo, emailImportSvc,
+		emailIntegrationRepo, emailMsgRepo, emailImportSvc, subscriptionUC,
 		cfg.GoogleClientID, cfg.GoogleClientSecret, gmailCallbackURL,
 	)
 	go gmailWorker.Start(workerCtx)

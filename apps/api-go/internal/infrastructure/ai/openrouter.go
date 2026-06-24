@@ -92,7 +92,7 @@ Jawab dengan JSON berikut (jangan tambahkan teks lain):
 	req.Header.Set("Authorization", "Bearer "+s.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", "https://github.com/fintrackr")
-	req.Header.Set("X-Title", "Saku Finance Tracker")
+	req.Header.Set("X-Title", "FamLedger")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -185,7 +185,7 @@ Jawab dengan JSON berikut SAJA (tanpa teks lain):
 	req.Header.Set("Authorization", "Bearer "+s.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", "https://github.com/fintrackr")
-	req.Header.Set("X-Title", "Saku Finance Tracker")
+	req.Header.Set("X-Title", "FamLedger")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -223,6 +223,88 @@ Jawab dengan JSON berikut SAJA (tanpa teks lain):
 		return FullParseResult{}, fmt.Errorf("openrouter full parse: %w", err)
 	}
 
+	return result, nil
+}
+
+// CategorizeTransaction asks the AI for a single category word given a transaction's
+// merchant, description, and type. Used as a final NLP fallback in matchCategory
+// when all keyword-based steps fail. Very cheap: max_tokens 20.
+func (s *OpenRouterService) CategorizeTransaction(ctx context.Context, merchant, description, txType string) (string, error) {
+	if !s.enabled {
+		return "", nil
+	}
+
+	target := strings.TrimSpace(merchant + " " + description)
+	if target == "" {
+		return "", nil
+	}
+
+	expenseList := "makanan, kopi, transport, belanja, tagihan, kesehatan, pendidikan, langganan, rumah, hiburan, pakaian, olahraga"
+	incomeList := "gaji, freelance, investasi, bonus"
+	transferList := "transfer, tabungan"
+
+	prompt := fmt.Sprintf(`Kamu adalah sistem kategorisasi transaksi keuangan Indonesia.
+Berikan SATU kata kategori untuk transaksi berikut:
+
+Merchant/Deskripsi: %s
+Tipe: %s
+
+Pilihan kategori:
+- expense: %s
+- income: %s
+- transfer: %s
+
+Jawab dengan SATU kata saja tanpa penjelasan apapun.`,
+		target, txType, expenseList, incomeList, transferList)
+
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"model": s.model,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+		"max_tokens":  20,
+		"temperature": 0,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, openRouterBaseURL, bytes.NewReader(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("openrouter request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+s.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("HTTP-Referer", "https://github.com/fintrackr")
+	req.Header.Set("X-Title", "FamLedger")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("openrouter call: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("openrouter status %d: %s", resp.StatusCode, string(b))
+	}
+
+	var apiResp struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return "", fmt.Errorf("openrouter decode: %w", err)
+	}
+	if len(apiResp.Choices) == 0 {
+		return "", nil
+	}
+
+	words := strings.Fields(strings.TrimSpace(apiResp.Choices[0].Message.Content))
+	if len(words) == 0 {
+		return "", nil
+	}
+	result := strings.ToLower(strings.Trim(words[0], `.,;:"'`))
 	return result, nil
 }
 

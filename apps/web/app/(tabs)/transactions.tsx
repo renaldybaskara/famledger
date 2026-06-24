@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  FlatList, RefreshControl, Alert, Platform, Share,
+  FlatList, RefreshControl, Alert, Platform, Share, Modal, Pressable,
 } from 'react-native'
+import { Download, SlidersHorizontal, Search, X } from 'lucide-react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTransactions, useDeleteTransaction } from '../../src/hooks/useTransactions'
@@ -25,8 +26,8 @@ const C = {
   primarySoft: '#DEE8D7',
   heroEnd:     '#41594F',
   accent:      '#C97B5C',
-  income:      '#6B8E6B',
-  expense:     '#C97B5C',
+  income:      '#3D7A56',
+  expense:     '#D4704A',
   fg1:         '#2D2A26',
   fg2:         '#55504A',
   fg3:         '#8E887F',
@@ -39,8 +40,8 @@ type TypeFilter = '' | TransactionType
 
 const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
   { value: '',         label: 'Semua'    },
-  { value: 'expense',  label: 'Keluar'   },
   { value: 'income',   label: 'Masuk'    },
+  { value: 'expense',  label: 'Keluar'   },
   { value: 'transfer', label: 'Transfer' },
 ]
 
@@ -201,10 +202,10 @@ export default function TransactionsScreen() {
           </View>
         </View>
 
-        {/* Transaction group card */}
-        <View style={{ marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
-          {item.data.map((txn, idx) => (
-            <View key={txn.id}>
+        {/* Transaction group cards */}
+        <View style={{ marginHorizontal: 16, gap: 4 }}>
+          {item.data.map((txn) => (
+            <View key={txn.id} style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
               <TransactionItem
                 transaction={txn}
                 showDate={false}
@@ -212,9 +213,6 @@ export default function TransactionsScreen() {
                 onLongPress={() => handleDelete(txn)}
                 onPress={() => setDetailTransaction(txn)}
               />
-              {idx < item.data.length - 1 && (
-                <View style={{ height: 1, backgroundColor: C.divider, marginLeft: 70 }} />
-              )}
             </View>
           ))}
         </View>
@@ -229,9 +227,11 @@ export default function TransactionsScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <View>
             <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>Transaksi</Text>
-            <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
-              {total > 0 ? `${total} transaksi` : 'Tidak ada transaksi'}
-            </Text>
+            {total > 0 && (
+              <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                {total} transaksi
+              </Text>
+            )}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {transactions.length > 0 && (
@@ -239,14 +239,20 @@ export default function TransactionsScreen() {
                 onPress={handleExportCSV}
                 style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}
               >
-                <Text style={{ fontSize: 16 }}>⬇</Text>
+                <Download size={16} color={C.primary} strokeWidth={2} />
               </TouchableOpacity>
             )}
             <TouchableOpacity
               onPress={() => setScanModalVisible(true)}
               style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#F4DDD0', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text style={{ fontSize: 16 }}>📷</Text>
+              <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="2" width="14" height="18" rx="2" fill="none" stroke={C.accent} strokeWidth="1.8" />
+                <line x1="8" y1="7" x2="16" y2="7" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="8" y1="10.5" x2="16" y2="10.5" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="8" y1="14" x2="12" y2="14" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M2 11.5 L22 11.5" fill="none" stroke={C.accent} strokeWidth="1.8" strokeLinecap="round" style={{ opacity: 0.6 } as any} />
+              </svg>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setShowFilters((v) => !v)}
@@ -257,26 +263,42 @@ export default function TransactionsScreen() {
                 borderWidth: 1, borderColor: showFilters ? C.primary : C.border,
               }}
             >
-              <Text style={{ fontSize: 16 }}>🔽</Text>
+              <SlidersHorizontal size={16} color={showFilters ? '#fff' : C.fg1} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Period chip */}
-        <TouchableOpacity
-          onPress={() => setShowPeriod(true)}
-          style={{
-            alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center',
-            backgroundColor: C.primarySoft, borderRadius: 999,
-            paddingHorizontal: 14, paddingVertical: 6, marginBottom: 12,
-            borderWidth: 1.5, borderColor: C.primary,
-          }}
-        >
-          <Text style={{ fontSize: 13, fontWeight: '700', color: C.heroEnd, fontFamily: 'Nunito_700Bold' }}>
-            📅 {range.label}
-          </Text>
-          <Text style={{ color: C.primary, marginLeft: 6, fontSize: 12 }}>▾</Text>
-        </TouchableOpacity>
+        {/* Period pills — same as dashboard */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          {([
+            { key: 'this_month' as Preset, label: 'Bulan ini' },
+            { key: 'payday'     as Preset, label: 'Gajian' },
+            { key: 'custom'     as Preset, label: 'Custom', isCustom: true },
+          ] as Array<{ key: Preset; label: string; isCustom?: boolean }>).map(({ key, label, isCustom }) => (
+            <TouchableOpacity
+              key={key}
+              onPress={() => key === 'custom' ? setShowPeriod(true) : handlePresetSelect(key)}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 5,
+                paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999,
+                backgroundColor: preset === key ? C.primary : C.surface,
+                borderWidth: 1.5, borderColor: preset === key ? C.primary : C.border,
+              }}
+            >
+              {isCustom && Platform.OS === 'web' && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" strokeLinecap="round" />
+                  <line x1="8" y1="2" x2="8" y2="6" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" strokeLinecap="round" />
+                  <line x1="3" y1="10" x2="21" y2="10" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
+                </svg>
+              )}
+              <Text style={{ fontSize: 12, fontWeight: '600', color: preset === key ? '#fff' : C.fg2, fontFamily: 'Nunito_600SemiBold' }}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* Search */}
         <View style={{
@@ -286,7 +308,7 @@ export default function TransactionsScreen() {
           borderWidth: 1, borderColor: C.border,
           gap: 10,
         }}>
-          <Text style={{ fontSize: 16, color: C.fg3 }}>🔍</Text>
+          <Search size={16} color={C.fg3} strokeWidth={2} />
           <TextInput
             style={{ flex: 1, fontSize: 15, fontWeight: '600', color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}
             placeholder="Cari transaksi..."
@@ -297,70 +319,136 @@ export default function TransactionsScreen() {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => { setSearch(''); setPage(1) }}>
-              <Text style={{ color: C.fg4, fontSize: 16 }}>✕</Text>
+              <X size={14} color={C.fg4} strokeWidth={2.5} />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Workspace scope chips — only shown when user has workspaces */}
-        {workspaces.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
-            <TouchableOpacity
-              onPress={() => setSelectedWsId(null)}
-              style={{
-                paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
-                backgroundColor: !selectedWsId ? C.primary : C.surface,
-                borderWidth: 1.5, borderColor: !selectedWsId ? C.primary : C.border,
-              }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: !selectedWsId ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Pribadi</Text>
-            </TouchableOpacity>
-            {workspaces.map((ws: any) => {
-              const active = selectedWsId === ws.id
-              return (
-                <TouchableOpacity
-                  key={ws.id}
-                  onPress={() => setSelectedWsId(active ? null : ws.id)}
-                  style={{
-                    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
-                    backgroundColor: active ? C.primary : C.surface,
-                    borderWidth: 1.5, borderColor: active ? C.primary : C.border,
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
-                </TouchableOpacity>
-              )
-            })}
-          </ScrollView>
-        )}
-
-        {/* Type filter chips */}
-        {showFilters && (
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            {TYPE_FILTERS.map((f) => {
-              const active = typeFilter === f.value
-              return (
-                <TouchableOpacity
-                  key={f.value}
-                  onPress={() => { setTypeFilter(f.value); setPage(1) }}
-                  style={{
-                    paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999,
-                    backgroundColor: active ? C.primary : C.surface,
-                    borderWidth: 1.5, borderColor: active ? C.primary : C.border,
-                  }}
-                >
-                  <Text style={{
-                    fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold',
-                    color: active ? '#fff' : C.fg2,
-                  }}>
-                    {f.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
+        {/* Active filter pills summary */}
+        {(typeFilter !== '' || selectedWsId !== null) && (
+          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            {typeFilter !== '' && (
+              <TouchableOpacity
+                onPress={() => { setTypeFilter(''); setPage(1) }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.primary + '22' }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                  {TYPE_FILTERS.find(f => f.value === typeFilter)?.label}
+                </Text>
+                <X size={10} color={C.primary} strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+            {selectedWsId !== null && (
+              <TouchableOpacity
+                onPress={() => setSelectedWsId(null)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.primary + '22' }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                  {workspaces.find((w: any) => w.id === selectedWsId)?.name ?? 'Workspace'}
+                </Text>
+                <X size={10} color={C.primary} strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
+
+      {/* Filter popup modal */}
+      <Modal visible={showFilters} transparent animationType="slide" onRequestClose={() => setShowFilters(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }} onPress={() => setShowFilters(false)}>
+          <Pressable onPress={e => e.stopPropagation()}>
+            <View style={{ backgroundColor: '#FAF7F2', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0DBD2', alignSelf: 'center', marginBottom: 20 }} />
+              <Text style={{ fontSize: 18, fontWeight: '900', color: '#2D2A26', fontFamily: 'Nunito_900Black', marginBottom: 20 }}>Filter Transaksi</Text>
+
+              {/* Type filter */}
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E887F', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold', marginBottom: 10 }}>Tipe Transaksi</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                {TYPE_FILTERS.map((f) => {
+                  const active = typeFilter === f.value
+                  return (
+                    <TouchableOpacity
+                      key={f.value}
+                      onPress={() => { setTypeFilter(f.value); setPage(1) }}
+                      style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: active ? C.primary : C.surface, borderWidth: 1.5, borderColor: active ? C.primary : C.border }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: active ? '#fff' : C.fg2 }}>{f.label}</Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+
+              {/* Workspace filter */}
+              {workspaces.length > 0 && (
+                <>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E887F', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold', marginBottom: 10 }}>Tampilkan Dari</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                    <TouchableOpacity
+                      onPress={() => setSelectedWsId(null)}
+                      style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: !selectedWsId ? C.primary : C.surface, borderWidth: 1.5, borderColor: !selectedWsId ? C.primary : C.border }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: !selectedWsId ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Pribadi</Text>
+                    </TouchableOpacity>
+                    {workspaces.map((ws: any) => {
+                      const active = selectedWsId === ws.id
+                      return (
+                        <TouchableOpacity key={ws.id} onPress={() => setSelectedWsId(active ? null : ws.id)} style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: active ? C.primary : C.surface, borderWidth: 1.5, borderColor: active ? C.primary : C.border }}>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity
+                onPress={() => setShowFilters(false)}
+                style={{ backgroundColor: C.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: 'Nunito_800ExtraBold' }}>Terapkan Filter</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Summary card */}
+      {!loading && transactions.length > 0 && (() => {
+        const inc = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+        const exp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+        const net = inc - exp
+        return (
+          <View style={{
+            marginHorizontal: 16, marginBottom: 8, borderRadius: 20, padding: 16, overflow: 'hidden',
+            backgroundColor: '#3D7A56',
+            ...(({ background: 'linear-gradient(160deg, #3D7A56 0%, #41594F 100%)' }) as any),
+          }}>
+            <View style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+                  {net >= 0 ? '+' : '-'}{fmtIDR(Math.abs(net))}
+                </Text>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                  {range.label}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                {inc > 0 && (
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(180,255,180,0.9)', fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+                    ↑ Masuk {fmtIDR(inc)}
+                  </Text>
+                )}
+                {exp > 0 && (
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,200,180,0.9)', fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+                    ↓ Keluar {fmtIDR(exp)}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+        )
+      })()}
 
       {/* List */}
       {loading ? (

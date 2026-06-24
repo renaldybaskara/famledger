@@ -176,8 +176,8 @@ func (r *transactionRepository) GetMonthlyTrend(ctx context.Context, userID uuid
 			COALESCE(SUM(amount), 0) AS total
 		FROM transactions
 		WHERE user_id = ? AND deleted_at IS NULL AND date >= ?
-		GROUP BY month, type
-		ORDER BY month ASC, type ASC
+		GROUP BY TO_CHAR(date, 'YYYY-MM'), type
+		ORDER BY TO_CHAR(date, 'YYYY-MM') ASC, type ASC
 	`, userID, startDate).Scan(&rows).Error
 	return rows, err
 }
@@ -317,8 +317,8 @@ func (r *transactionRepository) GetMonthlyTrendByUserIDs(ctx context.Context, us
 			COALESCE(SUM(amount), 0) AS total
 		FROM transactions
 		WHERE user_id IN ? AND deleted_at IS NULL AND date >= ?
-		GROUP BY month, type
-		ORDER BY month ASC, type ASC
+		GROUP BY TO_CHAR(date, 'YYYY-MM'), type
+		ORDER BY TO_CHAR(date, 'YYYY-MM') ASC, type ASC
 	`, userIDs, startDate).Scan(&rows).Error
 	return rows, err
 }

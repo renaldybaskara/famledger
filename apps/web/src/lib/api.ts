@@ -2,7 +2,7 @@ import axios from 'axios'
 import { router } from 'expo-router'
 import { useAuthStore } from '../store/auth.store'
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api'
+const API_URL = process.env.EXPO_PUBLIC_API_URL || '/api'
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -263,35 +263,25 @@ export interface UserSubscription {
   id: string
   userId: string
   plan: 'free' | 'pro'
-  period: 'monthly' | 'annual' | ''
+  period: 'monthly' | 'annual' | 'lifetime' | ''
   status: 'free' | 'trialing' | 'active' | 'past_due' | 'canceled'
   trialEndsAt?: string
   currentPeriodStart?: string
   currentPeriodEnd?: string
   canceledAt?: string
   gracePeriodEndsAt?: string
-}
-
-export interface PaymentOrder {
-  id: string
-  midtransOrderId: string
-  plan: string
-  period: string
-  amount: number
-  status: string
-  paidAt?: string
-  createdAt: string
+  productId?: string
 }
 
 export const subscriptionApi = {
   getStatus: () =>
     api.get<UserSubscription>('/subscription'),
-  checkout: (data: { plan: 'pro'; period: 'monthly' | 'annual' }) =>
-    api.post<{ snapToken: string; midtransOrderId: string; amount: number; redirectUrl?: string }>('/subscription/checkout', data),
   cancel: () =>
     api.post('/subscription/cancel'),
-  getHistory: () =>
-    api.get<PaymentOrder[]>('/subscription/history'),
+  createMidtransPayment: (body: { plan: string; period: string }) =>
+    api.post<{ snapToken: string; clientKey: string; orderId: string }>('/subscription/midtrans/create-payment', body),
+  confirmMidtransPayment: () =>
+    api.post('/subscription/midtrans/confirm'),
 }
 
 export const accountsApi = {

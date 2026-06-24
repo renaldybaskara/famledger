@@ -4,41 +4,43 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/fintrackr/api/internal/domain/entity"
 	domainrepo "github.com/fintrackr/api/internal/domain/repository"
 	domainuc "github.com/fintrackr/api/internal/domain/usecase"
-	paymentsvc "github.com/fintrackr/api/internal/infrastructure/payment"
+	"github.com/fintrackr/api/internal/infrastructure/payment"
 	"github.com/google/uuid"
 )
 
 const (
 	trialDays       = 14
 	gracePeriodDays = 3
-	priceMonthly    = int64(49000)
-	priceAnnual     = int64(490000)
 )
 
-var ErrSubscriptionNotFound = errors.New("subscription not found")
+var (
+	ErrSubscriptionNotFound  = errors.New("subscription not found")
+	ErrMidtransNotConfigured = errors.New("web payment not configured")
+)
 
 type subscriptionUseCase struct {
 	subRepo           domainrepo.SubscriptionRepository
 	userRepo          domainrepo.UserRepository
-	midtrans          *paymentsvc.MidtransService
+	midtransSvc       *payment.MidtransService
 	disableTierLimits bool
 }
 
 func NewSubscriptionUseCase(
 	subRepo domainrepo.SubscriptionRepository,
 	userRepo domainrepo.UserRepository,
-	midtrans *paymentsvc.MidtransService,
+	midtransSvc *payment.MidtransService,
 	disableTierLimits bool,
 ) domainuc.SubscriptionUseCase {
 	return &subscriptionUseCase{
 		subRepo:           subRepo,
 		userRepo:          userRepo,
-		midtrans:          midtrans,
+		midtransSvc:       midtransSvc,
 		disableTierLimits: disableTierLimits,
 	}
 }
@@ -84,116 +86,6 @@ func (uc *subscriptionUseCase) CreateTrial(ctx context.Context, userID uuid.UUID
 	})
 }
 
-func (uc *subscriptionUseCase) Checkout(ctx context.Context, userID uuid.UUID, in domainuc.CheckoutInput) (*domainuc.CheckoutOutput, error) {
-	if !uc.midtrans.Enabled() {
-		return nil, errors.New("payment gateway not configured")
-	}
-	user, err := uc.userRepo.FindByID(ctx, userID)
-	if err != nil || user == nil {
-		return nil, ErrUserNotFound
-	}
-
-	amount := priceMonthly
-	itemName := "Saku Pro — Bulanan"
-	if in.Period == "annual" {
-		amount = priceAnnual
-		itemName = "Saku Pro — Tahunan"
-	}
-
-	orderID := fmt.Sprintf("saku-pro-%s-%d", userID.String()[:8], time.Now().UnixMilli())
-	snapResp, err := uc.midtrans.CreateSnapToken(paymentsvc.SnapRequest{
-		TransactionDetails: paymentsvc.TransactionDetails{OrderID: orderID, GrossAmount: amount},
-		CustomerDetails:    paymentsvc.CustomerDetails{FirstName: user.Name, Email: user.Email},
-		ItemDetails:        []paymentsvc.ItemDetail{{ID: "saku-pro", Price: amount, Quantity: 1, Name: itemName}},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := uc.subRepo.CreateOrder(ctx, &entity.PaymentOrder{
-		ID:              uuid.New(),
-		UserID:          userID,
-		MidtransOrderID: orderID,
-		SnapToken:       snapResp.Token,
-		Plan:            "pro",
-		Period:          in.Period,
-		Amount:          float64(amount),
-		Status:          "pending",
-	}); err != nil {
-		return nil, err
-	}
-	return &domainuc.CheckoutOutput{
-		SnapToken:       snapResp.Token,
-		MidtransOrderID: orderID,
-		Amount:          amount,
-		RedirectURL:     snapResp.RedirectURL,
-	}, nil
-}
-
-func (uc *subscriptionUseCase) HandleWebhook(ctx context.Context, payload map[string]interface{}) error {
-	orderID, _ := payload["order_id"].(string)
-	statusCode, _ := payload["status_code"].(string)
-	grossAmount, _ := payload["gross_amount"].(string)
-	sigKey, _ := payload["signature_key"].(string)
-	txStatus, _ := payload["transaction_status"].(string)
-	fraudStatus, _ := payload["fraud_status"].(string)
-
-	if !uc.midtrans.VerifyNotification(orderID, statusCode, grossAmount, sigKey) {
-		return errors.New("invalid webhook signature")
-	}
-	order, err := uc.subRepo.FindOrderByMidtransID(ctx, orderID)
-	if err != nil || order == nil {
-		return errors.New("order not found")
-	}
-
-	var newStatus string
-	var succeeded bool
-	switch txStatus {
-	case "capture":
-		if fraudStatus == "challenge" {
-			newStatus = "challenge"
-		} else {
-			newStatus, succeeded = "paid", true
-		}
-	case "settlement":
-		newStatus, succeeded = "paid", true
-	case "cancel", "expire":
-		newStatus = txStatus
-	default:
-		newStatus = txStatus
-	}
-
-	now := time.Now()
-	var paidAt *time.Time
-	if succeeded {
-		paidAt = &now
-	}
-	if err := uc.subRepo.UpdateOrderStatus(ctx, orderID, newStatus, paidAt); err != nil {
-		return err
-	}
-	if !succeeded {
-		return nil
-	}
-
-	periodEnd := now.AddDate(0, 1, 0)
-	if order.Period == "annual" {
-		periodEnd = now.AddDate(1, 0, 0)
-	}
-	if err := uc.subRepo.Upsert(ctx, &entity.UserSubscription{
-		ID:                 uuid.New(),
-		UserID:             order.UserID,
-		Plan:               "pro",
-		Period:             order.Period,
-		Status:             "active",
-		CurrentPeriodStart: &now,
-		CurrentPeriodEnd:   &periodEnd,
-	}); err != nil {
-		return err
-	}
-	_, _ = uc.userRepo.Update(ctx, order.UserID, map[string]interface{}{"tier": "premium"})
-	return nil
-}
-
 func (uc *subscriptionUseCase) Cancel(ctx context.Context, userID uuid.UUID) error {
 	sub, err := uc.subRepo.FindByUserID(ctx, userID)
 	if err != nil {
@@ -211,8 +103,255 @@ func (uc *subscriptionUseCase) Cancel(ctx context.Context, userID uuid.UUID) err
 	return err
 }
 
-func (uc *subscriptionUseCase) GetHistory(ctx context.Context, userID uuid.UUID) ([]entity.PaymentOrder, error) {
-	return uc.subRepo.FindOrdersByUserID(ctx, userID, 20)
+func (uc *subscriptionUseCase) HandleRevenueCatWebhook(ctx context.Context, payload map[string]interface{}) error {
+	event, _ := payload["event"].(map[string]interface{})
+	if event == nil {
+		return errors.New("missing event")
+	}
+
+	eventType, _ := event["type"].(string)
+	appUserID, _ := event["app_user_id"].(string)
+	productID, _ := event["product_id"].(string)
+	periodType, _ := event["period_type"].(string)
+	expirationAtMs, _ := event["expiration_at_ms"].(float64)
+
+	userID, err := uuid.Parse(appUserID)
+	if err != nil {
+		return errors.New("invalid app_user_id: " + appUserID)
+	}
+
+	now := time.Now()
+	var expiration *time.Time
+	if expirationAtMs > 0 {
+		t := time.UnixMilli(int64(expirationAtMs))
+		expiration = &t
+	}
+
+	existing, err := uc.subRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		existing = &entity.UserSubscription{ID: uuid.New(), UserID: userID}
+	}
+
+	switch eventType {
+	case "INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION":
+		period := "monthly"
+		if productID != "" {
+			period = productID
+		}
+		existing.Plan = "pro"
+		existing.Period = period
+		existing.Status = "active"
+		existing.CurrentPeriodStart = &now
+		existing.CurrentPeriodEnd = expiration
+		existing.CanceledAt = nil
+		existing.ProductID = productID
+		_, _ = uc.userRepo.Update(ctx, userID, map[string]interface{}{"tier": "premium"})
+
+	case "TRIAL_STARTED":
+		existing.Plan = "pro"
+		existing.Status = "trialing"
+		existing.TrialEndsAt = expiration
+		existing.ProductID = productID
+
+	case "TRIAL_CONVERTED":
+		period := periodType
+		if period == "" {
+			period = "monthly"
+		}
+		existing.Plan = "pro"
+		existing.Period = period
+		existing.Status = "active"
+		existing.CurrentPeriodStart = &now
+		existing.CurrentPeriodEnd = expiration
+		existing.TrialEndsAt = nil
+		existing.ProductID = productID
+		_, _ = uc.userRepo.Update(ctx, userID, map[string]interface{}{"tier": "premium"})
+
+	case "CANCELLATION", "TRIAL_CANCELLED":
+		existing.CanceledAt = &now
+		if existing.Status == "trialing" {
+			existing.Status = "free"
+			existing.Plan = "free"
+			_, _ = uc.userRepo.Update(ctx, userID, map[string]interface{}{"tier": "free"})
+		}
+
+	case "EXPIRATION":
+		existing.Status = "free"
+		existing.Plan = "free"
+		_, _ = uc.userRepo.Update(ctx, userID, map[string]interface{}{"tier": "free"})
+
+	case "BILLING_ISSUE":
+		grace := now.Add(time.Duration(gracePeriodDays) * 24 * time.Hour)
+		existing.Status = "past_due"
+		existing.GracePeriodEndsAt = &grace
+
+	default:
+		return nil
+	}
+
+	return uc.subRepo.Upsert(ctx, existing)
+}
+
+// CreateMidtransPayment generates a Midtrans Snap token for web subscribers.
+func (uc *subscriptionUseCase) CreateMidtransPayment(ctx context.Context, userID uuid.UUID, plan, period, email, name string) (*domainuc.MidtransPaymentResult, error) {
+	if uc.midtransSvc == nil || !uc.midtransSvc.Enabled() {
+		return nil, ErrMidtransNotConfigured
+	}
+
+	orderID := fmt.Sprintf("SAKU-%s-%d", userID.String()[:8], time.Now().UnixMilli())
+	amount := payment.PlanAmount(period)
+
+	snap, err := uc.midtransSvc.CreateSnapToken(orderID, amount, plan, period, email, name)
+	if err != nil {
+		return nil, fmt.Errorf("create snap token: %w", err)
+	}
+
+	existing, err := uc.subRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		existing = &entity.UserSubscription{ID: uuid.New(), UserID: userID, Plan: "free", Status: "free"}
+	}
+	existing.MidtransOrderID = &orderID
+	existing.PendingPeriod = &period
+	_ = uc.subRepo.Upsert(ctx, existing)
+
+	return &domainuc.MidtransPaymentResult{
+		SnapToken: snap.Token,
+		ClientKey: uc.midtransSvc.ClientKey(),
+		OrderID:   orderID,
+	}, nil
+}
+
+// ConfirmMidtransPayment polls Midtrans directly for the pending order's status
+// and activates Pro if the transaction has settled. Called by the frontend after
+// Snap's onSuccess so the subscription updates immediately without waiting for a webhook.
+func (uc *subscriptionUseCase) ConfirmMidtransPayment(ctx context.Context, userID uuid.UUID) error {
+	if uc.midtransSvc == nil || !uc.midtransSvc.Enabled() {
+		return ErrMidtransNotConfigured
+	}
+
+	sub, err := uc.subRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if sub == nil || sub.MidtransOrderID == nil || *sub.MidtransOrderID == "" {
+		return errors.New("no pending midtrans order")
+	}
+
+	status, err := uc.midtransSvc.GetTransactionStatus(*sub.MidtransOrderID)
+	if err != nil {
+		return fmt.Errorf("get transaction status: %w", err)
+	}
+
+	if status.TransactionStatus != "settlement" && status.TransactionStatus != "capture" {
+		return fmt.Errorf("payment not settled (status: %s)", status.TransactionStatus)
+	}
+	if status.FraudStatus == "deny" {
+		return errors.New("payment flagged as fraud")
+	}
+
+	// Resolve the period from the order, not the prior subscription state.
+	pendingPeriod := "monthly"
+	if sub.PendingPeriod != nil && *sub.PendingPeriod != "" {
+		pendingPeriod = *sub.PendingPeriod
+	}
+
+	// Verify the settled amount matches the price we quoted for that period.
+	paidAmount, parseErr := strconv.ParseFloat(status.GrossAmount, 64)
+	if parseErr != nil || int64(paidAmount) != payment.PlanAmount(pendingPeriod) {
+		return fmt.Errorf("gross amount mismatch: got %s for period %s", status.GrossAmount, pendingPeriod)
+	}
+
+	now := time.Now()
+	sub.Plan = "pro"
+	sub.Period = pendingPeriod
+	sub.Status = "active"
+	sub.CurrentPeriodStart = &now
+	sub.CanceledAt = nil
+	sub.PendingPeriod = nil
+
+	if pendingPeriod != "lifetime" {
+		var periodEnd time.Time
+		if pendingPeriod == "annual" {
+			periodEnd = now.AddDate(1, 0, 0)
+		} else {
+			periodEnd = now.AddDate(0, 1, 0)
+		}
+		sub.CurrentPeriodEnd = &periodEnd
+	}
+
+	if err := uc.subRepo.Upsert(ctx, sub); err != nil {
+		return err
+	}
+	_, _ = uc.userRepo.Update(ctx, userID, map[string]interface{}{"tier": "premium"})
+	return nil
+}
+
+// HandleMidtransWebhook processes a payment notification from Midtrans.
+func (uc *subscriptionUseCase) HandleMidtransWebhook(ctx context.Context, payload domainuc.MidtransWebhookPayload) error {
+	if uc.midtransSvc == nil || !uc.midtransSvc.Enabled() {
+		return ErrMidtransNotConfigured
+	}
+
+	if !uc.midtransSvc.VerifySignatureKey(payload.OrderID, payload.StatusCode, payload.GrossAmount, payload.SignatureKey) {
+		return errors.New("invalid midtrans signature")
+	}
+
+	if payload.TransactionStatus != "settlement" && payload.TransactionStatus != "capture" {
+		return nil
+	}
+	if payload.FraudStatus == "deny" {
+		return nil
+	}
+
+	sub, err := uc.subRepo.FindByMidtransOrderID(ctx, payload.OrderID)
+	if err != nil {
+		return err
+	}
+	if sub == nil {
+		return errors.New("order not found: " + payload.OrderID)
+	}
+
+	// Resolve the period from the order, not the prior subscription state.
+	pendingPeriod := "monthly"
+	if sub.PendingPeriod != nil && *sub.PendingPeriod != "" {
+		pendingPeriod = *sub.PendingPeriod
+	}
+
+	// Verify the webhook amount matches the price we quoted for that period.
+	paidAmount, parseErr := strconv.ParseFloat(payload.GrossAmount, 64)
+	if parseErr != nil || int64(paidAmount) != payment.PlanAmount(pendingPeriod) {
+		return fmt.Errorf("gross amount mismatch: got %s for period %s", payload.GrossAmount, pendingPeriod)
+	}
+
+	now := time.Now()
+	sub.Plan = "pro"
+	sub.Period = pendingPeriod
+	sub.Status = "active"
+	sub.CurrentPeriodStart = &now
+	sub.CanceledAt = nil
+	sub.PendingPeriod = nil
+
+	if pendingPeriod != "lifetime" {
+		var periodEnd time.Time
+		if pendingPeriod == "annual" {
+			periodEnd = now.AddDate(1, 0, 0)
+		} else {
+			periodEnd = now.AddDate(0, 1, 0)
+		}
+		sub.CurrentPeriodEnd = &periodEnd
+	}
+
+	if err := uc.subRepo.Upsert(ctx, sub); err != nil {
+		return err
+	}
+	_, _ = uc.userRepo.Update(ctx, sub.UserID, map[string]interface{}{"tier": "premium"})
+	return nil
 }
 
 func (uc *subscriptionUseCase) IsProActive(ctx context.Context, userID uuid.UUID) bool {

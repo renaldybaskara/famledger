@@ -6,8 +6,10 @@ import * as Font from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import { useState } from 'react'
 import { View } from 'react-native'
+import { initSentry, Sentry } from '../src/lib/sentry'
 import '../global.css'
 
+initSentry()
 SplashScreen.preventAutoHideAsync()
 
 const queryClient = new QueryClient({
@@ -17,7 +19,7 @@ const queryClient = new QueryClient({
   },
 })
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, setFontsLoaded] = useState(false)
 
   useEffect(() => {
@@ -47,3 +49,5 @@ export default function RootLayout() {
     </QueryClientProvider>
   )
 }
+
+export default Sentry.wrap(RootLayout)

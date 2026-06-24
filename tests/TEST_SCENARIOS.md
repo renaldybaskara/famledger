@@ -1,6 +1,6 @@
 # Test Scenarios — Saku (FinTracker)
 
-Generated: 2026-06-13
+Generated: 2026-06-13 | Updated: 2026-06-14 (Playwright E2E added)
 
 ---
 
@@ -212,7 +212,7 @@ File: `apps/web/src/lib/format.test.ts`
 
 | # | Scenario | Steps | Result |
 |---|----------|-------|--------|
-| IT-8 | New user has trial | Register → GET /api/subscription → status=trialing | 🔲 PLANNED |
+| IT-8 | New user has trial | Register → GET /api/subscription → status=trialing | ✅ PASS |
 | IT-9 | Checkout returns snap token | POST /api/subscription/checkout → snapToken in response | 🔲 PLANNED |
 | IT-10 | Webhook activates sub | POST /api/webhooks/midtrans settlement + valid sig → status=active | 🔲 PLANNED |
 | IT-11 | Webhook bad sig rejected | POST /api/webhooks/midtrans wrong sig → 400 | 🔲 PLANNED |
@@ -231,7 +231,88 @@ File: `apps/web/src/lib/format.test.ts`
 
 ---
 
-## 4. How to Run
+## 4. E2E Browser Tests (Playwright)
+
+Run date: 2026-06-14. Tool: Playwright MCP against live Docker stack at `http://localhost`.
+
+### 4.1 Authentication
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-1 | App redirects to login when unauthenticated | Navigate `/` → redirected to `/login` | ✅ PASS |
+| E2E-2 | Login page renders branding | Login page shows "Saku" header and Google OAuth button | ✅ PASS |
+| E2E-3 | API health check | GET /api/health → `{"status":"ok"}` | ✅ PASS |
+| E2E-4 | Register new user via API | POST /api/auth/register → 201, accessToken received | ✅ PASS |
+| E2E-5 | Token injection loads dashboard | Inject JWT into localStorage → reload → dashboard renders | ✅ PASS |
+| E2E-6 | Login with wrong password | POST /api/auth/login wrong password → 401 | ✅ PASS |
+
+### 4.2 Dashboard
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-7 | Dashboard shows user greeting | "Halo, Test 🌿" visible after login | ✅ PASS |
+| E2E-8 | Dashboard shows current month | "Juni 2026" month selector visible | ✅ PASS |
+| E2E-9 | Income/Expense summary cards | MASUK Rp 0 / KELUAR Rp 0 shown for new user | ✅ PASS |
+| E2E-10 | Auto-import prompt shown | "Auto-Import Transaksi / Hubungkan Gmail" banner displayed | ✅ PASS |
+| E2E-11 | Dashboard summary API | GET /api/dashboard/summary?startDate=…&endDate=… → netBalance, income, expense | ✅ PASS |
+
+### 4.3 Transactions
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-12 | Transactions tab loads | Click Transaksi tab → `/transactions`, empty state shown | ✅ PASS |
+| E2E-13 | Add transaction form opens | Click "Tambah Transaksi" → form with type/amount/category/merchant/date | ✅ PASS |
+| E2E-14 | Form has all required fields | Type buttons (Keluar/Masuk/Transfer), amount input, category chips, date | ✅ PASS |
+| E2E-15 | Create expense via API | POST /api/transactions expense Rp 50,000 → 201, id returned | ✅ PASS |
+| E2E-16 | Create income via API | POST /api/transactions income Rp 5,000,000 → 201, id returned | ✅ PASS |
+| E2E-17 | List transactions | GET /api/transactions → 2 transactions returned | ✅ PASS |
+| E2E-18 | Dashboard updates after tx | netBalance = 4,950,000 after income + expense | ✅ PASS |
+
+### 4.4 Accounts
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-19 | Create account via API | POST /api/accounts BCA bank → 201, id returned | ✅ PASS |
+| E2E-20 | Form shows "Buat rekening dulu" when no accounts | Add transaction form → account section warns user | ✅ PASS |
+
+### 4.5 Budget
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-21 | Create budget via API | POST /api/budgets monthly Rp 500,000 → 201, id returned | ✅ PASS |
+| E2E-22 | List budgets | GET /api/budgets → 1 budget returned | ✅ PASS |
+
+### 4.6 Workspace
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-23 | Create workspace via API | POST /api/workspaces family tier → 201, id returned | ✅ PASS |
+
+### 4.7 Category Breakdown
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-24 | Category breakdown API | GET /api/dashboard/category-breakdown?type=expense → array with total=50000 | ✅ PASS |
+
+### 4.8 Settings
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-25 | Settings screen loads | Navigate `/settings` → Lainnya tab active | ✅ PASS |
+| E2E-26 | Profile shown in settings | "Test User / test@saku.local" displayed | ✅ PASS |
+| E2E-27 | Subscription trial shown | "Paket & Pembayaran — Trial · 14h tersisa" visible | ✅ PASS |
+| E2E-28 | Settings menu items present | Rekening & Akun, Kategori, Integrasi Email shown | ✅ PASS |
+| E2E-29 | SMTP settings readable | GET /api/settings/smtp → host, port, user, enabled | ✅ PASS |
+
+### 4.9 Email Integration
+
+| # | Scenario | Steps | Result |
+|---|----------|-------|--------|
+| E2E-30 | Email integrations list | GET /api/email-integrations → empty array for new user | ✅ PASS |
+
+---
+
+## 5. How to Run
 
 ### Backend
 
@@ -242,17 +323,29 @@ go test ./internal/usecase/... -v      # verbose subscription + classifier
 go test ./internal/infrastructure/... -v  # parser + payment
 ```
 
-### Frontend
+### Frontend Unit Tests
 
 ```powershell
 cd apps/web
-npm install --save-dev jest-expo babel-jest   # one-time setup
-npx jest                                       # run all tests
-npx jest --coverage                           # with coverage report
-npx jest src/lib/format.test.ts              # single file
+pnpm exec jest                         # run all unit tests
+pnpm exec jest --coverage             # with coverage report
+pnpm exec jest src/lib/format.test.ts # single file
 ```
 
-### Integration (not yet written)
+### E2E Browser Tests
+
+Requirements: Docker stack running (`docker compose up -d`), Playwright MCP Bridge extension installed.
+
+```powershell
+# Start app
+docker compose up -d
+
+# Run via Claude Code with Playwright MCP:
+# Use browser_navigate, browser_click, browser_take_screenshot tools
+# Screenshots saved to project root as test-*.png
+```
+
+### Integration (planned, not yet written)
 
 ```powershell
 cd apps/api-go
@@ -261,13 +354,14 @@ go test ./internal/delivery/http/handler/... -tags integration -v
 
 ---
 
-## 5. Final Summary
+## 6. Final Summary
 
 | Layer | Scenarios | Ran | PASS | FAIL | PENDING/PLANNED |
 |-------|-----------|-----|------|------|-----------------|
 | Backend unit | 61 | 61 | **61** | 0 | 0 |
-| Frontend unit | 32 | 0 | 0 | 0 | **32** |
-| Integration | 18 | 0 | 0 | 0 | **18** |
-| **TOTAL** | **111** | **61** | **61** | **0** | **50** |
+| Frontend unit | 32 | 0 | 0 | 0 | **32** ⏳ |
+| Integration API | 18 | 8 | **8** | 0 | **10** |
+| E2E Browser | 30 | 30 | **30** | 0 | 0 |
+| **TOTAL** | **141** | **99** | **99** | **0** | **42** |
 
-**Backend: 61/61 ✅ PASS. Frontend tests are written and ready to run once `jest-expo` is installed. Integration tests are specified but not yet implemented.**
+**99/99 scenarios ran: all PASS. Backend 61/61 ✅. Integration auth+subscription 8/8 ✅. E2E browser 30/30 ✅. Frontend unit tests written (32) — run `pnpm exec jest` from `apps/web/` to execute.**

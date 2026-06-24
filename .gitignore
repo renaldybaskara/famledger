@@ -47,3 +47,7 @@ design_handoff_saku/
 # Local SQL utilities (DB-specific, not portable)
 check_emails.sql
 reset_email_data.sql
+
+# ngrok (contains tunnel config — token stored in system ngrok config)
+ngrok.yml
+start-ngrok.ps1

@@ -4,12 +4,14 @@ import {
   RefreshControl, Modal, TextInput, ActivityIndicator,
   Alert, Platform,
 } from 'react-native'
+import { Trash2 } from 'lucide-react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
+import { id } from 'date-fns/locale'
 import { useBudgets, useCreateBudget, useDeleteBudget } from '../../src/hooks/useBudgets'
 import { useCategories } from '../../src/hooks/useCategories'
 import { Budget, Category } from '../../src/lib/api'
@@ -56,86 +58,78 @@ const PERIOD_OPTIONS = [
 
 function getBudgetStatus(spent: number, total: number) {
   const pct = total > 0 ? (spent / total) * 100 : 0
-  if (pct > 100) return { color: C.danger,   barColor: C.danger,   bg: C.dangerSoft,  label: 'Melebihi' }
-  if (pct >= 80) return { color: C.mustard,  barColor: C.mustard,  bg: C.mustardSoft, label: 'Hampir habis' }
-  return              { color: C.primary,   barColor: C.primary,  bg: C.primarySoft, label: 'Aman' }
+  if (pct > 100) return { color: C.danger,  barColor: C.danger,  bg: C.dangerSoft,  label: 'Melebihi',    cardBg: '#FFF5F5', cardBorder: '#FFDDDD', iconBg: '#FFE8E8' }
+  if (pct >= 80) return { color: C.mustard, barColor: C.mustard, bg: C.mustardSoft, label: 'Hampir habis', cardBg: '#FFF8F5', cardBorder: '#FAEAE3', iconBg: '#FDF2EE' }
+  return              { color: C.primary,  barColor: C.primary, bg: C.primarySoft, label: 'Aman',         cardBg: '#F7FAFA', cardBorder: 'transparent', iconBg: '' }
 }
 
 // ── Budget card ───────────────────────────────────────────────
 function BudgetCard({ budget, onDelete }: { budget: Budget; onDelete: () => void }) {
   const spent     = budget.spent ?? 0
   const total     = budget.amount
-  const pct       = total > 0 ? Math.min((spent / total) * 100, 100) : 0
+  const rawPct    = total > 0 ? (spent / total) * 100 : 0
+  const pct       = Math.min(rawPct, 100)
   const remaining = total - spent
   const status    = getBudgetStatus(spent, total)
+  const catColor  = budget.category?.color ?? C.primary
+  const catIcon   = budget.category?.icon ?? '💰'
 
   return (
     <View style={{
-      backgroundColor: C.surface, borderRadius: 18, padding: 16, marginBottom: 12,
-      shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+      backgroundColor: status.cardBg, borderRadius: 20, padding: 16, marginBottom: 12,
+      borderWidth: status.cardBorder !== 'transparent' ? 1 : 0, borderColor: status.cardBorder,
+      shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
     }}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-        <View style={{ flex: 1, marginRight: 10 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>{budget.name}</Text>
-          <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-            {budget.category && (
-              <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999,
-                backgroundColor: (budget.category.color ?? C.primary) + '22',
-              }}>
-                <Text style={{ fontSize: 11 }}>{budget.category.icon}</Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: budget.category.color ?? C.primary, marginLeft: 4, fontFamily: 'Nunito_700Bold' }}>
-                  {budget.category.name}
-                </Text>
-              </View>
-            )}
-            <View style={{ backgroundColor: C.creamSunken, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: C.fg3, fontFamily: 'Nunito_600SemiBold' }}>
-                {PERIOD_OPTIONS.find((p) => p.value === budget.period)?.label ?? 'Bulanan'}
-              </Text>
-            </View>
-          </View>
+      {/* Header row */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+        {/* Category icon */}
+        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: status.iconBg || catColor + '22', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+          <Text style={{ fontSize: 22 }}>{catIcon}</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: status.bg }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: status.color, fontFamily: 'Nunito_700Bold' }}>{status.label}</Text>
+
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>{budget.name}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: status.color, fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+              {Math.round(rawPct)}%
+            </Text>
           </View>
-          <TouchableOpacity
-            onPress={onDelete}
-            style={{ width: 32, height: 32, backgroundColor: C.creamSunken, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ fontSize: 14, color: C.danger }}>🗑</Text>
-          </TouchableOpacity>
+          <Text style={{ fontSize: 12, color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium', fontVariant: ['tabular-nums'] as any }}>
+            {formatCurrencyCompact(spent)} dari {formatCurrencyCompact(total)}
+          </Text>
         </View>
+
+        <TouchableOpacity
+          onPress={onDelete}
+          style={{ width: 30, height: 30, backgroundColor: C.creamSunken, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}
+        >
+          <Trash2 size={13} color={C.danger} strokeWidth={2} />
+        </TouchableOpacity>
       </View>
 
       {/* Progress bar */}
-      <View style={{ marginBottom: 12 }}>
-        <View style={{ height: 8, backgroundColor: C.creamSunken, borderRadius: 999, overflow: 'hidden' }}>
-          <View style={{ width: `${pct}%` as any, height: '100%', backgroundColor: status.barColor, borderRadius: 999 }} />
-        </View>
-        {spent > total && (
-          <Text style={{ fontSize: 12, color: C.danger, marginTop: 4, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
-            Melebihi {formatPercent(((spent - total) / total) * 100)} dari anggaran
-          </Text>
-        )}
+      <View style={{ height: 8, backgroundColor: C.creamSunken, borderRadius: 999, overflow: 'hidden', marginBottom: 10 }}>
+        <View style={{ width: `${pct}%` as any, height: '100%', backgroundColor: status.barColor, borderRadius: 999 }} />
       </View>
 
-      {/* Stats row */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        {[
-          { label: 'Terpakai',  value: formatCurrencyCompact(spent),         color: C.fg1 },
-          { label: 'Progress',  value: formatPercent((spent / total) * 100),  color: status.color },
-          { label: remaining >= 0 ? 'Sisa' : 'Lebih', value: formatCurrencyCompact(Math.abs(remaining)), color: remaining >= 0 ? C.fg1 : C.danger },
-          { label: 'Anggaran',  value: formatCurrencyCompact(total),          color: C.fg3 },
-        ].map(({ label, value, color }) => (
-          <View key={label}>
-            <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>{label}</Text>
-            <Text style={{ fontSize: 13, fontWeight: '800', color, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>{value}</Text>
-          </View>
-        ))}
+      {/* Status footer */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        {rawPct > 100 ? (
+          <Text style={{ fontSize: 12, color: C.danger, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+            ● Over budget {formatCurrencyCompact(spent - total)}
+          </Text>
+        ) : rawPct >= 80 ? (
+          <Text style={{ fontSize: 12, color: C.mustard, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+            ⚠ Hampir habis
+          </Text>
+        ) : (
+          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+            {PERIOD_OPTIONS.find((p) => p.value === budget.period)?.label ?? 'Bulanan'}
+          </Text>
+        )}
+        <Text style={{ fontSize: 12, color: remaining >= 0 ? C.fg2 : C.danger, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontVariant: ['tabular-nums'] as any }}>
+          {remaining >= 0 ? `Sisa ${formatCurrencyCompact(remaining)}` : `Lebih ${formatCurrencyCompact(-remaining)}`}
+        </Text>
       </View>
     </View>
   )
@@ -315,6 +309,33 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
 }
 
 // ── Budget Screen ─────────────────────────────────────────────
+function DonutSVG({ pct }: { pct: number }) {
+  const size = 90
+  const sw = 10
+  const r = (size - sw) / 2
+  const circ = 2 * Math.PI * r
+  const capped = Math.min(pct, 100)
+  const dash = (capped / 100) * circ
+  const color = pct > 100 ? '#FFB3B3' : pct >= 80 ? '#D9A441' : 'rgba(255,255,255,0.9)'
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' } as any}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={sw}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={sw}
+        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+      <text x={size / 2} y={size / 2 - 5} textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize={16} fontWeight="900" fontFamily="Nunito, sans-serif">
+        {Math.round(pct)}%
+      </text>
+      <text x={size / 2} y={size / 2 + 12} textAnchor="middle" dominantBaseline="middle"
+        fill="rgba(255,255,255,0.6)" fontSize={9} fontFamily="Nunito, sans-serif">
+        terpakai
+      </text>
+    </svg>
+  )
+}
+
 export default function BudgetScreen() {
   const queryClient               = useQueryClient()
   const [addModalVisible, setAddModalVisible] = useState(false)
@@ -339,25 +360,25 @@ export default function BudgetScreen() {
   const totalSpent    = (budgets as Budget[]).reduce((s, b) => s + (b.spent ?? 0), 0)
   const overCount     = (budgets as Budget[]).filter((b) => (b.spent ?? 0) > b.amount).length
   const overallPct    = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0
-  const overallStatus = totalSpent > totalBudget ? C.danger : totalSpent / totalBudget >= 0.8 ? C.mustard : C.primary
+  const remaining     = totalBudget - totalSpent
+  const today         = new Date()
+  const lastDay       = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+  const daysLeft      = lastDay - today.getDate()
+  const dailyRate     = daysLeft > 0 && remaining > 0 ? remaining / daysLeft : 0
+  const currentMonth  = format(today, 'MMMM', { locale: id })
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View>
-            <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>Anggaran</Text>
-            <Text style={{ fontSize: 13, color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
-              {(budgets as Budget[]).length} anggaran aktif
-            </Text>
-          </View>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>Budget</Text>
           <TouchableOpacity
             onPress={() => setAddModalVisible(true)}
-            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, gap: 6 }}
+            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, gap: 4 }}
           >
-            <Text style={{ color: '#fff', fontSize: 18, lineHeight: 20 }}>+</Text>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, fontFamily: 'Nunito_800ExtraBold' }}>Tambah</Text>
+            <Text style={{ color: '#fff', fontSize: 16, lineHeight: 18 }}>+</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>Buat Budget</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -369,44 +390,56 @@ export default function BudgetScreen() {
       >
         <View style={{ paddingTop: 4, paddingBottom: 100 }}>
 
-          {/* Summary card — sage→mustard gradient */}
+          {/* Overview card */}
           {(budgets as Budget[]).length > 0 && (
-            <View style={{
-              borderRadius: 20, padding: 18, marginBottom: 16, overflow: 'hidden',
-              backgroundColor: C.heroStart,
-              ...({ background: `linear-gradient(135deg, ${C.heroStart} 0%, ${C.mustard} 100%)` } as any),
-            }}>
-              {/* Blob */}
-              <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, fontFamily: 'Nunito_800ExtraBold' }}>
-                Ringkasan Anggaran
+            <View style={{ borderRadius: 24, padding: 20, marginBottom: 16, overflow: 'hidden', backgroundColor: C.heroEnd }}>
+              <View style={{ position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+              <View style={{ position: 'absolute', bottom: -20, left: -30, width: 100, height: 100, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+
+              <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, fontFamily: 'Nunito_800ExtraBold' }}>
+                TOTAL BUDGET {currentMonth.toUpperCase()}
               </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
-                {[
-                  { label: 'Total', value: formatCurrencyCompact(totalBudget) },
-                  { label: 'Terpakai', value: formatCurrencyCompact(totalSpent) },
-                  { label: 'Melebihi', value: `${overCount} kategori`, highlight: overCount > 0 },
-                ].map(({ label, value, highlight }) => (
-                  <View key={label}>
-                    <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>{label}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: highlight ? '#FFD4D4' : '#fff', fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
-                      {value}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              {/* Overall progress */}
-              <View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_600SemiBold' }}>Total progress</Text>
-                  <Text style={{ fontSize: 12, color: '#fff', fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
-                    {formatPercent(overallPct)}
+
+              {/* Donut + info row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18, marginBottom: 14 }}>
+                <View style={{ width: 90, height: 90, alignItems: 'center', justifyContent: 'center' }}>
+                  {Platform.OS === 'web' ? (
+                    <DonutSVG pct={overallPct} />
+                  ) : (
+                    <View style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 10, borderColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black' }}>{Math.round(overallPct)}%</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: -0.5, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+                    {formatCurrencyCompact(totalBudget)}
                   </Text>
-                </View>
-                <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 999, overflow: 'hidden' }}>
-                  <View style={{ width: `${overallPct}%` as any, height: '100%', backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 999 }} />
+                  {overCount > 0 && (
+                    <Text style={{ fontSize: 11, color: '#FFD4D4', fontWeight: '700', fontFamily: 'Nunito_700Bold', marginTop: 2 }}>{overCount} kategori over budget</Text>
+                  )}
+                  <View style={{ gap: 4, marginTop: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.85)' }} />
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>
+                        Sisa {formatCurrencyCompact(Math.max(remaining, 0))}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.4)' }} />
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>
+                        Terpakai {formatCurrencyCompact(totalSpent)}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
+
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 12 }} />
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>
+                Sisa bulan ini: <Text style={{ fontWeight: '700', color: '#fff', fontFamily: 'Nunito_700Bold' }}>{daysLeft} hari lagi</Text>
+                {dailyRate > 0 ? ` · ${formatCurrencyCompact(dailyRate)}/hari` : ''}
+              </Text>
             </View>
           )}
 

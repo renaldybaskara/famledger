@@ -7,7 +7,6 @@ import (
 
 	"github.com/fintrackr/api/internal/domain/entity"
 	domainrepo "github.com/fintrackr/api/internal/domain/repository"
-	paymentsvc "github.com/fintrackr/api/internal/infrastructure/payment"
 	"github.com/google/uuid"
 )
 
@@ -15,36 +14,18 @@ import (
 
 type mockSubRepo struct {
 	sub          *entity.UserSubscription
-	order        *entity.PaymentOrder
 	upsertCalled bool
 }
 
 func (m *mockSubRepo) FindByUserID(_ context.Context, _ uuid.UUID) (*entity.UserSubscription, error) {
 	return m.sub, nil
 }
+func (m *mockSubRepo) FindByMidtransOrderID(_ context.Context, _ string) (*entity.UserSubscription, error) {
+	return nil, nil
+}
 func (m *mockSubRepo) Upsert(_ context.Context, sub *entity.UserSubscription) error {
 	m.sub = sub
 	m.upsertCalled = true
-	return nil
-}
-func (m *mockSubRepo) CreateOrder(_ context.Context, o *entity.PaymentOrder) error {
-	m.order = o
-	return nil
-}
-func (m *mockSubRepo) FindOrderByMidtransID(_ context.Context, _ string) (*entity.PaymentOrder, error) {
-	return m.order, nil
-}
-func (m *mockSubRepo) FindOrdersByUserID(_ context.Context, _ uuid.UUID, _ int) ([]entity.PaymentOrder, error) {
-	if m.order != nil {
-		return []entity.PaymentOrder{*m.order}, nil
-	}
-	return nil, nil
-}
-func (m *mockSubRepo) UpdateOrderStatus(_ context.Context, _ string, status string, paidAt *time.Time) error {
-	if m.order != nil {
-		m.order.Status = status
-		m.order.PaidAt = paidAt
-	}
 	return nil
 }
 
@@ -73,7 +54,6 @@ func newTestSubUC(repo *mockSubRepo, disableTierLimits bool) *subscriptionUseCas
 	return &subscriptionUseCase{
 		subRepo:           repo,
 		userRepo:          &mockUserRepoMin{},
-		midtrans:          paymentsvc.NewMidtransService("", "", false),
 		disableTierLimits: disableTierLimits,
 	}
 }
@@ -214,21 +194,66 @@ func TestCancel_NoSubscription(t *testing.T) {
 	}
 }
 
-// ─── HandleWebhook ────────────────────────────────────────────────────────────
+// ─── HandleRevenueCatWebhook ─────────────────────────────────────────────────
 
-func TestHandleWebhook_InvalidSignature(t *testing.T) {
-	uc := newTestSubUC(&mockSubRepo{}, false)
-	uc.midtrans = paymentsvc.NewMidtransService("real-key", "", false)
+func TestHandleRevenueCatWebhook_InitialPurchase(t *testing.T) {
+	userID := uuid.New()
+	expiryMs := float64(time.Now().Add(30*24*time.Hour).UnixMilli())
+	repo := &mockSubRepo{}
+	uc := newTestSubUC(repo, false)
 
-	err := uc.HandleWebhook(context.Background(), map[string]interface{}{
-		"order_id":         "order-001",
-		"status_code":      "200",
-		"gross_amount":     "49000.00",
-		"signature_key":    "bad-signature",
-		"transaction_status": "settlement",
-		"fraud_status":     "accept",
+	err := uc.HandleRevenueCatWebhook(context.Background(), map[string]interface{}{
+		"event": map[string]interface{}{
+			"type":               "INITIAL_PURCHASE",
+			"app_user_id":        userID.String(),
+			"product_id":         "monthly",
+			"period_type":        "NORMAL",
+			"expiration_at_ms":   expiryMs,
+		},
 	})
-	if err == nil || err.Error() != "invalid webhook signature" {
-		t.Errorf("expected invalid signature error, got %v", err)
+	if err != nil {
+		t.Fatalf("webhook error: %v", err)
+	}
+	if !repo.upsertCalled {
+		t.Error("expected Upsert to be called")
+	}
+	if repo.sub.Status != "active" {
+		t.Errorf("Status=%q, want active", repo.sub.Status)
+	}
+}
+
+func TestHandleRevenueCatWebhook_Expiration(t *testing.T) {
+	userID := uuid.New()
+	future := time.Now().Add(30 * 24 * time.Hour)
+	repo := &mockSubRepo{sub: &entity.UserSubscription{
+		UserID: userID, Status: "active", Plan: "pro", CurrentPeriodEnd: &future,
+	}}
+	uc := newTestSubUC(repo, false)
+
+	err := uc.HandleRevenueCatWebhook(context.Background(), map[string]interface{}{
+		"event": map[string]interface{}{
+			"type":        "EXPIRATION",
+			"app_user_id": userID.String(),
+			"product_id":  "monthly",
+		},
+	})
+	if err != nil {
+		t.Fatalf("webhook error: %v", err)
+	}
+	if repo.sub.Status != "free" {
+		t.Errorf("Status=%q, want free after expiration", repo.sub.Status)
+	}
+}
+
+func TestHandleRevenueCatWebhook_InvalidUserID(t *testing.T) {
+	uc := newTestSubUC(&mockSubRepo{}, false)
+	err := uc.HandleRevenueCatWebhook(context.Background(), map[string]interface{}{
+		"event": map[string]interface{}{
+			"type":        "INITIAL_PURCHASE",
+			"app_user_id": "not-a-uuid",
+		},
+	})
+	if err == nil {
+		t.Error("expected error for invalid app_user_id")
 	}
 }

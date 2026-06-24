@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, ActivityIndicator } from 'react-native'
+import { View, ActivityIndicator, Platform } from 'react-native'
 import { Redirect, router } from 'expo-router'
 import { useAuthStore } from '../src/store/auth.store'
 
@@ -14,7 +14,7 @@ export default function Index() {
   }, [])
 
   useEffect(() => {
-    if (!ready || typeof window === 'undefined') return
+    if (!ready || Platform.OS !== 'web') return
     const params = new URLSearchParams(window.location.search)
     const gmailConnected = params.get('gmail_connected')
     const gmailError = params.get('gmail_error')

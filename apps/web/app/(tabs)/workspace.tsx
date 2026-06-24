@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
+import { useIsProActive, useSubscription } from '../../src/hooks/useSubscription'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { TransactionItem } from '../../components/transactions/TransactionItem'
@@ -674,6 +675,8 @@ function PendingInviteBanner() {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function WorkspaceScreen() {
+  const isPro = useIsProActive()
+  const { isLoading: subLoading } = useSubscription()
   const [showCreate, setShowCreate] = useState(false)
   const [selected, setSelected] = useState<Workspace | null>(null)
 
@@ -708,14 +711,30 @@ export default function WorkspaceScreen() {
               <Text className="text-2xl font-bold text-ink-900">Workspace</Text>
               <Text className="text-ink-400 text-sm mt-0.5">Kelola keuangan bersama</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => setShowCreate(true)}
-              className="flex-row items-center bg-primary rounded-xl px-4 py-2.5"
-            >
-              <Text style={{ fontSize: 16, color: 'white', lineHeight: 20, marginRight: 4 }}>+</Text>
-              <Text className="text-white font-semibold text-sm">Buat</Text>
-            </TouchableOpacity>
+            {isPro && (
+              <TouchableOpacity
+                onPress={() => setShowCreate(true)}
+                className="flex-row items-center bg-primary rounded-xl px-4 py-2.5"
+              >
+                <Text style={{ fontSize: 16, color: 'white', lineHeight: 20, marginRight: 4 }}>+</Text>
+                <Text className="text-white font-semibold text-sm">Buat</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {/* Soft upgrade banner for free users */}
+          {!subLoading && !isPro && (
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
+              style={{ backgroundColor: '#FBEFD2', borderWidth: 1, borderColor: '#E8C888', borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+            >
+              <Text style={{ fontSize: 22 }}>⭐</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#7A5C1E', fontFamily: 'Nunito_800ExtraBold' }}>Upgrade ke Pro</Text>
+                <Text style={{ fontSize: 12, color: '#9A7B40', fontFamily: 'Nunito_500Medium', marginTop: 1 }}>Buat workspace baru & undang anggota →</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* Pending invitations for current user */}
           <PendingInviteBanner />
@@ -740,12 +759,22 @@ export default function WorkspaceScreen() {
               <Text className="text-ink-400 text-sm mt-1 text-center">
                 Buat workspace untuk berbagi keuangan dengan keluarga atau bisnis
               </Text>
-              <TouchableOpacity
-                onPress={() => setShowCreate(true)}
-                className="mt-4 bg-primary rounded-xl px-6 py-3"
-              >
-                <Text className="text-white font-bold">Buat Workspace Pertama</Text>
-              </TouchableOpacity>
+              {isPro ? (
+                <TouchableOpacity
+                  onPress={() => setShowCreate(true)}
+                  className="mt-4 bg-primary rounded-xl px-6 py-3"
+                >
+                  <Text className="text-white font-bold">Buat Workspace Pertama</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
+                  className="mt-4 rounded-xl px-6 py-3"
+                  style={{ backgroundColor: '#D9A441' }}
+                >
+                  <Text className="text-white font-bold">Upgrade Pro untuk Membuat →</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View className="gap-3">
