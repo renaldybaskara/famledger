@@ -189,6 +189,7 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 	subscription := protected.Group("/subscription")
 	{
 		subscription.GET("", deps.SubscriptionHandler.GetStatus)
+		subscription.POST("/start-trial", deps.SubscriptionHandler.StartTrial)
 		subscription.POST("/cancel", deps.SubscriptionHandler.Cancel)
 		subscription.POST("/midtrans/create-payment", deps.SubscriptionHandler.CreateMidtransPayment)
 		subscription.POST("/midtrans/confirm", deps.SubscriptionHandler.ConfirmMidtransPayment)

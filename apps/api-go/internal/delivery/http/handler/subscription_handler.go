@@ -33,6 +33,18 @@ func (h *SubscriptionHandler) GetStatus(c *gin.Context) {
 	httputil.OK(c, sub)
 }
 
+// POST /api/subscription/start-trial  [auth]
+// Opt-in: called when user explicitly clicks "Try Free Trial" in the onboarding popup.
+// Idempotent — if trial already exists, returns 200 without error.
+func (h *SubscriptionHandler) StartTrial(c *gin.Context) {
+	userID := c.MustGet("currentUserID").(uuid.UUID)
+	if err := h.uc.CreateTrial(c.Request.Context(), userID); err != nil {
+		httputil.InternalError(c, err)
+		return
+	}
+	httputil.OK(c, gin.H{"message": "Trial 14 hari dimulai"})
+}
+
 // POST /api/subscription/cancel
 func (h *SubscriptionHandler) Cancel(c *gin.Context) {
 	userID := c.MustGet("currentUserID").(uuid.UUID)

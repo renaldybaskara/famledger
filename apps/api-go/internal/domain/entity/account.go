@@ -11,7 +11,7 @@ type Account struct {
 	ID            uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	UserID        uuid.UUID `gorm:"type:uuid;not null;index" json:"userId"`
 	Name          string    `gorm:"not null;size:255" json:"name"`
-	Type          string    `gorm:"not null;size:30" json:"type"` // bank|ewallet|cash|credit_card|investment
+	Type          string    `gorm:"not null;size:30" json:"type"` // bank|credit|investment
 	BankCode      *string   `gorm:"size:50" json:"bankCode,omitempty"`
 	AccountNumber *string   `gorm:"size:50" json:"accountNumber,omitempty"`
 	Balance       float64   `gorm:"type:numeric(15,2);default:0;not null" json:"balance"`

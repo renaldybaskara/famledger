@@ -19,7 +19,7 @@ func NewAccountsHandler(uc domainuc.AccountUseCase) *AccountsHandler {
 
 type createAccountRequest struct {
 	Name          string   `json:"name" binding:"required"`
-	Type          string   `json:"type" binding:"required,oneof=bank ewallet cash credit_card investment"`
+	Type          string   `json:"type" binding:"required,oneof=bank credit investment"`
 	BankCode      *string  `json:"bankCode"`
 	AccountNumber *string  `json:"accountNumber"`
 	Balance       *float64 `json:"balance"`

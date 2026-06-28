@@ -9,6 +9,16 @@ import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory 
 import type { Category, TransactionType } from '../../src/lib/api'
 import { resolveIcon } from '../../src/lib/iconMap'
 
+const C = {
+  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
+  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
+  accent: '#C97B5C', accentSoft: '#F4DDD0',
+  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
+  mustard: '#D9A441', mustardSoft: '#FBEFD2',
+  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
+  border: '#E0DBD2', divider: '#ECE4D3',
+}
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 const CATEGORY_ICONS = [
   '🍽️','🛒','🚗','🏠','💡','🏥','💊','🎓','👕','💅',
@@ -65,52 +75,51 @@ function CategoryFormModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-black/40 justify-end">
-        <View className="bg-white rounded-t-3xl">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
           <ScrollView keyboardShouldPersistTaps="handled">
-            <View className="p-6">
-              <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-xl font-bold text-ink-900">
+            <View style={{ padding: 24 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1 }}>
                   {isEdit ? 'Edit Kategori' : 'Tambah Kategori'}
                 </Text>
                 <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={{ fontSize: 20, color: '#A8A39B', lineHeight: 24 }}>✕</Text>
+                  <Text style={{ fontSize: 20, color: C.fg4, lineHeight: 24 }}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               {error ? (
-                <View style={{ backgroundColor: 'rgba(198,107,107,0.1)', borderWidth: 1, borderColor: '#C66B6B', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                  <Text style={{ color: '#C66B6B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+                <View style={{ backgroundColor: C.dangerSoft, borderWidth: 1, borderColor: C.danger, borderRadius: 12, padding: 12, marginBottom: 16 }}>
+                  <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center' }}>{error}</Text>
                 </View>
               ) : null}
 
               {/* Preview */}
-              <View className="items-center mb-6">
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
                 <View
-                  className="w-16 h-16 rounded-2xl items-center justify-center mb-2"
-                  style={{ backgroundColor: color + '25' }}
+                  style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 8, backgroundColor: color + '25' }}
                 >
                   <Text style={{ fontSize: 28 }}>{resolveIcon(icon)}</Text>
                 </View>
-                <Text className="font-semibold text-ink-700">{name || 'Nama Kategori'}</Text>
+                <Text style={{ fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2 }}>{name || 'Nama Kategori'}</Text>
               </View>
 
               {/* Type (only for new category) */}
               {!isEdit && (
                 <>
-                  <Text className="text-sm font-semibold text-ink-700 mb-2">Jenis Transaksi</Text>
-                  <View className="flex-row gap-2 mb-4">
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Jenis Transaksi</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                     {TX_TYPES.map((t) => (
                       <TouchableOpacity
                         key={t.value}
                         onPress={() => setType(t.value)}
-                        className={`flex-1 py-2.5 rounded-xl items-center border ${
-                          type === t.value ? 'bg-primary border-primary' : 'bg-canvas-200 border-border'
-                        }`}
+                        style={{
+                          flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: 'center', borderWidth: 1,
+                          backgroundColor: type === t.value ? C.primary : C.creamSunken,
+                          borderColor: type === t.value ? C.primary : C.border,
+                        }}
                       >
-                        <Text className={`text-xs font-semibold ${
-                          type === t.value ? 'text-white' : 'text-ink-500'
-                        }`}>{t.label}</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: type === t.value ? '#fff' : C.fg3 }}>{t.label}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -118,25 +127,28 @@ function CategoryFormModal({
               )}
 
               {/* Name */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Nama Kategori</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Nama Kategori</Text>
               <TextInput
-                className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-4"
+                style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16 }}
                 placeholder="Contoh: Makan & Minum"
-                placeholderTextColor="#A8A39B"
+                placeholderTextColor={C.fg4}
                 value={name}
                 onChangeText={setName}
               />
 
               {/* Icon picker */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Ikon</Text>
-              <View className="flex-row flex-wrap gap-2 mb-4">
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Ikon</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {CATEGORY_ICONS.map((ic) => (
                   <TouchableOpacity
                     key={ic}
                     onPress={() => setIcon(ic)}
-                    className={`w-11 h-11 rounded-xl items-center justify-center ${
-                      icon === ic ? 'bg-primary/10 border-2 border-primary' : 'bg-canvas-200'
-                    }`}
+                    style={{
+                      width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: icon === ic ? C.primarySoft : C.creamSunken,
+                      borderWidth: icon === ic ? 2 : 0,
+                      borderColor: icon === ic ? C.primary : 'transparent',
+                    }}
                   >
                     <Text style={{ fontSize: 20 }}>{resolveIcon(ic)}</Text>
                   </TouchableOpacity>
@@ -144,8 +156,8 @@ function CategoryFormModal({
               </View>
 
               {/* Color picker */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Warna</Text>
-              <View className="flex-row gap-2 mb-6 flex-wrap">
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Warna</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
                 {COLORS.map((c) => (
                   <TouchableOpacity
                     key={c}
@@ -167,11 +179,11 @@ function CategoryFormModal({
               <TouchableOpacity
                 onPress={handleSave}
                 disabled={isPending}
-                className={`rounded-xl py-4 items-center ${isPending ? 'bg-primary/60' : 'bg-primary'}`}
+                style={{ borderRadius: 14, paddingVertical: 16, alignItems: 'center', backgroundColor: isPending ? C.primary + '99' : C.primary }}
               >
                 {isPending
                   ? <ActivityIndicator color="white" />
-                  : <Text className="text-white font-bold text-base">
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
                       {isEdit ? 'Simpan Perubahan' : 'Tambah Kategori'}
                     </Text>}
               </TouchableOpacity>
@@ -203,38 +215,44 @@ export default function CategoriesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-4 pt-5">
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
           {/* Back button */}
           <TouchableOpacity
             onPress={() => router.back()}
-            className="flex-row items-center mb-4 self-start"
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, alignSelf: 'flex-start' }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={{ fontSize: 22, color: '#6B8E6B', lineHeight: 26 }}>‹</Text>
-            <Text className="text-primary text-sm font-semibold ml-0.5">Kembali</Text>
+            <Text style={{ fontSize: 22, color: C.primary, lineHeight: 26 }}>‹</Text>
+            <Text style={{ color: C.primary, fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', marginLeft: 2 }}>Kembali</Text>
           </TouchableOpacity>
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-2xl font-bold text-ink-900">Kategori</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <Text style={{ fontSize: 24, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1 }}>Kategori</Text>
             <TouchableOpacity
               onPress={() => setShowForm(true)}
-              className="flex-row items-center bg-primary rounded-xl px-4 py-2.5"
+              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 }}
             >
-              <Text style={{ fontSize: 16, color: 'white', lineHeight: 20, marginRight: 4 }}>+</Text>
-              <Text className="text-white font-semibold text-sm">Tambah</Text>
+              <Text style={{ fontSize: 16, color: '#fff', lineHeight: 20, marginRight: 4 }}>+</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontSize: 13 }}>Tambah</Text>
             </TouchableOpacity>
           </View>
 
           {/* Filter tabs */}
-          <View className="flex-row bg-canvas-200 rounded-xl p-1 mb-5">
+          <View style={{ flexDirection: 'row', backgroundColor: C.creamSunken, borderRadius: 14, padding: 4, marginBottom: 20 }}>
             {(['all', 'expense', 'income', 'transfer'] as const).map((f) => (
               <TouchableOpacity
                 key={f}
                 onPress={() => setFilter(f)}
-                className={`flex-1 py-2 rounded-lg items-center ${filter === f ? 'bg-white shadow-sm' : ''}`}
+                style={[
+                  { flex: 1, paddingVertical: 8, borderRadius: 12, alignItems: 'center' },
+                  filter === f && {
+                    backgroundColor: C.surface,
+                    shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+                  },
+                ]}
               >
-                <Text className={`text-xs font-semibold ${filter === f ? 'text-primary' : 'text-ink-400'}`}>
+                <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: filter === f ? C.primary : C.fg4 }}>
                   {f === 'all' ? 'Semua' : f === 'expense' ? 'Keluar' : f === 'income' ? 'Masuk' : 'Transfer'}
                 </Text>
               </TouchableOpacity>
@@ -242,8 +260,8 @@ export default function CategoriesScreen() {
           </View>
 
           {isLoading ? (
-            <View className="py-10 items-center">
-              <ActivityIndicator color="#6B8E6B" />
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={C.primary} />
             </View>
           ) : (
             <>
@@ -252,41 +270,39 @@ export default function CategoriesScreen() {
                 if (items.length === 0) return null
                 const labels = { expense: 'Pengeluaran', income: 'Pemasukan', transfer: 'Transfer' }
                 return (
-                  <View key={type} className="mb-5">
-                    <Text className="text-xs font-semibold text-ink-400 uppercase tracking-wide mb-2 ml-1">
+                  <View key={type} style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg4, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginLeft: 4 }}>
                       {labels[type]}
                     </Text>
-                    <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                    <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}>
                       {items.map((cat, idx) => (
                         <View key={cat.id}>
-                          <View className="flex-row items-center px-4 py-3.5">
+                          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
                             <View
-                              className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                              style={{ backgroundColor: cat.color + '20' }}
+                              style={{ width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: cat.color + '20' }}
                             >
                               <Text style={{ fontSize: 20 }}>{resolveIcon(cat.icon)}</Text>
                             </View>
-                            <View className="flex-1">
-                              <Text className="text-ink-800 font-medium">{cat.name}</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: C.fg1, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>{cat.name}</Text>
                             </View>
-                            <View className="flex-row gap-2">
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
                               <TouchableOpacity
                                 onPress={() => { setEditCat(cat); setShowForm(true) }}
-                                className="w-8 h-8 bg-primary/10 rounded-lg items-center justify-center"
+                                style={{ width: 32, height: 32, backgroundColor: C.primarySoft, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
                               >
-                                <Text style={{ fontSize: 13, color: '#6B8E6B' }}>✎</Text>
+                                <Text style={{ fontSize: 13, color: C.primary }}>✎</Text>
                               </TouchableOpacity>
                               <TouchableOpacity
                                 onPress={() => setConfirmDelete(cat)}
-                                className="w-8 h-8 rounded-lg items-center justify-center"
-                                style={{ backgroundColor: 'rgba(198,107,107,0.1)' }}
+                                style={{ width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.dangerSoft }}
                               >
-                                <Text style={{ fontSize: 13, color: '#C66B6B' }}>🗑</Text>
+                                <Text style={{ fontSize: 13, color: C.danger }}>🗑</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
                           {idx < items.length - 1 && (
-                            <View className="h-px bg-canvas-200 ml-16" />
+                            <View style={{ height: 1, backgroundColor: C.creamSunken, marginLeft: 64 }} />
                           )}
                         </View>
                       ))}
@@ -296,14 +312,14 @@ export default function CategoriesScreen() {
               })}
 
               {filtered.length === 0 && (
-                <View className="py-10 items-center">
-                  <Text className="text-ink-400">Tidak ada kategori</Text>
+                <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                  <Text style={{ color: C.fg4 }}>Tidak ada kategori</Text>
                 </View>
               )}
             </>
           )}
 
-          <View className="h-6" />
+          <View style={{ height: 24 }} />
         </View>
       </ScrollView>
 
@@ -314,19 +330,19 @@ export default function CategoriesScreen() {
       />
 
       <Modal visible={!!confirmDelete} transparent animationType="fade" onRequestClose={() => setConfirmDelete(null)}>
-        <View className="flex-1 bg-black/40 items-center justify-center px-6">
-          <View className="bg-white rounded-2xl p-6 w-full">
-            <Text className="text-lg font-bold text-ink-900 mb-2">Hapus Kategori?</Text>
-            <Text className="text-ink-500 text-sm mb-6">
-              Kategori <Text className="font-semibold">{confirmDelete?.name}</Text> akan dihapus.
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 24, width: '100%' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1, marginBottom: 8 }}>Hapus Kategori?</Text>
+            <Text style={{ color: C.fg3, fontSize: 13, marginBottom: 24 }}>
+              Kategori <Text style={{ fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>{confirmDelete?.name}</Text> akan dihapus.
               Transaksi yang terkait tidak ikut terhapus.
             </Text>
-            <View className="flex-row gap-3">
+            <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity
                 onPress={() => setConfirmDelete(null)}
-                className="flex-1 py-3 rounded-xl border border-border items-center"
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: C.border, alignItems: 'center' }}
               >
-                <Text className="text-ink-600 font-medium">Batal</Text>
+                <Text style={{ color: C.fg2, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={async () => {
@@ -336,12 +352,11 @@ export default function CategoriesScreen() {
                   }
                 }}
                 disabled={deleteMutation.isPending}
-                className="flex-1 py-3 rounded-xl items-center"
-                style={{ backgroundColor: '#C66B6B' }}
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 14, alignItems: 'center', backgroundColor: C.danger }}
               >
                 {deleteMutation.isPending
                   ? <ActivityIndicator color="white" size="small" />
-                  : <Text className="text-white font-bold">Hapus</Text>}
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Hapus</Text>}
               </TouchableOpacity>
             </View>
           </View>

@@ -28,7 +28,7 @@ import (
 const (
 	gmailPollInterval    = 5 * time.Minute
 	gmailPageSize        = 100 // max allowed by Gmail API per page
-	gmailMaxMessages     = 500 // hard cap per poll cycle to avoid flooding
+	gmailMaxMessages     = 1000 // cap per poll cycle
 	gmailAPIBase         = "https://gmail.googleapis.com/gmail/v1/users/me"
 )
 
@@ -216,7 +216,10 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	// Query all emails after `since` — deduplication via message_id in DB prevents re-import.
 	// Do NOT filter by is:unread — bank emails may already be read by the user.
 	sinceEpoch := since.Unix()
-	query := fmt.Sprintf("after:%d", sinceEpoch)
+	// Filter by known bank/financial email domains so the 1000-message cap
+	// is not exhausted by newsletters, social media etc.
+	bankFilter := "from:(bri.co.id OR bankmandiri.co.id OR klikbca.com OR bni.co.id OR bankbsi.co.id OR cimbniaga.co.id OR permatabank.com OR danamon.co.id OR btn.co.id)"
+	query := fmt.Sprintf("after:%d %s", sinceEpoch, bankFilter)
 
 	// 1. List all message IDs matching the query — paginate until exhausted or cap hit.
 	baseListURL := fmt.Sprintf("%s/messages?q=%s&maxResults=%d",

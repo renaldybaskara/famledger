@@ -14,7 +14,18 @@ import { id } from 'date-fns/locale'
 import { TransactionItem } from '../../components/transactions/TransactionItem'
 import { formatCurrency } from '../../src/lib/format'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const C = {
+  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
+  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
+  accent: '#C97B5C', accentSoft: '#F4DDD0',
+  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
+  mustard: '#D9A441', mustardSoft: '#FBEFD2',
+  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
+  border: '#E0DBD2', divider: '#ECE4D3',
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Workspace {
   id: string
   name: string
@@ -89,7 +100,7 @@ function RoleIcon({ role }: { role: string }) {
   if (role === 'owner') return <Text style={{ fontSize: 14 }}>👑</Text>
   if (role === 'admin') return <Text style={{ fontSize: 14 }}>🛡</Text>
   if (role === 'contributor') return <Text style={{ fontSize: 14 }}>✎</Text>
-  return <Text style={{ fontSize: 14, color: '#A8A39B' }}>👁</Text>
+  return <Text style={{ fontSize: 14, color: C.fg4 }}>👁</Text>
 }
 
 function roleLabel(role: string) {
@@ -115,23 +126,23 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-black/40 justify-end">
-        <View className="bg-white rounded-t-3xl p-6">
-          <View className="flex-row items-center justify-between mb-5">
-            <Text className="text-xl font-bold text-ink-900">Buat Workspace Baru</Text>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Buat Workspace Baru</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ fontSize: 20, color: '#A8A39B', lineHeight: 24 }}>✕</Text>
+              <Text style={{ fontSize: 20, color: C.fg4, lineHeight: 24 }}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {error ? (
-            <View style={{ backgroundColor: 'rgba(198,107,107,0.1)', borderWidth: 1, borderColor: '#C66B6B', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-              <Text style={{ color: '#C66B6B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+            <View style={{ backgroundColor: C.dangerSoft, borderWidth: 1, borderColor: C.danger, borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center' }}>{error}</Text>
             </View>
           ) : null}
 
-          <Text className="text-sm font-semibold text-ink-700 mb-2">Jenis Workspace</Text>
-          <View className="flex-row gap-3 mb-4">
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Jenis Workspace</Text>
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
             {[
               { v: 'family',   label: 'Keluarga', icon: '👨‍👩‍👧' },
               { v: 'business', label: 'Bisnis',   icon: '💼' },
@@ -139,32 +150,30 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
               <TouchableOpacity
                 key={t.v}
                 onPress={() => setTier(t.v as any)}
-                className={`flex-1 p-3.5 rounded-xl items-center border ${
-                  tier === t.v ? 'bg-primary/5 border-primary' : 'bg-canvas-200 border-border'
-                }`}
+                style={{ flex: 1, padding: 14, borderRadius: 14, alignItems: 'center', borderWidth: 1, backgroundColor: tier === t.v ? C.primarySoft : C.creamSunken, borderColor: tier === t.v ? C.primary : C.border }}
               >
                 <Text style={{ fontSize: 24 }}>{t.icon}</Text>
-                <Text className={`text-sm font-semibold mt-1.5 ${tier === t.v ? 'text-primary' : 'text-ink-600'}`}>
+                <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', marginTop: 6, color: tier === t.v ? C.primary : C.fg2 }}>
                   {t.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text className="text-sm font-semibold text-ink-700 mb-2">Nama Workspace</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Nama Workspace</Text>
           <TextInput
-            className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-3"
+            style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 12 }}
             placeholder="Contoh: Keuangan Keluarga"
-            placeholderTextColor="#A8A39B"
+            placeholderTextColor={C.fg4}
             value={name}
             onChangeText={setName}
           />
 
-          <Text className="text-sm font-semibold text-ink-700 mb-2">Deskripsi (opsional)</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Deskripsi (opsional)</Text>
           <TextInput
-            className="bg-canvas-200 border border-border rounded-xl px-4 py-3 text-ink-900 mb-5"
+            style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: C.fg1, marginBottom: 20 }}
             placeholder="Untuk apa workspace ini..."
-            placeholderTextColor="#A8A39B"
+            placeholderTextColor={C.fg4}
             value={desc}
             onChangeText={setDesc}
             multiline
@@ -174,19 +183,18 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
           <TouchableOpacity
             onPress={() => { setError(''); mutation.mutate() }}
             disabled={mutation.isPending || !name.trim()}
-            className={`rounded-xl py-4 items-center ${
-              !name.trim() || mutation.isPending ? 'bg-primary/50' : 'bg-primary'
-            }`}
+            style={{ borderRadius: 14, paddingVertical: 16, alignItems: 'center', backgroundColor: !name.trim() || mutation.isPending ? C.primarySoft : C.primary }}
           >
             {mutation.isPending
               ? <ActivityIndicator color="white" />
-              : <Text className="text-white font-bold text-base">Buat Workspace</Text>}
+              : <Text style={{ color: C.surface, fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>Buat Workspace</Text>}
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   )
 }
+
 
 // ─── Invite Modal ─────────────────────────────────────────────────────────────
 function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: string; onClose: () => void }) {
@@ -208,34 +216,34 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-black/40 justify-end">
-        <View className="bg-white rounded-t-3xl p-6">
-          <View className="flex-row items-center justify-between mb-5">
-            <Text className="text-xl font-bold text-ink-900">Undang Anggota</Text>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Undang Anggota</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ fontSize: 20, color: '#A8A39B', lineHeight: 24 }}>✕</Text>
+              <Text style={{ fontSize: 20, color: C.fg4, lineHeight: 24 }}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {error ? (
-            <View style={{ backgroundColor: 'rgba(198,107,107,0.1)', borderWidth: 1, borderColor: '#C66B6B', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-              <Text style={{ color: '#C66B6B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+            <View style={{ backgroundColor: C.dangerSoft, borderWidth: 1, borderColor: C.danger, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center' }}>{error}</Text>
             </View>
           ) : null}
           {success ? (
-            <View style={{ backgroundColor: '#DEE8D7', borderWidth: 1, borderColor: '#C2D4B9', borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#41594F', marginRight: 8 }}>✓</Text>
-              <Text style={{ color: '#41594F', fontSize: 13, flex: 1 }}>{success}</Text>
+            <View style={{ backgroundColor: C.primarySoft, borderWidth: 1, borderColor: '#C2D4B9', borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: C.heroEnd, marginRight: 8 }}>✓</Text>
+              <Text style={{ color: C.heroEnd, fontSize: 13, flex: 1 }}>{success}</Text>
             </View>
           ) : null}
 
-          <Text className="text-sm font-semibold text-ink-700 mb-2">Email</Text>
-          <View className="flex-row items-center bg-canvas-200 border border-border rounded-xl px-4 mb-4">
-            <Text style={{ fontSize: 16, color: '#A8A39B' }}>✉️</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Email</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, color: C.fg4 }}>✉️</Text>
             <TextInput
-              className="flex-1 ml-3 py-3.5 text-ink-900"
+              style={{ flex: 1, marginLeft: 12, paddingVertical: 14, color: C.fg1 }}
               placeholder="email@contoh.com"
-              placeholderTextColor="#A8A39B"
+              placeholderTextColor={C.fg4}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -243,24 +251,22 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
             />
           </View>
 
-          <Text className="text-sm font-semibold text-ink-700 mb-2">Role</Text>
-          <View className="gap-2 mb-5">
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Role</Text>
+          <View style={{ gap: 8, marginBottom: 20 }}>
             {ROLES.map((r) => (
               <TouchableOpacity
                 key={r.value}
                 onPress={() => setRole(r.value)}
-                className={`flex-row items-center p-3.5 rounded-xl border ${
-                  role === r.value ? 'bg-primary/5 border-primary' : 'bg-canvas-200 border-border'
-                }`}
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1, backgroundColor: role === r.value ? C.primarySoft : C.creamSunken, borderColor: role === r.value ? C.primary : C.border }}
               >
                 <Text style={{ fontSize: 16 }}>{r.icon}</Text>
-                <View className="flex-1 ml-3">
-                  <Text className={`font-semibold text-sm ${role === r.value ? 'text-primary' : 'text-ink-700'}`}>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold', color: role === r.value ? C.primary : C.fg2 }}>
                     {r.label}
                   </Text>
-                  <Text className="text-xs text-ink-400">{r.desc}</Text>
+                  <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>{r.desc}</Text>
                 </View>
-                {role === r.value && <View className="w-2 h-2 rounded-full bg-primary" />}
+                {role === r.value && <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: C.primary }} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -268,19 +274,18 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
           <TouchableOpacity
             onPress={() => { setError(''); setSuccess(''); mutation.mutate() }}
             disabled={mutation.isPending || !email.trim()}
-            className={`rounded-xl py-4 items-center ${
-              !email.trim() || mutation.isPending ? 'bg-primary/50' : 'bg-primary'
-            }`}
+            style={{ borderRadius: 14, paddingVertical: 16, alignItems: 'center', backgroundColor: !email.trim() || mutation.isPending ? C.primarySoft : C.primary }}
           >
             {mutation.isPending
               ? <ActivityIndicator color="white" />
-              : <Text className="text-white font-bold">Kirim Undangan</Text>}
+              : <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Kirim Undangan</Text>}
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   )
 }
+
 
 // ─── Workspace Detail ─────────────────────────────────────────────────────────
 function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) {
@@ -345,92 +350,92 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
   ] as const
 
   return (
-    <View className="flex-1">
+    <View style={{ flex: 1 }}>
       {/* Header */}
-      <View className="bg-primary px-5 pt-4 pb-6">
-        <TouchableOpacity onPress={onBack} className="flex-row items-center mb-3">
+      <View style={{ backgroundColor: C.primary, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}>
+        <TouchableOpacity onPress={onBack} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)', lineHeight: 24 }}>‹</Text>
-          <Text className="text-white/70 text-sm ml-1">Workspace</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginLeft: 4, fontFamily: 'Nunito_500Medium' }}>Workspace</Text>
         </TouchableOpacity>
-        <Text className="text-white text-2xl font-bold">{ws.name}</Text>
+        <Text style={{ color: C.surface, fontSize: 24, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
         {ws.description ? (
-          <Text className="text-white/60 text-sm mt-1">{ws.description}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 4 }}>{ws.description}</Text>
         ) : null}
-        <View className="flex-row items-center mt-2">
-          <View className="bg-white/15 px-2.5 py-1 rounded-full flex-row items-center">
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 12 }}>👥</Text>
-            <Text className="text-white/80 text-xs ml-1.5 font-medium">
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginLeft: 6, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>
               {members?.length ?? 0} anggota
             </Text>
           </View>
-          <View className="bg-white/15 px-2.5 py-1 rounded-full ml-2">
-            <Text className="text-white/80 text-xs font-medium capitalize">{ws.tier}</Text>
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginLeft: 8 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>{ws.tier}</Text>
           </View>
-          <View className="bg-white/15 px-2.5 py-1 rounded-full ml-2">
-            <Text className="text-white/80 text-xs font-medium">{myRole === 'owner' ? '👑 Owner' : roleLabel(myRole)}</Text>
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginLeft: 8 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>{myRole === 'owner' ? '👑 Owner' : roleLabel(myRole)}</Text>
           </View>
         </View>
       </View>
 
       {/* Tabs */}
-      <View className="flex-row bg-white px-4" style={{ borderBottomWidth: 1, borderBottomColor: '#ECE4D3' }}>
+      <View style={{ flexDirection: 'row', backgroundColor: C.surface, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: C.divider }}>
         {TABS.map((t) => (
           <TouchableOpacity
             key={t.key}
             onPress={() => setTab(t.key)}
-            className={`py-3.5 mr-6 border-b-2 ${tab === t.key ? 'border-primary' : 'border-transparent'}`}
+            style={{ paddingVertical: 14, marginRight: 24, borderBottomWidth: 2, borderBottomColor: tab === t.key ? C.primary : 'transparent' }}
           >
-            <Text className={`text-sm font-semibold ${tab === t.key ? 'text-primary' : 'text-ink-400'}`}>
+            <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: tab === t.key ? C.primary : C.fg4 }}>
               {t.label}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-4">
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
         {/* Members tab */}
         {tab === 'members' && (
           <>
             {canManage && (
               <TouchableOpacity
                 onPress={() => setShowInvite(true)}
-                className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-4 flex-row items-center"
+                style={{ backgroundColor: C.primarySoft, borderWidth: 1, borderColor: 'rgba(107,142,107,0.2)', borderRadius: 20, padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}
               >
-                <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
+                <View style={{ width: 40, height: 40, backgroundColor: 'rgba(107,142,107,0.1)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                   <Text style={{ fontSize: 20 }}>👤</Text>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-primary font-semibold">Undang Anggota Baru</Text>
-                  <Text className="text-ink-400 text-xs mt-0.5">Kirim undangan via email</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: C.primary, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>Undang Anggota Baru</Text>
+                  <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Kirim undangan via email</Text>
                 </View>
-                <Text style={{ fontSize: 18, color: '#6B8E6B' }}>›</Text>
+                <Text style={{ fontSize: 18, color: C.primary }}>›</Text>
               </TouchableOpacity>
             )}
 
             {membersLoading ? (
-              <ActivityIndicator color="#6B8E6B" style={{ marginTop: 32 }} />
+              <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
             ) : (
-              <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden' }}>
                 {(members ?? []).map((m, idx) => (
                   <View key={m.userId}>
-                    <View className="px-4 py-3.5 flex-row items-center">
-                      <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mr-3">
-                        <Text className="text-primary font-bold text-base">
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ width: 40, height: 40, backgroundColor: 'rgba(107,142,107,0.1)', borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        <Text style={{ color: C.primary, fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>
                           {m.name?.charAt(0)?.toUpperCase() ?? '?'}
                         </Text>
                       </View>
-                      <View className="flex-1">
-                        <View className="flex-row items-center">
-                          <Text className="text-ink-800 font-semibold text-sm">{m.name}</Text>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>{m.name}</Text>
                           {m.userId === currentUser?.id && (
-                            <Text className="text-ink-400 text-xs ml-1.5">(kamu)</Text>
+                            <Text style={{ color: C.fg4, fontSize: 11, marginLeft: 6, fontFamily: 'Nunito_500Medium' }}>(kamu)</Text>
                           )}
                         </View>
-                        <Text className="text-ink-400 text-xs">{m.email}</Text>
+                        <Text style={{ color: C.fg4, fontSize: 11, fontFamily: 'Nunito_500Medium' }}>{m.email}</Text>
                       </View>
-                      <View className="flex-row items-center">
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <RoleIcon role={m.role} />
-                        <Text className="text-ink-500 text-xs ml-1 mr-2">{roleLabel(m.role)}</Text>
+                        <Text style={{ color: C.fg3, fontSize: 11, marginLeft: 4, marginRight: 8, fontFamily: 'Nunito_500Medium' }}>{roleLabel(m.role)}</Text>
                         {canManage && m.role !== 'owner' && m.userId !== currentUser?.id && (
                           <TouchableOpacity
                             onPress={() => {
@@ -439,15 +444,14 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                                 { text: 'Keluarkan', style: 'destructive', onPress: () => removeMut.mutate(m.userId) },
                               ])
                             }}
-                            className="w-7 h-7 rounded-lg items-center justify-center"
-                            style={{ backgroundColor: 'rgba(198,107,107,0.1)' }}
+                            style={{ width: 28, height: 28, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.dangerSoft }}
                           >
-                            <Text style={{ fontSize: 12, color: '#C66B6B' }}>✕</Text>
+                            <Text style={{ fontSize: 12, color: C.danger }}>✕</Text>
                           </TouchableOpacity>
                         )}
                       </View>
                     </View>
-                    {idx < (members ?? []).length - 1 && <View className="h-px bg-canvas-200 ml-16" />}
+                    {idx < (members ?? []).length - 1 && <View style={{ height: 1, backgroundColor: C.creamSunken, marginLeft: 64 }} />}
                   </View>
                 ))}
               </View>
@@ -468,51 +472,50 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                     },
                   ])
                 }}
-                className="mt-4 rounded-2xl p-4 flex-row items-center justify-center mb-6"
-                style={{ backgroundColor: 'rgba(198,107,107,0.08)', borderWidth: 1, borderColor: 'rgba(198,107,107,0.2)' }}
+                style={{ marginTop: 16, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24, backgroundColor: 'rgba(198,107,107,0.08)', borderWidth: 1, borderColor: 'rgba(198,107,107,0.2)' }}
               >
                 <Text style={{ fontSize: 16, marginRight: 8 }}>↗</Text>
-                <Text style={{ color: '#C66B6B', fontWeight: '600' }}>Keluar dari Workspace</Text>
+                <Text style={{ color: C.danger, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>Keluar dari Workspace</Text>
               </TouchableOpacity>
             )}
           </>
         )}
 
+
         {/* Invites tab */}
         {tab === 'invites' && (
           <>
             {invitesLoading ? (
-              <ActivityIndicator color="#6B8E6B" style={{ marginTop: 32 }} />
+              <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
             ) : (invites ?? []).length === 0 ? (
-              <View className="py-10 items-center">
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
                 <Text style={{ fontSize: 36 }}>✉️</Text>
-                <Text className="text-ink-400 mt-3">Tidak ada undangan aktif</Text>
+                <Text style={{ color: C.fg4, marginTop: 12, fontFamily: 'Nunito_500Medium' }}>Tidak ada undangan aktif</Text>
               </View>
             ) : (
-              <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden' }}>
                 {(invites ?? []).map((inv, idx) => (
                   <View key={inv.id}>
-                    <View className="px-4 py-3.5 flex-row items-center">
-                      <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: '#FBEFD2' }}>
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ width: 40, height: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: C.mustardSoft }}>
                         <Text style={{ fontSize: 16 }}>✉️</Text>
                       </View>
-                      <View className="flex-1">
-                        <Text className="text-ink-800 font-semibold text-sm">{inv.email}</Text>
-                        <Text className="text-ink-400 text-xs">
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>{inv.email}</Text>
+                        <Text style={{ color: C.fg4, fontSize: 11, fontFamily: 'Nunito_500Medium' }}>
                           Role: {roleLabel(inv.role)} · Exp: {format(new Date(inv.expiresAt), 'd MMM', { locale: id })}
                         </Text>
                       </View>
                       {canManage && (
                         <TouchableOpacity
                           onPress={() => revokeInviteMut.mutate(inv.id)}
-                          className="w-7 h-7 rounded-lg items-center justify-center"
-                          style={{ backgroundColor: 'rgba(198,107,107,0.1)' }}
+                          style={{ width: 28, height: 28, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.dangerSoft }}
                         >
-                          <Text style={{ fontSize: 12, color: '#C66B6B' }}>✕</Text>
+                          <Text style={{ fontSize: 12, color: C.danger }}>✕</Text>
                         </TouchableOpacity>
                       )}
                     </View>
-                    {idx < (invites ?? []).length - 1 && <View className="h-px bg-canvas-200 ml-16" />}
+                    {idx < (invites ?? []).length - 1 && <View style={{ height: 1, backgroundColor: C.creamSunken, marginLeft: 64 }} />}
                   </View>
                 ))}
               </View>
@@ -524,41 +527,40 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
         {tab === 'summary' && (
           <>
             {summaryLoading ? (
-              <ActivityIndicator color="#6B8E6B" style={{ marginTop: 32 }} />
+              <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
             ) : (
               <>
-                <View className="flex-row gap-3 mb-4">
-                  <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-                    <Text className="text-xs text-ink-400 font-medium">Pemasukan</Text>
-                    <Text className="text-lg font-bold text-primary mt-1">{formatCurrency(summary?.totalIncome ?? 0)}</Text>
+                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                  <View style={{ flex: 1, backgroundColor: C.surface, borderRadius: 20, padding: 16 }}>
+                    <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Pemasukan</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.primary, marginTop: 4, fontFamily: 'Nunito_700Bold' }}>{formatCurrency(summary?.totalIncome ?? 0)}</Text>
                   </View>
-                  <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-                    <Text className="text-xs text-ink-400 font-medium">Pengeluaran</Text>
-                    <Text className="text-lg font-bold text-accent mt-1">{formatCurrency(summary?.totalExpense ?? 0)}</Text>
+                  <View style={{ flex: 1, backgroundColor: C.surface, borderRadius: 20, padding: 16 }}>
+                    <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Pengeluaran</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.accent, marginTop: 4, fontFamily: 'Nunito_700Bold' }}>{formatCurrency(summary?.totalExpense ?? 0)}</Text>
                   </View>
                 </View>
-                <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-                  <Text className="text-xs text-ink-400 font-medium">Net Balance</Text>
-                  <Text className={`text-xl font-bold mt-1 ${(summary?.netBalance ?? 0) >= 0 ? 'text-primary' : ''}`}
-                    style={(summary?.netBalance ?? 0) < 0 ? { color: '#C66B6B' } : undefined}>
+                <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 16, marginBottom: 16 }}>
+                  <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Net Balance</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '700', marginTop: 4, fontFamily: 'Nunito_700Bold', color: (summary?.netBalance ?? 0) >= 0 ? C.primary : C.danger }}>
                     {formatCurrency(summary?.netBalance ?? 0)}
                   </Text>
-                  <Text className="text-xs text-ink-400 mt-1">{summary?.transactionCount ?? 0} transaksi</Text>
+                  <Text style={{ fontSize: 11, color: C.fg4, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>{summary?.transactionCount ?? 0} transaksi</Text>
                 </View>
                 {(categoryBreakdown ?? []).length > 0 && (
-                  <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-                    <Text className="text-sm font-bold text-ink-700 mb-3">Top Kategori</Text>
+                  <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 16, marginBottom: 16 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 12, fontFamily: 'Nunito_700Bold' }}>Top Kategori</Text>
                     {(categoryBreakdown ?? []).slice(0, 5).map((row: any) => {
                       const maxTotal = (categoryBreakdown ?? [])[0]?.total ?? 1
                       const pct = Math.round((row.total / maxTotal) * 100)
                       return (
-                        <View key={row.categoryId ?? 'uncategorized'} className="mb-3">
-                          <View className="flex-row justify-between mb-1">
-                            <Text className="text-sm text-ink-700">{row.categoryIcon ?? '📦'} {row.categoryName ?? 'Lainnya'}</Text>
-                            <Text className="text-sm font-semibold text-ink-700">{formatCurrency(row.total)}</Text>
+                        <View key={row.categoryId ?? 'uncategorized'} style={{ marginBottom: 12 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_500Medium' }}>{row.categoryIcon ?? '📦'} {row.categoryName ?? 'Lainnya'}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{formatCurrency(row.total)}</Text>
                           </View>
-                          <View className="h-2 bg-canvas-200 rounded-full overflow-hidden">
-                            <View className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                          <View style={{ height: 8, backgroundColor: C.creamSunken, borderRadius: 999, overflow: 'hidden' }}>
+                            <View style={{ height: '100%', backgroundColor: C.primary, borderRadius: 999, width: `${pct}%` }} />
                           </View>
                         </View>
                       )
@@ -574,13 +576,13 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
         {tab === 'transactions' && (
           <>
             {wsTxLoading ? (
-              <ActivityIndicator color="#6B8E6B" style={{ marginTop: 32 }} />
+              <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
             ) : (wsTxData?.data ?? []).length === 0 ? (
-              <View className="py-10 items-center">
-                <Text className="text-ink-400 mt-3">Belum ada transaksi</Text>
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Text style={{ color: C.fg4, marginTop: 12, fontFamily: 'Nunito_500Medium' }}>Belum ada transaksi</Text>
               </View>
             ) : (
-              <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden' }}>
                 {(wsTxData?.data ?? []).map((tx: any, idx: number) => (
                   <View key={tx.id}>
                     <TransactionItem
@@ -589,7 +591,7 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                       memberName={tx.memberName}
                     />
                     {idx < (wsTxData?.data ?? []).length - 1 && (
-                      <View className="h-px bg-canvas-200 ml-16" />
+                      <View style={{ height: 1, backgroundColor: C.creamSunken, marginLeft: 64 }} />
                     )}
                   </View>
                 ))}
@@ -598,13 +600,14 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
           </>
         )}
 
-        <View className="h-6" />
+        <View style={{ height: 24 }} />
       </ScrollView>
 
       <InviteModal visible={showInvite} wsId={ws.id} onClose={() => setShowInvite(false)} />
     </View>
   )
 }
+
 
 // ─── Pending Invite Banner ────────────────────────────────────────────────────
 function PendingInviteBanner() {
@@ -632,39 +635,39 @@ function PendingInviteBanner() {
   if (!pending || pending.length === 0) return null
 
   return (
-    <View className="mb-5">
-      <Text className="text-sm font-bold text-ink-700 mb-2">Undangan Masuk</Text>
+    <View style={{ marginBottom: 20 }}>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Undangan Masuk</Text>
       {pending.map((inv) => (
-        <View key={inv.id} className="rounded-2xl p-4 mb-2" style={{ backgroundColor: '#FBEFD2', borderWidth: 1, borderColor: '#D9A441' }}>
-          <View className="flex-row items-start">
-            <View className="w-10 h-10 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: 'rgba(217,164,65,0.2)' }}>
+        <View key={inv.id} style={{ borderRadius: 20, padding: 16, marginBottom: 8, backgroundColor: C.mustardSoft, borderWidth: 1, borderColor: C.mustard }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+            <View style={{ width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: 'rgba(217,164,65,0.2)' }}>
               <Text style={{ fontSize: 18 }}>✉️</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-ink-800 font-semibold text-sm">
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>
                 Undangan ke workspace
               </Text>
-              <Text className="text-ink-500 text-xs mt-0.5">
+              <Text style={{ color: C.fg3, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
                 Role: {roleLabel(inv.role)} · Exp: {format(new Date(inv.expiresAt), 'd MMM', { locale: id })}
               </Text>
             </View>
           </View>
-          <View className="flex-row mt-3 gap-2">
+          <View style={{ flexDirection: 'row', marginTop: 12, gap: 8 }}>
             <TouchableOpacity
               onPress={() => inv.token && acceptMut.mutate(inv.token)}
               disabled={acceptMut.isPending || !inv.token}
-              className="flex-1 bg-primary rounded-xl py-2.5 items-center"
+              style={{ flex: 1, backgroundColor: C.primary, borderRadius: 14, paddingVertical: 10, alignItems: 'center' }}
             >
               {acceptMut.isPending
                 ? <ActivityIndicator size="small" color="white" />
-                : <Text className="text-white font-bold text-sm">Terima</Text>}
+                : <Text style={{ color: C.surface, fontWeight: '700', fontSize: 13, fontFamily: 'Nunito_700Bold' }}>Terima</Text>}
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => inv.token && declineMut.mutate(inv.token)}
               disabled={declineMut.isPending || !inv.token}
-              className="flex-1 rounded-xl py-2.5 items-center bg-canvas-200"
+              style={{ flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center', backgroundColor: C.creamSunken }}
             >
-              <Text className="text-ink-600 font-semibold text-sm">Tolak</Text>
+              <Text style={{ color: C.fg2, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>Tolak</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -687,124 +690,155 @@ export default function WorkspaceScreen() {
 
   if (selected) {
     return (
-      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
         <WorkspaceDetail ws={selected} onBack={() => setSelected(null)} />
       </SafeAreaView>
     )
   }
 
+  if (subLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={C.primary} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (!isPro) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: C.mustardSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 32 }}>🔒</Text>
+          </View>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 6 }}>Fitur Pro</Text>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center', marginBottom: 8 }}>Workspace Bersama</Text>
+          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium', marginBottom: 24 }}>
+            {'Kelola keuangan bersama keluarga atau tim.\nFitur ini tersedia di paket Pro.'}
+          </Text>
+          <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 16, width: '100%', marginBottom: 24, gap: 10 }}>
+            {[
+              ['👥', 'Workspace hingga 5 anggota keluarga'],
+              ['🛡', 'Role: Owner, Admin, Kontributor, Viewer'],
+              ['📊', 'Laporan keuangan gabungan'],
+              ['📨', 'Undang anggota via email'],
+            ].map(([icon, label]) => (
+              <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{icon}</Text>
+                <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{label}</Text>
+              </View>
+            ))}
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
+            style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 36, width: '100%', alignItems: 'center' }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Lihat Paket Pro →</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-4 pt-5">
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
           {/* Back button */}
           <TouchableOpacity
             onPress={() => router.back()}
-            className="flex-row items-center mb-4 self-start"
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, alignSelf: 'flex-start' }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={{ fontSize: 22, color: '#6B8E6B', lineHeight: 26 }}>‹</Text>
-            <Text className="text-sm font-semibold ml-0.5" style={{ color: '#6B8E6B' }}>Kembali</Text>
+            <Text style={{ fontSize: 22, color: C.primary, lineHeight: 26 }}>‹</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', marginLeft: 2, color: C.primary, fontFamily: 'Nunito_600SemiBold' }}>Kembali</Text>
           </TouchableOpacity>
-          <View className="flex-row items-center justify-between mb-5">
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <View>
-              <Text className="text-2xl font-bold text-ink-900">Workspace</Text>
-              <Text className="text-ink-400 text-sm mt-0.5">Kelola keuangan bersama</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Workspace</Text>
+              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Kelola keuangan bersama</Text>
             </View>
             {isPro && (
               <TouchableOpacity
                 onPress={() => setShowCreate(true)}
-                className="flex-row items-center bg-primary rounded-xl px-4 py-2.5"
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 }}
               >
-                <Text style={{ fontSize: 16, color: 'white', lineHeight: 20, marginRight: 4 }}>+</Text>
-                <Text className="text-white font-semibold text-sm">Buat</Text>
+                <Text style={{ fontSize: 16, color: C.surface, lineHeight: 20, marginRight: 4 }}>+</Text>
+                <Text style={{ color: C.surface, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>Buat</Text>
               </TouchableOpacity>
             )}
           </View>
-
-          {/* Soft upgrade banner for free users */}
-          {!subLoading && !isPro && (
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
-              style={{ backgroundColor: '#FBEFD2', borderWidth: 1, borderColor: '#E8C888', borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-            >
-              <Text style={{ fontSize: 22 }}>⭐</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: '800', color: '#7A5C1E', fontFamily: 'Nunito_800ExtraBold' }}>Upgrade ke Pro</Text>
-                <Text style={{ fontSize: 12, color: '#9A7B40', fontFamily: 'Nunito_500Medium', marginTop: 1 }}>Buat workspace baru & undang anggota →</Text>
-              </View>
-            </TouchableOpacity>
-          )}
 
           {/* Pending invitations for current user */}
           <PendingInviteBanner />
 
           {/* Info card */}
-          <View style={{ backgroundColor: '#DEE8D7', borderWidth: 1, borderColor: '#C2D4B9', borderRadius: 16, padding: 16, marginBottom: 20 }}>
-            <Text style={{ color: '#2F4338', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>Apa itu Workspace?</Text>
-            <Text style={{ color: '#41594F', fontSize: 12, lineHeight: 18 }}>
+          <View style={{ backgroundColor: C.primarySoft, borderWidth: 1, borderColor: '#C2D4B9', borderRadius: 16, padding: 16, marginBottom: 20 }}>
+            <Text style={{ color: '#2F4338', fontSize: 13, fontWeight: '700', marginBottom: 4, fontFamily: 'Nunito_700Bold' }}>Apa itu Workspace?</Text>
+            <Text style={{ color: C.heroEnd, fontSize: 12, lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>
               Workspace memungkinkan kamu berbagi data keuangan dengan keluarga atau tim bisnis.
               Setiap anggota punya role berbeda — owner, admin, kontributor, atau viewer.
             </Text>
           </View>
 
           {isLoading ? (
-            <View className="py-10 items-center">
-              <ActivityIndicator color="#6B8E6B" />
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={C.primary} />
             </View>
           ) : (workspaces ?? []).length === 0 ? (
-            <View className="bg-white rounded-2xl p-8 items-center shadow-sm">
+            <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 32, alignItems: 'center' }}>
               <Text style={{ fontSize: 40 }}>👥</Text>
-              <Text className="text-ink-500 font-semibold mt-3">Belum ada workspace</Text>
-              <Text className="text-ink-400 text-sm mt-1 text-center">
+              <Text style={{ color: C.fg3, fontWeight: '600', marginTop: 12, fontFamily: 'Nunito_600SemiBold' }}>Belum ada workspace</Text>
+              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
                 Buat workspace untuk berbagi keuangan dengan keluarga atau bisnis
               </Text>
               {isPro ? (
                 <TouchableOpacity
                   onPress={() => setShowCreate(true)}
-                  className="mt-4 bg-primary rounded-xl px-6 py-3"
+                  style={{ marginTop: 16, backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12 }}
                 >
-                  <Text className="text-white font-bold">Buat Workspace Pertama</Text>
+                  <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Buat Workspace Pertama</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
-                  className="mt-4 rounded-xl px-6 py-3"
-                  style={{ backgroundColor: '#D9A441' }}
+                  style={{ marginTop: 16, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: C.mustard }}
                 >
-                  <Text className="text-white font-bold">Upgrade Pro untuk Membuat →</Text>
+                  <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Upgrade Pro untuk Membuat →</Text>
                 </TouchableOpacity>
               )}
             </View>
           ) : (
-            <View className="gap-3">
+            <View style={{ gap: 12 }}>
               {(workspaces ?? []).map((ws) => (
                 <TouchableOpacity
                   key={ws.id}
                   onPress={() => setSelected(ws)}
-                  className="bg-white rounded-2xl p-4 shadow-sm flex-row items-center"
-                  style={{ borderWidth: 1, borderColor: '#ECE4D3' }}
+                  style={{ backgroundColor: C.surface, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.divider }}
                 >
-                  <View className="w-12 h-12 bg-primary/10 rounded-xl items-center justify-center mr-4">
+                  <View style={{ width: 48, height: 48, backgroundColor: 'rgba(107,142,107,0.1)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
                     <Text style={{ fontSize: 22 }}>{ws.tier === 'family' ? '👨‍👩‍👧' : '💼'}</Text>
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-ink-900 font-bold text-base">{ws.name}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: C.fg1, fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
                     {ws.description ? (
-                      <Text className="text-ink-400 text-xs mt-0.5" numberOfLines={1}>{ws.description}</Text>
+                      <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>{ws.description}</Text>
                     ) : null}
-                    <View className="flex-row items-center mt-1.5">
-                      <View className="bg-canvas-200 px-2 py-0.5 rounded-full">
-                        <Text className="text-ink-500 text-xs capitalize">{ws.tier}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                      <View style={{ backgroundColor: C.creamSunken, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 }}>
+                        <Text style={{ color: C.fg3, fontSize: 11, fontFamily: 'Nunito_500Medium' }}>{ws.tier}</Text>
                       </View>
                     </View>
                   </View>
-                  <Text style={{ fontSize: 18, color: '#A8A39B' }}>›</Text>
+                  <Text style={{ fontSize: 18, color: C.fg4 }}>›</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
-          <View className="h-6" />
+          <View style={{ height: 24 }} />
         </View>
       </ScrollView>
 

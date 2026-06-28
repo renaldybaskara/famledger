@@ -51,8 +51,7 @@ export function useIsProActive(): boolean {
 
   if (Platform.OS !== 'web') return rcPro
 
-  // user.tier='free' is the DB source of truth — always block if free
-  if (userTier === 'free') return false
+  // Check subscription status first — this is always fresh from the server
   if (!sub) return false
   const now = Date.now()
   switch (sub.status) {

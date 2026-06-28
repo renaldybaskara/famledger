@@ -82,6 +82,7 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
 
   const { data: sub } = useSubscription()
   const isPro = useIsProActive()
+  const daysLeft = useTrialDaysLeft()
 
   const { data: workspacesRaw } = useQuery({
     queryKey: ['workspaces'],
@@ -133,11 +134,17 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
           }}
         >
           <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 22 }}>⭐</Text>
+            <Text style={{ fontSize: 22 }}>{sub?.status === 'trialing' ? '✨' : sub?.status === 'active' ? '⭐' : '⭐'}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black' }}>Paket & Pembayaran</Text>
-            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Upgrade ke Pro untuk fitur lengkap</Text>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+              {sub?.status === 'trialing'
+                ? `✨ Trial Pro aktif · ${daysLeft ?? 0} hari tersisa`
+                : sub?.status === 'active'
+                ? '⭐ Pro Aktif'
+                : 'Upgrade ke Pro untuk fitur lengkap'}
+            </Text>
           </View>
           {Platform.OS === 'web' && (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -160,10 +167,7 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
             iconBg="#E8F5EE"
             label={myWorkspace?.name ?? 'Buat Workspace'}
             sub={myWorkspace ? `${memberCount} anggota · Owner` : 'Kelola keuangan bersama keluarga'}
-            onPress={() => {
-              if (!isPro) { Alert.alert('Fitur Pro', 'This Feature only for Pro Member', [{ text: 'OK' }]); return }
-              router.push('/(tabs)/workspace')
-            }}
+            onPress={() => router.push('/(tabs)/workspace')}
           />
           <SettingRow
             icon={Platform.OS === 'web' ? (

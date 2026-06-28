@@ -51,7 +51,8 @@ func (uc *subscriptionUseCase) GetStatus(ctx context.Context, userID uuid.UUID) 
 		return nil, err
 	}
 	if sub == nil {
-		return &entity.UserSubscription{UserID: userID, Plan: "free", Status: "free"}, nil
+		// No subscription row ever created — user has never interacted with trial
+		return &entity.UserSubscription{UserID: userID, Plan: "free", Status: "free", TrialEligible: true}, nil
 	}
 	now := time.Now()
 	if sub.Status == "trialing" && sub.TrialEndsAt != nil && now.After(*sub.TrialEndsAt) {
@@ -76,14 +77,19 @@ func (uc *subscriptionUseCase) CreateTrial(ctx context.Context, userID uuid.UUID
 		return nil
 	}
 	trialEnd := time.Now().Add(time.Duration(trialDays) * 24 * time.Hour)
-	return uc.subRepo.Upsert(ctx, &entity.UserSubscription{
+	if err := uc.subRepo.Upsert(ctx, &entity.UserSubscription{
 		ID:          uuid.New(),
 		UserID:      userID,
 		Plan:        "pro",
 		Period:      "monthly",
 		Status:      "trialing",
 		TrialEndsAt: &trialEnd,
-	})
+	}); err != nil {
+		return err
+	}
+	// Set tier=premium so TierGate and useIsProActive allow access immediately
+	_, _ = uc.userRepo.Update(ctx, userID, map[string]interface{}{"tier": "premium"})
+	return nil
 }
 
 func (uc *subscriptionUseCase) Cancel(ctx context.Context, userID uuid.UUID) error {

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	httputil "github.com/fintrackr/api/internal/delivery/http/httputil"
 	domainuc "github.com/fintrackr/api/internal/domain/usecase"
@@ -193,7 +194,20 @@ func (h *EmailIntegrationHandler) Sync(c *gin.Context) {
 		return
 	}
 
-	if err := h.uc.Sync(c.Request.Context(), id, userID); err != nil {
+	var body struct {
+		SinceDate string `json:"sinceDate"` // optional, format: "2006-01-02"
+	}
+	_ = c.ShouldBindJSON(&body)
+
+	var sinceDate *time.Time
+	if body.SinceDate != "" {
+		t, err := time.Parse("2006-01-02", body.SinceDate)
+		if err == nil {
+			sinceDate = &t
+		}
+	}
+
+	if err := h.uc.Sync(c.Request.Context(), id, userID, sinceDate); err != nil {
 		if err == usecase.ErrEmailIntegrationNotFound {
 			httputil.NotFound(c, "Integration not found")
 			return

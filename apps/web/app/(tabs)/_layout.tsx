@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Tabs, Redirect } from 'expo-router'
 import { View, Text, Platform } from 'react-native'
 import { useAuthStore } from '../../src/store/auth.store'
 import { configurePurchases } from '../../src/lib/purchases'
+import { useSubscription } from '../../src/hooks/useSubscription'
+import { TrialOnboardingPopup } from '../../components/TrialOnboardingPopup'
 
 const ACTIVE   = '#3D7A56'
 const INACTIVE = '#9DB5A8'
@@ -32,6 +34,8 @@ function SvgTab({ focused, emoji, children }: {
 export default function TabsLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user = useAuthStore((s) => s.user)
+  const { data: sub, isLoading: subLoading } = useSubscription()
+  const [showTrialPopup, setShowTrialPopup] = useState(false)
 
   useEffect(() => {
     if (user?.id) {
@@ -39,10 +43,24 @@ export default function TabsLayout() {
     }
   }, [user?.id])
 
+  // Show trial popup when backend says user has never interacted with trial (trialEligible=true)
+  // This is DB-driven: trialEligible is only true when no user_subscriptions row exists yet.
+  useEffect(() => {
+    if (subLoading || !isAuthenticated || !sub) return
+    if (sub.trialEligible) {
+      setShowTrialPopup(true)
+    }
+  }, [subLoading, sub, isAuthenticated])
+
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />
 
   return (
-    <Tabs
+    <>
+      <TrialOnboardingPopup
+        visible={showTrialPopup}
+        onDismiss={() => setShowTrialPopup(false)}
+      />
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor:   ACTIVE,
@@ -129,5 +147,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="accounts"   options={{ href: null }} />
       <Tabs.Screen name="categories" options={{ href: null }} />
     </Tabs>
+    </>
   )
 }

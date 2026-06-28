@@ -162,10 +162,6 @@ function LainnyaSheet({ visible, onClose, onAdd, onScan }: {
   const isPro = useIsProActive()
 
   const proGate = (action: () => void) => () => {
-    if (!isPro) {
-      Alert.alert('Fitur Pro', 'This Feature only for Pro Member', [{ text: 'OK' }])
-      return
-    }
     action()
   }
 

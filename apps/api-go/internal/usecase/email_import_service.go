@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fintrackr/api/internal/domain/entity"
@@ -26,6 +27,11 @@ type EmailImportService struct {
 	categoryRepo domainrepo.CategoryRepository
 	ruleRepo     domainrepo.BankParserRuleRepository // may be nil (rules disabled)
 	aiSvc        *aisvc.OpenRouterService             // may be nil (AI disabled)
+
+	// parser rules cache — avoids a DB query on every email processed
+	ruleCache       []entity.BankParserRule
+	ruleCacheExpiry time.Time
+	ruleCacheMu     sync.Mutex
 }
 
 // NewEmailImportService builds an EmailImportService with its dependencies.
@@ -49,6 +55,24 @@ func NewEmailImportService(
 	}
 }
 
+// loadRules returns active DB parser rules, using a 30-second in-process cache.
+// This avoids a DB query on every single email processed during a poll cycle.
+func (s *EmailImportService) loadRules(ctx context.Context) []entity.BankParserRule {
+	s.ruleCacheMu.Lock()
+	defer s.ruleCacheMu.Unlock()
+	if s.ruleRepo == nil || time.Now().Before(s.ruleCacheExpiry) {
+		return s.ruleCache
+	}
+	rules, err := s.ruleRepo.FindAllActive(ctx)
+	if err != nil {
+		log.Printf("[EmailImport] failed to load parser rules: %v — using cached rules", err)
+		return s.ruleCache
+	}
+	s.ruleCache = rules
+	s.ruleCacheExpiry = time.Now().Add(30 * time.Second)
+	return s.ruleCache
+}
+
 // ProcessMessage parses the raw email content stored in msg and, if matched, creates
 // a Transaction. It updates msg.ParseStatus in the database regardless of outcome.
 func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.EmailMessage) error {
@@ -61,11 +85,8 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 		bodyHTML = *msg.BodyHTML
 	}
 
-	// Load DB-managed parser rules (if repo is available).
-	var dbRules []entity.BankParserRule
-	if s.ruleRepo != nil {
-		dbRules, _ = s.ruleRepo.FindAllActive(ctx)
-	}
+	// Load DB-managed parser rules (cached, refreshed every 30s).
+	dbRules := s.loadRules(ctx)
 
 	result := emailparser.ParseWithRules(msg.From, msg.Subject, bodyText, bodyHTML, dbRules)
 

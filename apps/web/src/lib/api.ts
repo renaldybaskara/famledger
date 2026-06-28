@@ -104,7 +104,7 @@ export interface Budget {
 export interface Account {
   id: string
   name: string
-  type: 'cash' | 'bank' | 'ewallet' | 'credit'
+  type: 'bank' | 'credit' | 'investment'
   balance: number
   currency: string
   color: string
@@ -265,6 +265,7 @@ export interface UserSubscription {
   plan: 'free' | 'pro'
   period: 'monthly' | 'annual' | 'lifetime' | ''
   status: 'free' | 'trialing' | 'active' | 'past_due' | 'canceled'
+  trialEligible: boolean   // true only when no subscription row exists yet (never interacted with trial)
   trialEndsAt?: string
   currentPeriodStart?: string
   currentPeriodEnd?: string
@@ -276,6 +277,8 @@ export interface UserSubscription {
 export const subscriptionApi = {
   getStatus: () =>
     api.get<UserSubscription>('/subscription'),
+  startTrial: () =>
+    api.post('/subscription/start-trial'),
   cancel: () =>
     api.post('/subscription/cancel'),
   createMidtransPayment: (body: { plan: string; period: string }) =>

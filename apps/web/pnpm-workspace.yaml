@@ -1,5 +1,2 @@
-﻿packages:
-  - '.'
-
-allowBuilds:
-  '@sentry/cli': true
+onlyBuiltDependencies:
+  - "@sentry/cli"

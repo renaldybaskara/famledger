@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/fintrackr/api/internal/domain/entity"
 	"github.com/google/uuid"
@@ -34,6 +35,6 @@ type EmailIntegrationUseCase interface {
 	// Toggle active/inactive
 	SetActive(ctx context.Context, integrationID, userID uuid.UUID, active bool) error
 
-	// Manual sync trigger
-	Sync(ctx context.Context, integrationID, userID uuid.UUID) error
+	// Manual sync trigger — sinceDate overrides last_sync_at if provided
+	Sync(ctx context.Context, integrationID, userID uuid.UUID, sinceDate *time.Time) error
 }

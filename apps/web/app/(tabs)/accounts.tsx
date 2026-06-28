@@ -7,7 +7,53 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '../../src/hooks/useAccounts'
 import { formatCurrency } from '../../src/lib/format'
+import { useAuthStore } from '../../src/store/auth.store'
 import type { Account } from '../../src/lib/api'
+
+const C = {
+  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
+  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
+  accent: '#C97B5C', accentSoft: '#F4DDD0',
+  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
+  mustard: '#D9A441', mustardSoft: '#FBEFD2',
+  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
+  border: '#E0DBD2', divider: '#ECE4D3',
+}
+
+// ─── 3 account types only ────────────────────────────────────────────────────
+const ACCOUNT_TYPES = [
+  {
+    value: 'bank',
+    label: 'Tabungan',
+    icon: '🏦',
+    color: '#6E97AE',
+    desc: 'Rekening tabungan bank',
+    balanceLabel: 'Saldo',
+  },
+  {
+    value: 'credit',
+    label: 'Kartu Kredit',
+    icon: '💳',
+    color: '#C97B5C',
+    desc: 'Kartu kredit',
+    balanceLabel: 'Limit Kartu',
+  },
+  {
+    value: 'investment',
+    label: 'Investasi',
+    icon: '📈',
+    color: '#6B8E6B',
+    desc: 'Saham, reksa dana, kripto',
+    balanceLabel: 'Nilai Investasi Bulan Ini',
+  },
+] as const
+
+type AccountType = 'bank' | 'credit' | 'investment'
+
+const COLORS = [
+  '#6E97AE', '#6B8E6B', '#D9A441', '#C97B5C',
+  '#C66B6B', '#7E4F94', '#41594F', '#A8624A',
+]
 
 function formatBalanceInput(text: string): string {
   const digits = text.replace(/\D/g, '')
@@ -15,32 +61,14 @@ function formatBalanceInput(text: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-const ACCOUNT_TYPES = [
-  { value: 'bank',    label: 'Bank',         icon: '🏦', color: '#6E97AE' },
-  { value: 'ewallet', label: 'E-Wallet',     icon: '📱', color: '#D9A441' },
-  { value: 'cash',    label: 'Tunai',        icon: '💵', color: '#6B8E6B' },
-  { value: 'credit',  label: 'Kartu Kredit', icon: '💳', color: '#C97B5C' },
-] as const
-
-const COLORS = [
-  '#C97B5C', '#6B8E6B', '#D9A441', '#6E97AE',
-  '#C66B6B', '#7E4F94', '#41594F', '#A8624A',
-]
-
-function AccountTypeIcon({ type, size = 18 }: { type: string; size?: number }) {
-  const cfg = ACCOUNT_TYPES.find((t) => t.value === type) ?? ACCOUNT_TYPES[0]
-  return (
-    <View style={{ backgroundColor: cfg.color + '20', borderRadius: 10, padding: 8 }}>
-      <Text style={{ fontSize: size }}>{cfg.icon}</Text>
-    </View>
-  )
+function getTypeCfg(type: string) {
+  return ACCOUNT_TYPES.find((t) => t.value === type) ?? ACCOUNT_TYPES[0]
 }
 
 // ─── Form Modal ───────────────────────────────────────────────────────────────
 interface AccountForm {
   name: string
-  type: 'bank' | 'ewallet' | 'cash' | 'credit'
+  type: AccountType
   balance: string
   bankCode: string
   accountNumber: string
@@ -50,7 +78,7 @@ interface AccountForm {
 
 const defaultForm: AccountForm = {
   name: '', type: 'bank', balance: '0',
-  bankCode: '', accountNumber: '', color: '#6B8E6B', isDefault: false,
+  bankCode: '', accountNumber: '', color: '#6E97AE', isDefault: false,
 }
 
 function AccountFormModal({
@@ -64,7 +92,7 @@ function AccountFormModal({
   const [form, setForm] = useState<AccountForm>(
     account ? {
       name: account.name,
-      type: account.type as AccountForm['type'],
+      type: (account.type as AccountType) ?? 'bank',
       balance: formatBalanceInput(String(Math.round(account.balance))),
       bankCode: (account as any).bankCode ?? '',
       accountNumber: (account as any).accountNumber ?? '',
@@ -81,10 +109,14 @@ function AccountFormModal({
   const set = (key: keyof AccountForm) => (val: string | boolean) =>
     setForm((f) => ({ ...f, [key]: val }))
 
+  const typeCfg = getTypeCfg(form.type)
+
   const handleSave = async () => {
     setError('')
     if (!form.name.trim()) { setError('Nama rekening wajib diisi'); return }
-    const balance = parseFloat(form.balance.replace(/\./g, '')) || 0
+    const balance = form.type === 'investment'
+      ? (parseFloat(form.balance.replace(/\./g, '')) || 0)
+      : 0
 
     try {
       if (isEdit) {
@@ -119,94 +151,131 @@ function AccountFormModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-black/40 justify-end">
-        <View className="bg-white rounded-t-3xl" style={{ maxHeight: '90%' }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' }}>
           <ScrollView keyboardShouldPersistTaps="handled">
-            <View className="p-6">
+            <View style={{ padding: 24 }}>
               {/* Header */}
-              <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-xl font-bold text-ink-900">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1 }}>
                   {isEdit ? 'Edit Rekening' : 'Tambah Rekening'}
                 </Text>
                 <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={{ fontSize: 20, color: '#A8A39B', lineHeight: 24 }}>✕</Text>
+                  <Text style={{ fontSize: 20, color: C.fg4, lineHeight: 24 }}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               {error ? (
-                <View style={{ backgroundColor: 'rgba(198,107,107,0.1)', borderWidth: 1, borderColor: '#C66B6B', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                  <Text style={{ color: '#C66B6B', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+                <View style={{ backgroundColor: C.dangerSoft, borderWidth: 1, borderColor: C.danger, borderRadius: 12, padding: 12, marginBottom: 16 }}>
+                  <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center' }}>{error}</Text>
                 </View>
               ) : null}
 
-              {/* Account type */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Jenis Rekening</Text>
-              <View className="flex-row gap-2 mb-4">
-                {ACCOUNT_TYPES.map((t) => (
-                  <TouchableOpacity
-                    key={t.value}
-                    onPress={() => set('type')(t.value)}
-                    className={`flex-1 items-center py-3 rounded-xl border ${
-                      form.type === t.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-canvas-200'
-                    }`}
-                  >
-                    <Text style={{ fontSize: 18 }}>{t.icon}</Text>
-                    <Text className={`text-xs mt-1 font-medium ${
-                      form.type === t.value ? 'text-primary' : 'text-ink-400'
-                    }`}>{t.label}</Text>
-                  </TouchableOpacity>
-                ))}
+              {/* Account type — 3 options */}
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 10 }}>Jenis Rekening</Text>
+              <View style={{ gap: 8, marginBottom: 20 }}>
+                {ACCOUNT_TYPES.map((t) => {
+                  const selected = form.type === t.value
+                  return (
+                    <TouchableOpacity
+                      key={t.value}
+                      onPress={() => set('type')(t.value)}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14,
+                        borderWidth: 1.5,
+                        borderColor: selected ? C.primary : C.border,
+                        backgroundColor: selected ? C.primarySoft : C.creamSunken,
+                      }}
+                    >
+                      <Text style={{ fontSize: 22, marginRight: 12 }}>{t.icon}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: selected ? C.heroEnd : C.fg1 }}>
+                          {t.label}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginTop: 1 }}>{t.desc}</Text>
+                      </View>
+                      <View style={{
+                        width: 20, height: 20, borderRadius: 999, borderWidth: 2,
+                        borderColor: selected ? C.primary : C.fg4,
+                        backgroundColor: selected ? C.primary : 'transparent',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {selected && <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900', lineHeight: 14 }}>✓</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
 
               {/* Name */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Nama Rekening</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Nama Rekening</Text>
               <TextInput
-                className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-4"
-                placeholder="Contoh: BCA Tabungan"
-                placeholderTextColor="#A8A39B"
+                style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                placeholder={
+                  form.type === 'bank' ? 'Contoh: BCA Tahapan' :
+                  form.type === 'credit' ? 'Contoh: Mandiri Visa' :
+                  'Contoh: Saham BBCA, Kripto BTC'
+                }
+                placeholderTextColor={C.fg4}
                 value={form.name}
                 onChangeText={set('name')}
               />
 
-              {/* Balance */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Saldo Awal</Text>
-              <TextInput
-                className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-4"
-                placeholder="0"
-                placeholderTextColor="#A8A39B"
-                keyboardType="numeric"
-                value={form.balance}
-                onChangeText={(text) => set('balance')(formatBalanceInput(text))}
-              />
-
-              {(form.type === 'bank' || form.type === 'credit') && (
+              {/* Investment amount only */}
+              {form.type === 'investment' && (
                 <>
-                  <Text className="text-sm font-semibold text-ink-700 mb-2">Kode Bank</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 4 }}>
+                    Nilai Investasi Saat Ini
+                  </Text>
+                  <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginBottom: 8 }}>
+                    Nilai portofolio saat ini. Kamu akan diingatkan update setiap awal bulan.
+                  </Text>
                   <TextInput
-                    className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-4"
+                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                    placeholder="0"
+                    placeholderTextColor={C.fg4}
+                    keyboardType="numeric"
+                    value={form.balance}
+                    onChangeText={(text) => set('balance')(formatBalanceInput(text))}
+                  />
+                </>
+              )}
+
+              {/* Credit card: card number last 4 only (for email matching) */}
+              {form.type === 'credit' && (
+                <>
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 4 }}>
+                    4 Digit Terakhir Kartu
+                  </Text>
+                  <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginBottom: 8 }}>
+                    Digunakan untuk mencocokkan notifikasi email kartu kredit.
+                  </Text>
+                  <TextInput
+                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                    placeholder="Contoh: 2609"
+                    placeholderTextColor={C.fg4}
+                    keyboardType="numeric"
+                    maxLength={4}
+                    value={form.accountNumber}
+                    onChangeText={set('accountNumber')}
+                  />
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>
+                    Kode Bank
+                  </Text>
+                  <TextInput
+                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
                     placeholder="Contoh: BCA, MANDIRI, BRI"
-                    placeholderTextColor="#A8A39B"
+                    placeholderTextColor={C.fg4}
                     autoCapitalize="characters"
                     value={form.bankCode}
                     onChangeText={set('bankCode')}
-                  />
-                  <Text className="text-sm font-semibold text-ink-700 mb-2">Nomor Rekening</Text>
-                  <TextInput
-                    className="bg-canvas-200 border border-border rounded-xl px-4 py-3.5 text-ink-900 mb-4"
-                    placeholder="Contoh: 1234567890"
-                    placeholderTextColor="#A8A39B"
-                    keyboardType="numeric"
-                    value={form.accountNumber}
-                    onChangeText={set('accountNumber')}
                   />
                 </>
               )}
 
               {/* Color */}
-              <Text className="text-sm font-semibold text-ink-700 mb-2">Warna</Text>
-              <View className="flex-row gap-2 mb-4">
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Warna</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                 {COLORS.map((c) => (
                   <TouchableOpacity
                     key={c}
@@ -218,47 +287,145 @@ function AccountFormModal({
                       alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    {form.color === c && (
-                      <Text style={{ color: 'white', fontSize: 12, fontWeight: '700', lineHeight: 16 }}>✓</Text>
-                    )}
+                    {form.color === c && <Text style={{ color: 'white', fontSize: 12, fontWeight: '700', lineHeight: 16 }}>✓</Text>}
                   </TouchableOpacity>
                 ))}
               </View>
 
-              {/* Default toggle */}
-              <TouchableOpacity
-                onPress={() => set('isDefault')(!form.isDefault)}
-                className={`flex-row items-center justify-between p-4 rounded-xl mb-6 ${
-                  form.isDefault ? 'bg-primary/10 border border-primary/20' : 'bg-canvas-200 border border-border'
-                }`}
-              >
-                <Text className={`font-medium ${form.isDefault ? 'text-primary' : 'text-ink-600'}`}>
-                  Jadikan rekening utama
-                </Text>
-                <View
-                  className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
-                    form.isDefault ? 'bg-primary border-primary' : 'border-ink-300'
-                  }`}
+              {/* Default toggle — only for bank accounts */}
+              {form.type === 'bank' && (
+                <TouchableOpacity
+                  onPress={() => set('isDefault')(!form.isDefault)}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                    padding: 16, borderRadius: 14, marginBottom: 20,
+                    backgroundColor: form.isDefault ? C.primarySoft : C.creamSunken,
+                    borderWidth: 1, borderColor: form.isDefault ? C.primary : C.border,
+                  }}
                 >
-                  {form.isDefault && (
-                    <Text style={{ color: 'white', fontSize: 10, fontWeight: '700', lineHeight: 14 }}>✓</Text>
-                  )}
-                </View>
-              </TouchableOpacity>
+                  <Text style={{ fontWeight: '500', fontFamily: 'Nunito_500Medium', color: form.isDefault ? C.primary : C.fg2 }}>
+                    Jadikan rekening utama
+                  </Text>
+                  <View style={{
+                    width: 20, height: 20, borderRadius: 999, borderWidth: 2,
+                    alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: form.isDefault ? C.primary : 'transparent',
+                    borderColor: form.isDefault ? C.primary : C.fg3,
+                  }}>
+                    {form.isDefault && <Text style={{ color: 'white', fontSize: 10, fontWeight: '700', lineHeight: 14 }}>✓</Text>}
+                  </View>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 onPress={handleSave}
                 disabled={isPending}
-                className={`rounded-xl py-4 items-center ${isPending ? 'bg-primary/60' : 'bg-primary'}`}
+                style={{ borderRadius: 14, paddingVertical: 16, alignItems: 'center', backgroundColor: isPending ? C.primary + '99' : C.primary }}
               >
                 {isPending
                   ? <ActivityIndicator color="white" />
-                  : <Text className="text-white font-bold text-base">
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
                       {isEdit ? 'Simpan Perubahan' : 'Tambah Rekening'}
                     </Text>}
               </TouchableOpacity>
             </View>
           </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+
+// ─── Investment Monthly Update Popup ─────────────────────────────────────────
+function InvestmentUpdatePopup({
+  accounts,
+  userId,
+}: {
+  accounts: Account[]
+  userId: string
+}) {
+  const updateMutation = useUpdateAccount()
+  const investments = accounts.filter((a) => a.type === 'investment')
+
+  // Check if today is 1st of month and popup not yet shown this month
+  const storageKey = `investment_popup_${userId}_${new Date().toISOString().slice(0, 7)}`
+  const isFirstOfMonth = new Date().getDate() === 1
+  const alreadySeen = typeof window !== 'undefined' && localStorage.getItem(storageKey) === '1'
+  const shouldShow = isFirstOfMonth && !alreadySeen && investments.length > 0
+
+  const [visible, setVisible] = useState(shouldShow)
+  const [values, setValues] = useState<Record<string, string>>(
+    Object.fromEntries(investments.map((a) => [a.id, formatBalanceInput(String(Math.round(a.balance)))]))
+  )
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await Promise.all(
+        investments.map((a) => {
+          const val = parseFloat((values[a.id] ?? '0').replace(/\./g, '')) || 0
+          return updateMutation.mutateAsync({ id: a.id, data: { balance: val } })
+        })
+      )
+      if (typeof window !== 'undefined') localStorage.setItem(storageKey, '1')
+      setVisible(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSkip = () => {
+    if (typeof window !== 'undefined') localStorage.setItem(storageKey, '1')
+    setVisible(false)
+  }
+
+  if (!visible) return null
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={handleSkip}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <View style={{ backgroundColor: C.surface, borderRadius: 24, padding: 24, width: '100%', maxWidth: 400 }}>
+          <Text style={{ fontSize: 24, textAlign: 'center', marginBottom: 8 }}>📈</Text>
+          <Text style={{ fontSize: 18, fontWeight: '900', fontFamily: 'Nunito_900Black', color: C.fg1, textAlign: 'center', marginBottom: 4 }}>
+            Update Nilai Investasi
+          </Text>
+          <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium', textAlign: 'center', marginBottom: 20 }}>
+            Awal bulan baru — masukkan nilai portofolio terkini
+          </Text>
+
+          <View style={{ gap: 14, marginBottom: 20 }}>
+            {investments.map((a) => (
+              <View key={a.id}>
+                <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 6 }}>
+                  {a.name}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingHorizontal: 14 }}>
+                  <Text style={{ color: C.fg3, fontSize: 13, marginRight: 6 }}>Rp</Text>
+                  <TextInput
+                    style={{ flex: 1, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_700Bold' }}
+                    keyboardType="numeric"
+                    value={values[a.id] ?? '0'}
+                    onChangeText={(t) => setValues((v) => ({ ...v, [a.id]: formatBalanceInput(t) }))}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={saving}
+            style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 10 }}
+          >
+            {saving
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Simpan →</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSkip} style={{ alignItems: 'center', paddingVertical: 6 }}>
+            <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>Ingatkan bulan depan</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -273,147 +440,189 @@ export default function AccountsScreen() {
   const [editAccount, setEditAccount] = useState<Account | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Account | null>(null)
 
-  const totalBalance = (accounts ?? []).reduce((sum, a) => sum + a.balance, 0)
-
-  const handleEdit = (acc: Account) => {
-    setEditAccount(acc)
-    setShowForm(true)
+  // Group by type
+  const grouped = {
+    bank: (accounts ?? []).filter((a) => a.type === 'bank'),
+    credit: (accounts ?? []).filter((a) => a.type === 'credit'),
+    investment: (accounts ?? []).filter((a) => a.type === 'investment'),
   }
 
-  const handleCloseForm = () => {
-    setShowForm(false)
-    setEditAccount(null)
-  }
+  const totalSavings = grouped.bank.reduce((s, a) => s + a.balance, 0)
+  const totalInvestment = grouped.investment.reduce((s, a) => s + a.balance, 0)
 
+  const handleEdit = (acc: Account) => { setEditAccount(acc); setShowForm(true) }
+  const handleCloseForm = () => { setShowForm(false); setEditAccount(null) }
   const handleDelete = async (acc: Account) => {
     await deleteMutation.mutateAsync(acc.id)
     setConfirmDelete(null)
   }
 
+  // Get userId for investment popup key
+  const userId = useAuthStore((s) => s.user?.id) ?? ''
+
   return (
-    <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="bg-primary px-5 pt-4 pb-8">
+        <View style={{ backgroundColor: C.heroEnd, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 }}>
           <TouchableOpacity
             onPress={() => router.back()}
-            className="flex-row items-center mb-3 self-start"
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, alignSelf: 'flex-start' }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)', lineHeight: 26 }}>‹</Text>
-            <Text className="text-white/80 text-sm font-semibold ml-0.5">Kembali</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginLeft: 2 }}>Kembali</Text>
           </TouchableOpacity>
-          <Text className="text-white/70 text-sm mb-1">Total Saldo</Text>
-          <Text className="text-white text-3xl font-bold font-mono mb-1">
-            {formatCurrency(totalBalance)}
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 2, fontFamily: 'Nunito_500Medium' }}>Total Tabungan</Text>
+          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', fontFamily: 'Nunito_900Black' }}>
+            {formatCurrency(totalSavings)}
           </Text>
-          <Text className="text-white/60 text-xs">{(accounts ?? []).length} rekening aktif</Text>
+          {totalInvestment > 0 && (
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>
+              Investasi: {formatCurrency(totalInvestment)}
+            </Text>
+          )}
         </View>
 
-        <View className="px-4 -mt-4">
+        <View style={{ paddingHorizontal: 16, marginTop: -16, paddingBottom: 32 }}>
           {/* Add button */}
           <TouchableOpacity
             onPress={() => setShowForm(true)}
-            className="bg-white rounded-2xl p-4 mb-4 flex-row items-center shadow-sm"
-            style={{ borderWidth: 1, borderColor: '#E0DBD2' }}
+            style={{
+              backgroundColor: C.surface, borderRadius: 20, padding: 16, marginBottom: 20,
+              flexDirection: 'row', alignItems: 'center',
+              shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+              borderWidth: 1, borderColor: C.border,
+            }}
           >
-            <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
-              <Text style={{ fontSize: 22, color: '#6B8E6B', lineHeight: 26 }}>+</Text>
+            <View style={{ width: 40, height: 40, backgroundColor: C.primarySoft, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+              <Text style={{ fontSize: 22, color: C.primary, lineHeight: 26 }}>+</Text>
             </View>
-            <Text className="text-primary font-semibold text-base">Tambah Rekening Baru</Text>
+            <Text style={{ color: C.primary, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontSize: 15 }}>Tambah Rekening Baru</Text>
           </TouchableOpacity>
 
-          {/* Account list */}
           {isLoading ? (
-            <View className="py-10 items-center">
-              <ActivityIndicator color="#6B8E6B" />
-            </View>
+            <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
           ) : (accounts ?? []).length === 0 ? (
-            <View className="bg-white rounded-2xl p-8 items-center shadow-sm">
+            <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 32, alignItems: 'center' }}>
               <Text style={{ fontSize: 40 }}>👛</Text>
-              <Text className="text-ink-400 mt-3 font-medium">Belum ada rekening</Text>
-              <Text className="text-ink-300 text-sm mt-1">Tambahkan rekening bank atau e-wallet kamu</Text>
+              <Text style={{ color: C.fg3, marginTop: 12, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Belum ada rekening</Text>
+              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
+                Tambahkan tabungan, kartu kredit, atau akun investasi
+              </Text>
             </View>
           ) : (
-            <View className="gap-3 mb-6">
-              {(accounts ?? []).map((acc) => (
-                <View key={acc.id} className="bg-white rounded-2xl p-4 shadow-sm" style={{ borderWidth: 1, borderColor: '#ECE4D3' }}>
-                  <View className="flex-row items-center">
-                    <AccountTypeIcon type={acc.type} />
-                    <View className="flex-1 ml-3">
-                      <View className="flex-row items-center">
-                        <Text className="text-ink-900 font-semibold text-base">{acc.name}</Text>
-                        {(acc as any).isDefault && (
-                          <View className="ml-2 bg-primary/10 px-2 py-0.5 rounded-full">
-                            <Text className="text-primary text-xs font-medium">Utama</Text>
-                          </View>
-                        )}
-                      </View>
-                      {(acc as any).accountNumber && (
-                        <Text className="text-ink-400 text-xs mt-0.5">
-                          •••• {String((acc as any).accountNumber).slice(-4)}
-                        </Text>
-                      )}
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-ink-900 font-bold font-mono">
-                        {formatCurrency(acc.balance)}
+            <>
+              {/* Render each group */}
+              {([
+                { key: 'bank', cfg: ACCOUNT_TYPES[0], list: grouped.bank },
+                { key: 'credit', cfg: ACCOUNT_TYPES[1], list: grouped.credit },
+                { key: 'investment', cfg: ACCOUNT_TYPES[2], list: grouped.investment },
+              ] as const).map(({ key, cfg, list }) =>
+                list.length === 0 ? null : (
+                  <View key={key} style={{ marginBottom: 20 }}>
+                    {/* Section header */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 6 }}>
+                      <Text style={{ fontSize: 16 }}>{cfg.icon}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {cfg.label}
                       </Text>
-                      <View className="flex-row mt-2 gap-2">
-                        <TouchableOpacity
-                          onPress={() => handleEdit(acc)}
-                          className="w-8 h-8 bg-primary/10 rounded-lg items-center justify-center"
-                        >
-                          <Text style={{ fontSize: 14, color: '#6B8E6B' }}>✎</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => setConfirmDelete(acc)}
-                          className="w-8 h-8 rounded-lg items-center justify-center"
-                          style={{ backgroundColor: 'rgba(198,107,107,0.1)' }}
-                        >
-                          <Text style={{ fontSize: 13, color: '#C66B6B' }}>🗑</Text>
-                        </TouchableOpacity>
-                      </View>
+                    </View>
+
+                    <View style={{ gap: 10 }}>
+                      {list.map((acc) => (
+                        <View key={acc.id} style={{
+                          backgroundColor: C.surface, borderRadius: 18, padding: 16,
+                          shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+                          borderWidth: 1, borderColor: C.divider,
+                        }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: cfg.color + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                              <Text style={{ fontSize: 20 }}>{cfg.icon}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text style={{ color: C.fg1, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontSize: 15 }}>{acc.name}</Text>
+                                {(acc as any).isDefault && (
+                                  <View style={{ backgroundColor: C.primarySoft, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 }}>
+                                    <Text style={{ color: C.primary, fontSize: 10, fontFamily: 'Nunito_600SemiBold' }}>Utama</Text>
+                                  </View>
+                                )}
+                              </View>
+                              {(acc as any).accountNumber && (
+                                <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                                  •••• {String((acc as any).accountNumber).slice(-4)}
+                                </Text>
+                              )}
+                              <Text style={{ fontSize: 11, color: C.fg3, marginTop: 1, fontFamily: 'Nunito_500Medium' }}>
+                                {cfg.balanceLabel}
+                              </Text>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                              {acc.type === 'investment' && (
+                                <Text style={{ color: C.fg1, fontWeight: '700', fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
+                                  {formatCurrency(acc.balance)}
+                                </Text>
+                              )}
+                              <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
+                                <TouchableOpacity
+                                  onPress={() => handleEdit(acc)}
+                                  style={{ width: 32, height: 32, backgroundColor: C.primarySoft, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Text style={{ fontSize: 14, color: C.primary }}>✎</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() => setConfirmDelete(acc)}
+                                  style={{ width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: C.dangerSoft }}
+                                >
+                                  <Text style={{ fontSize: 13, color: C.danger }}>🗑</Text>
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          </View>
+                          <View style={{ backgroundColor: acc.color, height: 3, borderRadius: 2, marginTop: 12 }} />
+                        </View>
+                      ))}
                     </View>
                   </View>
-                  <View style={{ backgroundColor: acc.color, height: 3, borderRadius: 2, marginTop: 12 }} />
-                </View>
-              ))}
-            </View>
+                )
+              )}
+            </>
           )}
         </View>
       </ScrollView>
 
-      <AccountFormModal
-        visible={showForm}
-        account={editAccount}
-        onClose={handleCloseForm}
-      />
+      {/* Investment monthly update popup */}
+      {!isLoading && accounts && accounts.length > 0 && (
+        <InvestmentUpdatePopup accounts={accounts} userId={userId} />
+      )}
 
+      <AccountFormModal visible={showForm} account={editAccount} onClose={handleCloseForm} />
+
+      {/* Delete confirm */}
       <Modal visible={!!confirmDelete} transparent animationType="fade" onRequestClose={() => setConfirmDelete(null)}>
-        <View className="flex-1 bg-black/40 items-center justify-center px-6">
-          <View className="bg-white rounded-2xl p-6 w-full">
-            <Text className="text-lg font-bold text-ink-900 mb-2">Hapus Rekening?</Text>
-            <Text className="text-ink-500 text-sm mb-6">
-              Rekening <Text className="font-semibold">{confirmDelete?.name}</Text> akan dihapus.
-              Transaksi yang terkait tidak ikut terhapus.
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 24, width: '100%' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1, marginBottom: 8 }}>Hapus Rekening?</Text>
+            <Text style={{ color: C.fg3, fontSize: 13, marginBottom: 24, fontFamily: 'Nunito_500Medium' }}>
+              Rekening <Text style={{ fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>{confirmDelete?.name}</Text> akan dihapus.
+              Transaksi tidak ikut terhapus.
             </Text>
-            <View className="flex-row gap-3">
+            <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity
                 onPress={() => setConfirmDelete(null)}
-                className="flex-1 py-3 rounded-xl border border-border items-center"
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: C.border, alignItems: 'center' }}
               >
-                <Text className="text-ink-600 font-medium">Batal</Text>
+                <Text style={{ color: C.fg2, fontFamily: 'Nunito_500Medium' }}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => confirmDelete && handleDelete(confirmDelete)}
                 disabled={deleteMutation.isPending}
-                className="flex-1 py-3 rounded-xl items-center"
-                style={{ backgroundColor: '#C66B6B' }}
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 14, alignItems: 'center', backgroundColor: C.danger }}
               >
                 {deleteMutation.isPending
                   ? <ActivityIndicator color="white" size="small" />
-                  : <Text className="text-white font-bold">Hapus</Text>}
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Hapus</Text>}
               </TouchableOpacity>
             </View>
           </View>

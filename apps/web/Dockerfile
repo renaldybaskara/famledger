@@ -12,11 +12,13 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 FROM base AS deps
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* .npmrc* pnpm-workspace.yaml* ./
 
 ENV CI=true
 # Use hoisted linker so node_modules is a flat directory (safe to COPY between stages)
-RUN pnpm install --frozen-lockfile --node-linker=hoisted || pnpm install --no-frozen-lockfile --node-linker=hoisted
+# --ignore-scripts skips post-install scripts (e.g. @sentry/cli binary download) — not needed at build time
+RUN pnpm install --frozen-lockfile --node-linker=hoisted --ignore-scripts \
+ || pnpm install --no-frozen-lockfile --node-linker=hoisted --ignore-scripts
 
 # ── Stage 2: Build static export ───────────────────────────
 FROM base AS builder

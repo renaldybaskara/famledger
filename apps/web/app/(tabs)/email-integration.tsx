@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { router } from 'expo-router'
 import {
   View, Text, TouchableOpacity, ScrollView, ActivityIndicator,
-  RefreshControl, Alert, Platform, TextInput,
+  RefreshControl, Alert, Platform, TextInput, Modal,
 } from 'react-native'
 import { Mail, Monitor, RefreshCw, Trash2, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import * as WebBrowser from 'expo-web-browser'
@@ -47,7 +47,7 @@ const emailApi = {
   getGmailAuthUrl: () => api.get<{ url: string }>('/email-integrations/gmail/auth'),
   disconnect: (id: string) => api.delete(`/email-integrations/${id}`),
   toggle: (id: string) => api.patch(`/email-integrations/${id}/toggle`),
-  sync: (id: string) => api.post(`/email-integrations/${id}/sync`),
+  sync: (id: string, sinceDate?: string) => api.post(`/email-integrations/${id}/sync`, sinceDate ? { sinceDate } : {}),
   listMessages: (params?: { integrationId?: string; status?: string; page?: number; limit?: number; aiUsed?: boolean }) =>
     api.get<{ data: EmailMessage[]; total: number; page: number }>('/email-messages', { params }),
   reprocess: (id: string) => api.post(`/email-messages/${id}/reprocess`),
@@ -61,13 +61,51 @@ export default function EmailIntegrationScreen() {
   const [view, setView] = useState<'main' | 'add-gmail' | 'add-imap'>('main')
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
+  // Date picker — shown after Gmail/IMAP connects
+  const [sincePicker, setSincePicker] = useState<{ email: string } | null>(null)
+  const [sinceDate, setSinceDate] = useState<string>(() => {
+    const d = new Date(); d.setDate(d.getDate() - 7)
+    return d.toISOString().split('T')[0]
+  })
+  const [syncLoading, setSyncLoading] = useState(false)
+  const qc = useQueryClient()
+
+  // Max = 25th of last month
+  const maxSinceDate = (() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth() - 1, 25).toISOString().split('T')[0]
+  })()
+
+  const handleConnectSuccess = (email: string) => {
+    setView('main')
+    setSinceDate((() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] })())
+    setSincePicker({ email })
+  }
+
+  const handleConfirmSince = async () => {
+    setSyncLoading(true)
+    try {
+      const { data } = await emailApi.listIntegrations()
+      const list: EmailIntegration[] = Array.isArray(data) ? data : (data as any)?.data ?? []
+      const integ = list.find(i => i.email === sincePicker?.email) ?? list[0]
+      if (integ) await emailApi.sync(integ.id, sinceDate)
+      qc.invalidateQueries({ queryKey: ['email-integrations'] })
+      setSincePicker(null)
+      setToast({ type: 'success', msg: `Mengambil email dari ${sinceDate} ✅` })
+    } catch {
+      setToast({ type: 'error', msg: 'Gagal mengatur tanggal sync.' })
+    } finally {
+      setSyncLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const connected = sessionStorage.getItem('gmail_connected')
     const gmailError = sessionStorage.getItem('gmail_error')
     if (connected) {
       sessionStorage.removeItem('gmail_connected')
-      setToast({ type: 'success', msg: `Gmail ${connected} berhasil dihubungkan!` })
+      handleConnectSuccess(connected)
     } else if (gmailError) {
       sessionStorage.removeItem('gmail_error')
       const msgs: Record<string, string> = {
@@ -105,6 +143,58 @@ export default function EmailIntegrationScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+      {/* ── Date picker modal ── */}
+      <Modal visible={!!sincePicker} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', marginBottom: 6 }}>
+              📅 Ambil email dari tanggal?
+            </Text>
+            <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Nunito_500Medium', lineHeight: 18, marginBottom: 16 }}>
+              <Text style={{ fontWeight: '700', color: C.fg2 }}>{sincePicker?.email}</Text> berhasil terhubung!{'\n'}
+              Pilih tanggal awal. Default 7 hari lalu. Maks tanggal 25 bulan lalu.
+            </Text>
+
+            {Platform.OS === 'web' ? (
+              <input
+                type="date"
+                value={sinceDate}
+                max={maxSinceDate}
+                onClick={e => (e.target as HTMLInputElement).showPicker?.()}
+                onChange={e => { if (e.target.value <= maxSinceDate) setSinceDate(e.target.value) }}
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: 12,
+                  border: '1.5px solid #E0DBD2', fontSize: 15, marginBottom: 20,
+                  backgroundColor: '#FAF7F2', fontFamily: 'inherit', color: '#2D2A26',
+                  boxSizing: 'border-box', cursor: 'pointer',
+                } as any}
+              />
+            ) : (
+              <TextInput
+                value={sinceDate}
+                onChangeText={v => { if (v <= maxSinceDate) setSinceDate(v) }}
+                placeholder="YYYY-MM-DD"
+                style={{ borderWidth: 1.5, borderColor: C.border, borderRadius: 12, padding: 12, marginBottom: 20, fontSize: 14, color: C.fg1 }}
+              />
+            )}
+
+            <TouchableOpacity
+              onPress={handleConfirmSince}
+              disabled={syncLoading}
+              style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 10 }}
+            >
+              {syncLoading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Mulai Ambil Email →</Text>
+              }
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setSincePicker(null); setToast({ type: 'success', msg: `${sincePicker?.email} terhubung!` }) }}>
+              <Text style={{ textAlign: 'center', color: C.fg3, fontSize: 13, fontFamily: 'Nunito_500Medium' }}>Lewati, atur nanti</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {toast && (
         <TouchableOpacity
           onPress={() => setToast(null)}
@@ -132,7 +222,7 @@ export default function EmailIntegrationScreen() {
         <ConnectGmailView onBack={() => setView('main')} onSuccess={() => setView('main')} />
       )}
       {view === 'add-imap' && (
-        <ConnectIMAPView onBack={() => setView('main')} onSuccess={() => setView('main')} />
+        <ConnectIMAPView onBack={() => setView('main')} onSuccess={(email) => handleConnectSuccess(email)} />
       )}
     </SafeAreaView>
   )
@@ -606,7 +696,7 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
 }
 
 // ── Connect IMAP ───────────────────────────────────────────────
-function ConnectIMAPView({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
+function ConnectIMAPView({ onBack, onSuccess }: { onBack: () => void; onSuccess: (email: string) => void }) {
   const qc = useQueryClient()
   const [form, setForm] = useState({ email: '', imapHost: '', imapPort: '993', imapUser: '', imapPassword: '' })
   const [showPass, setShowPass] = useState(false)
@@ -635,7 +725,7 @@ function ConnectIMAPView({ onBack, onSuccess }: { onBack: () => void; onSuccess:
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['email-integrations'] })
-      onSuccess()
+      onSuccess(form.email)
     },
     onError: (e: any) => {
       setFormError(e.response?.data?.error || e.response?.data?.message || 'Tidak bisa terhubung ke server IMAP. Periksa host, port, dan password.')

@@ -126,11 +126,6 @@ func (uc *authUseCase) Register(ctx context.Context, in domainuc.RegisterInput) 
 		go uc.autoJoinWorkspaces(context.Background(), user)
 	}
 
-	// Start 14-day Pro trial for new users (non-blocking).
-	if uc.subscriptionUC != nil {
-		go func() { _ = uc.subscriptionUC.CreateTrial(context.Background(), user.ID) }()
-	}
-
 	return uc.buildAuthOutput(ctx, user)
 }
 
@@ -232,10 +227,6 @@ func (uc *authUseCase) GoogleLogin(ctx context.Context, googleUser domainuc.Goog
 		// New user — auto-join any pending workspace invites sent before registration.
 		if uc.workspaceRepo != nil {
 			go uc.autoJoinWorkspaces(context.Background(), user)
-		}
-		// Start 14-day Pro trial (non-blocking).
-		if uc.subscriptionUC != nil {
-			go func() { _ = uc.subscriptionUC.CreateTrial(context.Background(), user.ID) }()
 		}
 	} else if user.GoogleID == nil {
 		// Link Google to existing account

@@ -236,7 +236,7 @@ func (uc *emailIntegrationUseCase) SetActive(ctx context.Context, integrationID,
 	return err
 }
 
-func (uc *emailIntegrationUseCase) Sync(ctx context.Context, integrationID, userID uuid.UUID) error {
+func (uc *emailIntegrationUseCase) Sync(ctx context.Context, integrationID, userID uuid.UUID, sinceDate *time.Time) error {
 	integration, err := uc.repo.FindByID(ctx, integrationID)
 	if err != nil {
 		return err
@@ -245,11 +245,13 @@ func (uc *emailIntegrationUseCase) Sync(ctx context.Context, integrationID, user
 		return ErrEmailIntegrationNotFound
 	}
 
-	now := time.Now()
+	lastSync := time.Now()
+	if sinceDate != nil {
+		lastSync = *sinceDate
+	}
 	_, err = uc.repo.Update(ctx, integrationID, map[string]interface{}{
-		"last_sync_at": now,
+		"last_sync_at": lastSync,
 	})
-	// TODO: trigger actual IMAP/Gmail sync worker in background
 	return err
 }
 
