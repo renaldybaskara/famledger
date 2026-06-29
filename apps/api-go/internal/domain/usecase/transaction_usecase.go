@@ -59,4 +59,7 @@ type TransactionUseCase interface {
 	GetSummaryByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) (*repository.TransactionSummary, error)
 	GetCategoryBreakdownByUserIDs(ctx context.Context, userIDs []uuid.UUID, txType string, start, end time.Time) ([]repository.CategoryBreakdownRow, error)
 	GetMonthlyTrendByUserIDs(ctx context.Context, userIDs []uuid.UUID, months int) ([]repository.MonthlyTrendRow, error)
+	// GetTrendByDateRangeByUserIDs returns monthly-grouped trend data within an
+	// explicit date range. Used for payday filter chart.
+	GetTrendByDateRangeByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]repository.MonthlyTrendRow, error)
 }

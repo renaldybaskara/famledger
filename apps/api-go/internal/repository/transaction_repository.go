@@ -322,3 +322,24 @@ func (r *transactionRepository) GetMonthlyTrendByUserIDs(ctx context.Context, us
 	`, userIDs, startDate).Scan(&rows).Error
 	return rows, err
 }
+
+// GetTrendByDateRangeByUserIDs groups transactions by calendar month within an
+// explicit start–end window. Used for payday filter so bars reflect the payday
+// period rather than the last-N-months default.
+func (r *transactionRepository) GetTrendByDateRangeByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]domainrepo.MonthlyTrendRow, error) {
+	if len(userIDs) == 0 {
+		return []domainrepo.MonthlyTrendRow{}, nil
+	}
+	rows := make([]domainrepo.MonthlyTrendRow, 0)
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT
+			TO_CHAR(date, 'YYYY-MM') AS month,
+			type,
+			COALESCE(SUM(amount), 0) AS total
+		FROM transactions
+		WHERE user_id IN ? AND deleted_at IS NULL AND date BETWEEN ? AND ?
+		GROUP BY TO_CHAR(date, 'YYYY-MM'), type
+		ORDER BY TO_CHAR(date, 'YYYY-MM') ASC, type ASC
+	`, userIDs, start, end).Scan(&rows).Error
+	return rows, err
+}

@@ -10,7 +10,7 @@ import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend } from '../../src/hooks/useDashboard'
+import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend, usePaydayTrend } from '../../src/hooks/useDashboard'
 import { useTransactions } from '../../src/hooks/useTransactions'
 import { useAuthStore } from '../../src/store/auth.store'
 import { useIsProActive } from '../../src/hooks/useSubscription'
@@ -124,19 +124,17 @@ function TrendBarChart({ data }: { data: { label: string; income: number; expens
               style={{ width: 28, alignItems: 'center', gap: 6 }}
               {...(hoverProps as any)}
             >
-              {/* Fixed-height bar container */}
-              <View style={{ width: 28, height: chartH, position: 'relative' }}>
-                {/* Expense bar at bottom */}
+              {/* Fixed-height bar container — income left, expense right, side by side */}
+              <View style={{ width: 28, height: chartH, flexDirection: 'row', alignItems: 'flex-end', gap: 2 }}>
+                {/* Income bar */}
                 <View style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  height: expH, backgroundColor: expColor,
-                  borderTopLeftRadius: 4, borderTopRightRadius: 4,
+                  flex: 1, height: incH, backgroundColor: incColor,
+                  borderTopLeftRadius: 3, borderTopRightRadius: 3,
                 }} />
-                {/* Income bar at bottom — overlaps expense */}
+                {/* Expense bar */}
                 <View style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  height: incH, backgroundColor: incColor,
-                  borderTopLeftRadius: 4, borderTopRightRadius: 4,
+                  flex: 1, height: expH, backgroundColor: expColor,
+                  borderTopLeftRadius: 3, borderTopRightRadius: 3,
                 }} />
               </View>
               {/* Month label */}
@@ -311,7 +309,18 @@ export default function DashboardScreen() {
 
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary({ startDate: range.startDate, endDate: range.endDate, ...scopeParams })
   const { data: categoryData }                        = useCategoryBreakdown({ startDate: range.startDate, endDate: range.endDate, type: 'expense', ...scopeParams })
-  const { data: trendRaw }                            = useMonthlyTrend(6)
+  const { data: trendRaw }                            = useMonthlyTrend(
+    preset === 'payday'
+      ? (() => {
+          // Show 6 payday cycles: go back 6 months from current payday start
+          const d = new Date(range.startDate)
+          d.setMonth(d.getMonth() - 5) // 6 cycles total including current
+          const sixCyclesStart = d.toISOString().split('T')[0]
+          return { startDate: sixCyclesStart, endDate: range.endDate }
+        })()
+      : 6
+  )
+  const { data: paydayTrendRaw }                      = usePaydayTrend(paydayDate, 6, scopeParams)
 
   const { data: recentData, isLoading: recentLoading } = useTransactions({
     limit: 5, page: 1, startDate: range.startDate, endDate: range.endDate,
@@ -360,6 +369,18 @@ export default function DashboardScreen() {
         expense: row.expense ?? 0,
       }))
   }, [trendRaw])
+
+  const paydayChartData = useMemo(() => {
+    if (!paydayTrendRaw || !Array.isArray(paydayTrendRaw)) return []
+    return (paydayTrendRaw as { label: string; income: number; expense: number }[])
+      .map(row => ({
+        label:   row.label,
+        income:  row.income  ?? 0,
+        expense: row.expense ?? 0,
+      }))
+  }, [paydayTrendRaw])
+
+  const chartData = preset === 'payday' ? paydayChartData : trendData
 
   const momComparison = useMemo(() => {
     if (!trendRaw || !Array.isArray(trendRaw)) return { incomePct: null as number | null, expensePct: null as number | null }
@@ -708,15 +729,20 @@ export default function DashboardScreen() {
         <View style={{ paddingHorizontal: 16, paddingTop: 20, gap: 16 }}>
 
           {/* ── Tren 6 Bulan ── */}
-          {trendData.length > 0 && (
+          {chartData.length > 0 && (
             <View style={{ backgroundColor: '#F7FAFA', borderRadius: 20, padding: 16 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Tren 6 Bulan</Text>
+                <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>
+                  {preset === 'payday' ? 'Tren Gajian' : 'Tren 6 Bulan'}
+                </Text>
+                <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+                  {preset === 'payday' ? range.label.replace('Gajian 25 ', '') : '6 bulan terakhir'}
+                </Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Lihat Semua</Text>
                 </TouchableOpacity>
               </View>
-              <TrendBarChart data={trendData} />
+              <TrendBarChart data={chartData} />
               <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 14 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />

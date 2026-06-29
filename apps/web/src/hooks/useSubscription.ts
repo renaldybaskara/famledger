@@ -11,6 +11,7 @@ export function useSubscription() {
     queryFn: () => subscriptionApi.getStatus().then((r) => r.data),
     staleTime: 0,
     refetchOnMount: true,
+    retry: false, // fail fast — don't spin for 30s on auth/network errors
   })
 }
 

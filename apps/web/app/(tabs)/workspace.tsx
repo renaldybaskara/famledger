@@ -679,7 +679,7 @@ function PendingInviteBanner() {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function WorkspaceScreen() {
   const isPro = useIsProActive()
-  const { isLoading: subLoading } = useSubscription()
+  const { isLoading: subLoading, isError: subError } = useSubscription()
   const [showCreate, setShowCreate] = useState(false)
   const [selected, setSelected] = useState<Workspace | null>(null)
 
@@ -696,7 +696,7 @@ export default function WorkspaceScreen() {
     )
   }
 
-  if (subLoading) {
+  if (subLoading && !subError) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

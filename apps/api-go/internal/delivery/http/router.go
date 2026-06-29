@@ -133,6 +133,7 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		dashboard.GET("/summary", deps.DashboardHandler.Summary)
 		dashboard.GET("/category-breakdown", deps.DashboardHandler.CategoryBreakdown)
 		dashboard.GET("/monthly-trend", deps.DashboardHandler.MonthlyTrend)
+		dashboard.GET("/payday-trend", deps.DashboardHandler.PaydayTrend)
 	}
 
 	// Workspaces

@@ -63,4 +63,8 @@ type TransactionRepository interface {
 	GetSummaryByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) (*TransactionSummary, error)
 	GetCategoryBreakdownByUserIDs(ctx context.Context, userIDs []uuid.UUID, txType string, start, end time.Time) ([]CategoryBreakdownRow, error)
 	GetMonthlyTrendByUserIDs(ctx context.Context, userIDs []uuid.UUID, months int) ([]MonthlyTrendRow, error)
+	// GetTrendByDateRangeByUserIDs groups transactions by calendar month within an
+	// explicit date range. Used by the payday filter so the chart reflects the
+	// actual payday period instead of the default last-N-months window.
+	GetTrendByDateRangeByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]MonthlyTrendRow, error)
 }

@@ -160,7 +160,7 @@ export const dashboardApi = {
         percentage: number
       }>
     >('/dashboard/category-breakdown', { params }),
-  monthlyTrend: (params?: { months?: number }) =>
+  monthlyTrend: (params?: { months?: number; startDate?: string; endDate?: string }) =>
     api.get<
       Array<{
         month: string
@@ -168,6 +168,16 @@ export const dashboardApi = {
         expense: number
       }>
     >('/dashboard/monthly-trend', { params }),
+  paydayTrend: (params: { paydayDate: number; cycles?: number; workspaceIds?: string[]; includePersonal?: boolean }) =>
+    api.get<
+      Array<{
+        label: string
+        startDate: string
+        endDate: string
+        income: number
+        expense: number
+      }>
+    >('/dashboard/payday-trend', { params }),
 }
 
 export const categoriesApi = {

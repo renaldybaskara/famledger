@@ -31,10 +31,28 @@ export function useCategoryBreakdown(params?: {
   })
 }
 
-export function useMonthlyTrend(months = 6) {
+export function useMonthlyTrend(params: number | { startDate: string; endDate: string } = 6) {
+  // Backward-compat: if a number is passed, use months param (existing behavior).
+  // If an object with startDate/endDate is passed, use date range (payday filter).
+  const queryParams = typeof params === 'number'
+    ? { months: params }
+    : { startDate: params.startDate, endDate: params.endDate }
+
   return useQuery({
-    queryKey: ['dashboard', 'monthly-trend', months],
-    queryFn: () => dashboardApi.monthlyTrend({ months }).then((r) => r.data),
+    queryKey: ['dashboard', 'monthly-trend', queryParams],
+    queryFn: () => dashboardApi.monthlyTrend(queryParams).then((r) => r.data),
+    staleTime: 60_000,
+  })
+}
+
+export function usePaydayTrend(paydayDate: number, cycles = 6, scope?: DashboardScope) {
+  return useQuery({
+    queryKey: ['dashboard', 'payday-trend', paydayDate, cycles, scope],
+    queryFn: () => dashboardApi.paydayTrend({
+      paydayDate,
+      cycles,
+      ...scope,
+    }).then((r) => r.data),
     staleTime: 60_000,
   })
 }

@@ -70,8 +70,9 @@ export default function EmailIntegrationScreen() {
   const [syncLoading, setSyncLoading] = useState(false)
   const qc = useQueryClient()
 
-  // Max = 25th of last month
-  const maxSinceDate = (() => {
+  // Min = 25th of last month, Max = today
+  const maxSinceDate = new Date().toISOString().split('T')[0]
+  const minSinceDate = (() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth() - 1, 25).toISOString().split('T')[0]
   })()
@@ -152,16 +153,17 @@ export default function EmailIntegrationScreen() {
             </Text>
             <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Nunito_500Medium', lineHeight: 18, marginBottom: 16 }}>
               <Text style={{ fontWeight: '700', color: C.fg2 }}>{sincePicker?.email}</Text> berhasil terhubung!{'\n'}
-              Pilih tanggal awal. Default 7 hari lalu. Maks tanggal 25 bulan lalu.
+              Pilih tanggal awal. Default 7 hari lalu. Bisa pilih dari tanggal 25 bulan lalu sampai hari ini.
             </Text>
 
             {Platform.OS === 'web' ? (
               <input
                 type="date"
                 value={sinceDate}
+                min={minSinceDate}
                 max={maxSinceDate}
                 onClick={e => (e.target as HTMLInputElement).showPicker?.()}
-                onChange={e => { if (e.target.value <= maxSinceDate) setSinceDate(e.target.value) }}
+                onChange={e => { if (e.target.value >= minSinceDate && e.target.value <= maxSinceDate) setSinceDate(e.target.value) }}
                 style={{
                   width: '100%', padding: '10px 14px', borderRadius: 12,
                   border: '1.5px solid #E0DBD2', fontSize: 15, marginBottom: 20,
@@ -172,7 +174,7 @@ export default function EmailIntegrationScreen() {
             ) : (
               <TextInput
                 value={sinceDate}
-                onChangeText={v => { if (v <= maxSinceDate) setSinceDate(v) }}
+                onChangeText={v => { if (v >= minSinceDate && v <= maxSinceDate) setSinceDate(v) }}
                 placeholder="YYYY-MM-DD"
                 style={{ borderWidth: 1.5, borderColor: C.border, borderRadius: 12, padding: 12, marginBottom: 20, fontSize: 14, color: C.fg1 }}
               />
