@@ -45,7 +45,15 @@ function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style="dark" backgroundColor="#FAF7F2" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="privacy" />
+        <Stack.Screen name="terms" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="workspace" />
+      </Stack>
     </QueryClientProvider>
   )
 }
