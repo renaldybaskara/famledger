@@ -2,12 +2,10 @@ package usecase
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"time"
 
 	"github.com/fintrackr/api/internal/domain/entity"
@@ -20,9 +18,7 @@ import (
 
 var (
 	ErrEmailIntegrationNotFound = errors.New("email integration not found")
-	ErrEmailAlreadyConnected    = errors.New("this email is already connected")
 	ErrGmailNotConfigured       = errors.New("Google OAuth is not configured")
-	ErrIMAPConnectionFailed     = errors.New("failed to connect to IMAP server — check host, port, and credentials")
 )
 
 type emailIntegrationUseCase struct {
@@ -46,42 +42,6 @@ func NewEmailIntegrationUseCase(
 
 func (uc *emailIntegrationUseCase) List(ctx context.Context, userID uuid.UUID) ([]entity.EmailIntegration, error) {
 	return uc.repo.FindByUserID(ctx, userID)
-}
-
-func (uc *emailIntegrationUseCase) ConnectIMAP(ctx context.Context, userID uuid.UUID, in domainuc.ConnectIMAPInput) (*entity.EmailIntegration, error) {
-	// Check if already connected
-	existing, err := uc.repo.FindByUserIDAndEmail(ctx, userID, in.Email)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
-		return nil, ErrEmailAlreadyConnected
-	}
-
-	// Test IMAP connection
-	if err := testIMAPConnection(in.ImapHost, in.ImapPort); err != nil {
-		return nil, ErrIMAPConnectionFailed
-	}
-
-	integration := &entity.EmailIntegration{
-		ID:           uuid.New(),
-		UserID:       userID,
-		Email:        in.Email,
-		Provider:     "imap",
-		ImapHost:     &in.ImapHost,
-		ImapPort:     &in.ImapPort,
-		ImapUser:     &in.ImapUser,
-		ImapPassword: &in.ImapPass,
-		IsActive:     true,
-	}
-
-	if err := uc.repo.Create(ctx, integration); err != nil {
-		return nil, err
-	}
-
-	// Mask password before returning
-	integration.ImapPassword = nil
-	return integration, nil
 }
 
 func (uc *emailIntegrationUseCase) GetGmailAuthURL(ctx context.Context, userID uuid.UUID) (string, error) {
@@ -268,26 +228,4 @@ func (uc *emailIntegrationUseCase) gmailOAuthConfig() *oauth2.Config {
 		},
 		Endpoint: google.Endpoint,
 	}
-}
-
-func testIMAPConnection(host string, port int) error {
-	addr := fmt.Sprintf("%s:%d", host, port)
-	var conn net.Conn
-	var err error
-
-	if port == 993 {
-		conn, err = tls.DialWithDialer(
-			&net.Dialer{Timeout: 10 * time.Second},
-			"tcp", addr,
-			&tls.Config{ServerName: host},
-		)
-	} else {
-		conn, err = net.DialTimeout("tcp", addr, 10*time.Second)
-	}
-
-	if err != nil {
-		return err
-	}
-	conn.Close()
-	return nil
 }

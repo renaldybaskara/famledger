@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
           </Section>
 
           <Section title="2. Informasi yang Kami Kumpulkan">
-            {`Kami mengumpulkan informasi berikut:\n\n• Informasi akun: nama, alamat email, dan foto profil (jika login dengan Google)\n• Data transaksi keuangan yang Anda masukkan secara manual atau diimpor dari email bank\n• Notifikasi email bank yang Anda izinkan untuk diakses melalui Gmail atau IMAP\n• Data penggunaan aplikasi untuk meningkatkan layanan`}
+            {`Kami mengumpulkan informasi berikut:\n\n• Informasi akun: nama, alamat email, dan foto profil (jika login dengan Google)\n• Data transaksi keuangan yang Anda masukkan secara manual atau diimpor dari email bank\n• Notifikasi email bank yang Anda izinkan untuk diakses melalui Gmail\n• Data penggunaan aplikasi untuk meningkatkan layanan`}
           </Section>
 
           <Section title="3. Cara Kami Menggunakan Informasi">

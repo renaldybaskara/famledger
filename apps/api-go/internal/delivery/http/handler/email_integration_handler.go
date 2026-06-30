@@ -33,43 +33,6 @@ func (h *EmailIntegrationHandler) List(c *gin.Context) {
 	httputil.OK(c, integrations)
 }
 
-// POST /api/email-integrations/imap
-func (h *EmailIntegrationHandler) ConnectIMAP(c *gin.Context) {
-	userID := c.MustGet("currentUserID").(uuid.UUID)
-
-	var req struct {
-		Email    string `json:"email" binding:"required,email"`
-		ImapHost string `json:"imapHost" binding:"required"`
-		ImapPort int    `json:"imapPort" binding:"required"`
-		ImapUser string `json:"imapUser" binding:"required"`
-		ImapPass string `json:"imapPass" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		httputil.ValidationError(c, err)
-		return
-	}
-
-	integration, err := h.uc.ConnectIMAP(c.Request.Context(), userID, domainuc.ConnectIMAPInput{
-		Email:    req.Email,
-		ImapHost: req.ImapHost,
-		ImapPort: req.ImapPort,
-		ImapUser: req.ImapUser,
-		ImapPass: req.ImapPass,
-	})
-	if err != nil {
-		switch err {
-		case usecase.ErrEmailAlreadyConnected:
-			httputil.Conflict(c, "This email is already connected")
-		case usecase.ErrIMAPConnectionFailed:
-			httputil.BadRequest(c, "Failed to connect to IMAP server — check host, port, and credentials")
-		default:
-			httputil.InternalError(c, err)
-		}
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"data": integration})
-}
-
 // GET /api/email-integrations/gmail/auth
 func (h *EmailIntegrationHandler) GmailAuthURL(c *gin.Context) {
 	userID := c.MustGet("currentUserID").(uuid.UUID)
@@ -201,7 +164,14 @@ func (h *EmailIntegrationHandler) Sync(c *gin.Context) {
 
 	var sinceDate *time.Time
 	if body.SinceDate != "" {
-		t, err := time.Parse("2006-01-02", body.SinceDate)
+		// Parse in WIB (Asia/Jakarta, UTC+7) so "2026-06-25" means
+		// 2026-06-25T00:00:00+07:00, not UTC midnight.
+		// Without this, emails from Jun 25 00:00–07:00 WIB would be missed.
+		wibLoc, locErr := time.LoadLocation("Asia/Jakarta")
+		if locErr != nil {
+			wibLoc = time.UTC
+		}
+		t, err := time.ParseInLocation("2006-01-02", body.SinceDate, wibLoc)
 		if err == nil {
 			sinceDate = &t
 		}

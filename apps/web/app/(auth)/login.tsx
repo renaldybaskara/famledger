@@ -391,7 +391,21 @@ export default function LoginScreen() {
             fontFamily: 'Nunito_500Medium',
           }}>
             Data tersimpan di servermu sendiri, bukan di cloud kami.{'\n'}
-            Dengan masuk, kamu menyetujui syarat penggunaan.
+            Dengan masuk, kamu menyetujui{' '}
+            <Text
+              onPress={() => router.push('/terms' as any)}
+              style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+            >
+              Syarat Penggunaan
+            </Text>
+            {' '}dan{' '}
+            <Text
+              onPress={() => router.push('/privacy' as any)}
+              style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+            >
+              Kebijakan Privasi
+            </Text>
+            {' '}kami.
           </Text>
         </View>
       </ScrollView>

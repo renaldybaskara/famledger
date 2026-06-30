@@ -8,20 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
-type ConnectIMAPInput struct {
-	Email    string
-	ImapHost string
-	ImapPort int
-	ImapUser string
-	ImapPass string
-}
-
 type EmailIntegrationUseCase interface {
 	// List all integrations for a user
 	List(ctx context.Context, userID uuid.UUID) ([]entity.EmailIntegration, error)
-
-	// Connect IMAP (generic email)
-	ConnectIMAP(ctx context.Context, userID uuid.UUID, in ConnectIMAPInput) (*entity.EmailIntegration, error)
 
 	// Get Gmail OAuth URL (returns redirect URL)
 	GetGmailAuthURL(ctx context.Context, userID uuid.UUID) (string, error)

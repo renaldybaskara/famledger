@@ -217,7 +217,6 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 	emailIntegrations.Use(tierGate)
 	{
 		emailIntegrations.GET("", deps.EmailIntegrationHandler.List)
-		emailIntegrations.POST("/imap", deps.EmailIntegrationHandler.ConnectIMAP)
 		// /gmail/auth and /gmail/callback are static routes — must come before /:id
 		emailIntegrations.GET("/gmail/auth", deps.EmailIntegrationHandler.GmailAuthURL)
 		// /:id routes — these are dynamic and must come AFTER all static sub-paths

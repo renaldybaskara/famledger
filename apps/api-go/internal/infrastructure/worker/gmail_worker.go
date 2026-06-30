@@ -209,10 +209,15 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	}
 
 	// Determine since date.
-	since := time.Now().Add(-imapLookback)
-	if integ.LastSyncAt != nil {
-		since = *integ.LastSyncAt
+	// If last_sync_at is nil, the user has not yet set a start date via the date picker.
+	// Skip this poll cycle and wait — do not use a default lookback.
+	// This prevents the worker from fetching a large batch before the user
+	// has had a chance to choose how far back to import.
+	if integ.LastSyncAt == nil {
+		log.Printf("[GmailWorker %s] last_sync_at not set yet — waiting for user to pick a start date", integ.Email)
+		return nil
 	}
+	since := *integ.LastSyncAt
 	// Query all emails after `since` — deduplication via message_id in DB prevents re-import.
 	// Do NOT filter by is:unread — bank emails may already be read by the user.
 	sinceEpoch := since.Unix()

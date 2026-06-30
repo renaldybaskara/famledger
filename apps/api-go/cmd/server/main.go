@@ -201,9 +201,6 @@ func main() {
 	// Workers start in the background — they don't block server startup.
 	workerCtx := context.Background()
 
-	imapWorker := worker.NewIMAPWorker(emailIntegrationRepo, emailMsgRepo, emailImportSvc, subscriptionUC)
-	go imapWorker.Start(workerCtx)
-
 	gmailWorker := worker.NewGmailWorker(
 		emailIntegrationRepo, emailMsgRepo, emailImportSvc, subscriptionUC,
 		cfg.GoogleClientID, cfg.GoogleClientSecret, gmailCallbackURL,

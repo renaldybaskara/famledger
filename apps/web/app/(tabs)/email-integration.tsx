@@ -4,7 +4,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, ActivityIndicator,
   RefreshControl, Alert, Platform, TextInput, Modal,
 } from 'react-native'
-import { Mail, Monitor, RefreshCw, Trash2, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { Mail, Monitor, RefreshCw, Trash2, ArrowLeft } from 'lucide-react'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -26,9 +26,8 @@ const KNOWN_BANKS = ['BCA', 'BRI', 'GoPay', 'Shopee', 'Mandiri', 'BNI', 'OVO', '
 
 // ── Types ──────────────────────────────────────────────────────
 interface EmailIntegration {
-  id: string; email: string; provider: 'gmail' | 'imap'
+  id: string; email: string; provider: 'gmail'
   isActive: boolean; lastSyncAt: string | null
-  imapHost?: string; imapPort?: number; imapUser?: string
   createdAt: string
 }
 
@@ -51,17 +50,16 @@ const emailApi = {
   listMessages: (params?: { integrationId?: string; status?: string; page?: number; limit?: number; aiUsed?: boolean }) =>
     api.get<{ data: EmailMessage[]; total: number; page: number }>('/email-messages', { params }),
   reprocess: (id: string) => api.post(`/email-messages/${id}/reprocess`),
-  connectIMAP: (body: object) => api.post('/email-integrations/imap', body),
 }
 
 // ── Main Screen ────────────────────────────────────────────────
 export default function EmailIntegrationScreen() {
   const isPro = useIsProActive()
   const { isLoading: subLoading } = useSubscription()
-  const [view, setView] = useState<'main' | 'add-gmail' | 'add-imap'>('main')
+  const [view, setView] = useState<'main' | 'add-gmail'>('main')
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
-  // Date picker — shown after Gmail/IMAP connects
+  // Date picker — shown after Gmail connects
   const [sincePicker, setSincePicker] = useState<{ email: string } | null>(null)
   const [sinceDate, setSinceDate] = useState<string>(() => {
     const d = new Date(); d.setDate(d.getDate() - 7)
@@ -129,7 +127,7 @@ export default function EmailIntegrationScreen() {
           <Text style={{ fontSize: 11, fontWeight: '800', color: '#C97B5C', textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 6 }}>Fitur Pro</Text>
           <Text style={{ fontSize: 20, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center', marginBottom: 8 }}>Integrasi Email</Text>
           <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium', marginBottom: 24 }}>
-            {'This Feature only for Pro Member.\nAuto-import transaksi dari Gmail & IMAP.'}
+            {'This Feature only for Pro Member.\nAuto-import transaksi dari Gmail.'}
           </Text>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
@@ -217,21 +215,17 @@ export default function EmailIntegrationScreen() {
       {view === 'main' && (
         <EmailMainView
           onAddGmail={() => setView('add-gmail')}
-          onAddIMAP={() => setView('add-imap')}
         />
       )}
       {view === 'add-gmail' && (
         <ConnectGmailView onBack={() => setView('main')} onSuccess={() => setView('main')} />
-      )}
-      {view === 'add-imap' && (
-        <ConnectIMAPView onBack={() => setView('main')} onSuccess={(email) => handleConnectSuccess(email)} />
       )}
     </SafeAreaView>
   )
 }
 
 // ── Unified Main View ──────────────────────────────────────────
-function EmailMainView({ onAddGmail, onAddIMAP }: { onAddGmail: () => void; onAddIMAP: () => void }) {
+function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const [refreshing, setRefreshing] = useState(false)
@@ -376,7 +370,7 @@ function EmailMainView({ onAddGmail, onAddIMAP }: { onAddGmail: () => void; onAd
               Belum ada email terhubung
             </Text>
             <Text style={{ fontSize: 12, color: C.fg3, marginTop: 4, textAlign: 'center', fontFamily: 'Nunito_500Medium', lineHeight: 18 }}>
-              Hubungkan Gmail atau IMAP untuk import{'\n'}otomatis dari BCA, BRI, GoPay, dan lainnya
+              Hubungkan Gmail untuk import{'\n'}otomatis dari BCA, BRI, GoPay, dan lainnya
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
               <TouchableOpacity
@@ -384,12 +378,6 @@ function EmailMainView({ onAddGmail, onAddIMAP }: { onAddGmail: () => void; onAd
                 style={{ backgroundColor: C.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 }}
               >
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>✉️ Gmail</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={onAddIMAP}
-                style={{ backgroundColor: C.creamSunken, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: C.border }}
-              >
-                <Text style={{ color: C.fg2, fontWeight: '700', fontSize: 13, fontFamily: 'Nunito_700Bold' }}>🖥 IMAP</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -690,173 +678,6 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
           <Text style={{ fontSize: 12, fontWeight: '700', color: '#8C6B1F', marginBottom: 4, fontFamily: 'Nunito_700Bold' }}>⚠️ Perlu Google OAuth</Text>
           <Text style={{ fontSize: 12, color: '#8C6B1F', lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>
             Fitur ini butuh GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET di file .env. Jika belum dikonfigurasi, hubungi administrator server.
-          </Text>
-        </View>
-      </View>
-    </ScrollView>
-  )
-}
-
-// ── Connect IMAP ───────────────────────────────────────────────
-function ConnectIMAPView({ onBack, onSuccess }: { onBack: () => void; onSuccess: (email: string) => void }) {
-  const qc = useQueryClient()
-  const [form, setForm] = useState({ email: '', imapHost: '', imapPort: '993', imapUser: '', imapPassword: '' })
-  const [showPass, setShowPass] = useState(false)
-  const [preset, setPreset] = useState('')
-  const [formError, setFormError] = useState('')
-
-  const PRESETS: Record<string, { host: string; port: string; label: string; icon: string }> = {
-    gmail:   { host: 'imap.gmail.com',        port: '993', label: 'Gmail',   icon: '✉️' },
-    outlook: { host: 'outlook.office365.com', port: '993', label: 'Outlook', icon: '📧' },
-    yahoo:   { host: 'imap.mail.yahoo.com',   port: '993', label: 'Yahoo',   icon: '📨' },
-  }
-
-  const applyPreset = (key: string) => {
-    setPreset(key)
-    setFormError('')
-    setForm(f => ({ ...f, imapHost: PRESETS[key].host, imapPort: PRESETS[key].port, imapUser: f.email }))
-  }
-
-  const connectMut = useMutation({
-    mutationFn: () => emailApi.connectIMAP({
-      email: form.email,
-      imapHost: form.imapHost,
-      imapPort: parseInt(form.imapPort, 10),
-      imapUser: form.imapUser || form.email,
-      imapPassword: form.imapPassword,
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['email-integrations'] })
-      onSuccess(form.email)
-    },
-    onError: (e: any) => {
-      setFormError(e.response?.data?.error || e.response?.data?.message || 'Tidak bisa terhubung ke server IMAP. Periksa host, port, dan password.')
-    },
-  })
-
-  const isValid = !!(form.email && form.imapHost && form.imapPort && form.imapPassword)
-  const showGmailHint = preset === 'gmail' || form.imapHost.includes('gmail')
-
-  return (
-    <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
-      <View style={{ padding: 20 }}>
-        <PageHeader title="Hubungkan via IMAP" onBack={onBack} />
-
-        {/* Provider presets */}
-        <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 16, marginBottom: 12, shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold' }}>
-            Pilih Provider
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {Object.entries(PRESETS).map(([key, p]) => (
-              <TouchableOpacity
-                key={key}
-                onPress={() => applyPreset(key)}
-                style={{
-                  flex: 1, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12,
-                  borderWidth: 1.5, alignItems: 'center',
-                  backgroundColor: preset === key ? C.primary : C.cream,
-                  borderColor: preset === key ? C.primary : C.border,
-                }}
-              >
-                <Text style={{ fontSize: 20, marginBottom: 4 }}>{p.icon}</Text>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: preset === key ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{p.label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              onPress={() => { setPreset('manual'); setFormError('') }}
-              style={{
-                flex: 1, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12,
-                borderWidth: 1.5, alignItems: 'center',
-                backgroundColor: preset === 'manual' ? C.primary : C.cream,
-                borderColor: preset === 'manual' ? C.primary : C.border,
-              }}
-            >
-              <Text style={{ fontSize: 20, marginBottom: 4 }}>⚙️</Text>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: preset === 'manual' ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Manual</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Form */}
-        <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 20, marginBottom: 12, shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 }}>
-          <FormField label="Alamat Email" placeholder="kamu@gmail.com" value={form.email}
-            onChangeText={(v) => { setFormError(''); setForm(f => ({ ...f, email: v, imapUser: v })) }}
-            keyboardType="email-address" autoCapitalize="none" />
-          <FormField label="IMAP Host" placeholder="imap.gmail.com" value={form.imapHost}
-            onChangeText={(v) => { setFormError(''); setForm(f => ({ ...f, imapHost: v })) }}
-            autoCapitalize="none" />
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={{ width: 96 }}>
-              <FormField label="Port" placeholder="993" value={form.imapPort}
-                onChangeText={(v) => setForm(f => ({ ...f, imapPort: v }))} keyboardType="numeric" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FormField label="Username (opsional)" placeholder="sama dengan email" value={form.imapUser}
-                onChangeText={(v) => setForm(f => ({ ...f, imapUser: v }))} autoCapitalize="none" />
-            </View>
-          </View>
-
-          <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: 'Nunito_700Bold' }}>
-            Password / App Password
-          </Text>
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border,
-            borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: C.creamSunken,
-          }}>
-            <TextInput
-              style={{ flex: 1, paddingVertical: 12, fontSize: 14, color: C.fg1 }}
-              placeholder="App password dari provider"
-              placeholderTextColor={C.fg4}
-              value={form.imapPassword}
-              onChangeText={(v) => { setFormError(''); setForm(f => ({ ...f, imapPassword: v })) }}
-              secureTextEntry={!showPass}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={() => setShowPass(s => !s)} style={{ padding: 4 }}>
-              {showPass ? <EyeOff size={16} color={C.fg4} strokeWidth={2} /> : <Eye size={16} color={C.fg4} strokeWidth={2} />}
-            </TouchableOpacity>
-          </View>
-
-          {showGmailHint && (
-            <View style={{ backgroundColor: C.mustardSoft, borderRadius: 12, padding: 12, marginBottom: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#8C6B1F', marginBottom: 4, fontFamily: 'Nunito_700Bold' }}>⚠️ Gmail: Gunakan App Password</Text>
-              <Text style={{ fontSize: 12, color: '#8C6B1F', lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>
-                Gmail tidak mengizinkan password biasa via IMAP.{'\n'}
-                Buat App Password di: myaccount.google.com → Security → 2-Step Verification → App Passwords
-              </Text>
-            </View>
-          )}
-
-          {formError ? (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: C.dangerSoft, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(198,107,107,0.3)', padding: 12, marginBottom: 12 }}>
-              <Text style={{ fontSize: 15, marginRight: 8 }}>⚠️</Text>
-              <Text style={{ fontSize: 13, color: C.danger, flex: 1, lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>{formError}</Text>
-            </View>
-          ) : null}
-
-          <TouchableOpacity
-            onPress={() => connectMut.mutate()}
-            disabled={!isValid || connectMut.isPending}
-            style={{ paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: isValid ? C.primary : C.creamSunken }}
-          >
-            {connectMut.isPending
-              ? <ActivityIndicator color="white" />
-              : <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 16, marginRight: 8 }}>🔌</Text>
-                  <Text style={{ fontWeight: '700', fontSize: 15, color: isValid ? '#fff' : C.fg4, fontFamily: 'Nunito_700Bold' }}>
-                    Hubungkan & Test Koneksi
-                  </Text>
-                </View>
-            }
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ backgroundColor: C.primarySoft, borderWidth: 1, borderColor: '#C2D4B9', borderRadius: 16, padding: 16 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#2F4338', marginBottom: 6, fontFamily: 'Nunito_700Bold' }}>🔒 Keamanan</Text>
-          <Text style={{ fontSize: 12, color: '#41594F', lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>
-            Password disimpan terenkripsi di database lokal kamu sendiri.{'\n'}
-            Sistem hanya <Text style={{ fontWeight: '700' }}>membaca</Text> email — tidak pernah kirim, hapus, atau modifikasi email apapun.
           </Text>
         </View>
       </View>

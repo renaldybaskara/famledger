@@ -37,10 +37,6 @@ type EmailIntegration struct {
 	RefreshToken      *string    `json:"-"`
 	WatchResourceName *string    `json:"-"`
 	WatchExpiration   *time.Time `json:"watchExpiration,omitempty"`
-	ImapHost          *string    `gorm:"size:255" json:"imapHost,omitempty"`
-	ImapPort          *int       `json:"imapPort,omitempty"`
-	ImapUser          *string    `gorm:"size:255" json:"imapUser,omitempty"`
-	ImapPassword      *string    `json:"-"`
 	IsActive          bool           `gorm:"default:true;not null" json:"isActive"`
 	LastSyncAt        *time.Time     `json:"lastSyncAt,omitempty"`
 	CreatedAt         time.Time      `gorm:"autoCreateTime" json:"createdAt"`

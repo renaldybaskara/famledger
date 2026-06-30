@@ -54,7 +54,7 @@ export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
           </Text>
 
           <View style={styles.perks}>
-            {['✉️  Auto-import Gmail & IMAP', '👥  Workspace keluarga (5 anggota)', '🤖  AI kategorisasi merchant', '🏦  Custom bank parser'].map((perk) => (
+            {['✉️  Auto-import Gmail', '👥  Workspace keluarga (5 anggota)', '🤖  AI kategorisasi merchant', '🏦  Custom bank parser'].map((perk) => (
               <View key={perk} style={styles.perkRow}>
                 <Text style={styles.perkText}>{perk}</Text>
               </View>

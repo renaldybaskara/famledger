@@ -865,7 +865,7 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                   {/* Feature list */}
                   <View style={{ backgroundColor: C.cream, borderRadius: 14, padding: 14, gap: 10 }}>
                     {[
-                      ['✉️', 'Auto-import Gmail & IMAP'],
+                      ['✉️', 'Auto-import Gmail'],
                       ['👥', 'Workspace keluarga (5 anggota)'],
                       ['🤖', 'AI kategorisasi merchant'],
                       ['🏦', 'Custom bank parser rules'],

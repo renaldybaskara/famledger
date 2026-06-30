@@ -12,7 +12,7 @@ const C = {
 }
 
 const BENEFITS = [
-  ['✉️', 'Auto-import transaksi dari Gmail & IMAP'],
+  ['✉️', 'Auto-import transaksi dari Gmail'],
   ['👥', 'Workspace keluarga hingga 5 anggota'],
   ['🤖', 'AI kategorisasi merchant otomatis'],
   ['🏦', 'Custom bank parser rules'],
