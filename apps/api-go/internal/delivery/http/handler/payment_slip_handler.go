@@ -13,6 +13,26 @@ import (
 
 const maxSlipImageSize = 10 << 20 // 10 MB
 
+// heicBrands are the ISO Base Media File Format major brands used by HEIC/HEIF.
+// HEIC/HEIF files start with a 4-byte box size, then "ftyp", then a 4-byte brand.
+var heicBrands = map[string]struct{}{
+	"heic": {}, "heis": {}, "hevx": {}, "heim": {},
+	"hevc": {}, "hevs": {}, "mif1": {}, "msf1": {},
+}
+
+// isHEICBytes returns true when the byte slice is a HEIC/HEIF image.
+func isHEICBytes(b []byte) bool {
+	if len(b) < 12 {
+		return false
+	}
+	if string(b[4:8]) != "ftyp" {
+		return false
+	}
+	brand := string(b[8:12])
+	_, ok := heicBrands[brand]
+	return ok
+}
+
 // PaymentSlipHandler handles payment slip OCR requests.
 type PaymentSlipHandler struct {
 	uc domainuc.PaymentSlipUseCase
@@ -48,10 +68,17 @@ func (h *PaymentSlipHandler) Scan(c *gin.Context) {
 		return
 	}
 
-	// Detect actual MIME type from magic bytes (not filename extension)
+	// Detect MIME type — prefer magic bytes over header (iOS quirks)
+	// http.DetectContentType does not recognise HEIC/HEIF, so we check manually.
 	detectedMIME := http.DetectContentType(imageBytes)
-	if !strings.HasPrefix(detectedMIME, "image/") {
-		httputil.BadRequest(c, "File harus berupa gambar (JPEG, PNG, atau WebP)")
+	clientMIME := strings.ToLower(strings.SplitN(header.Header.Get("Content-Type"), ";", 2)[0])
+
+	isImageMIME := strings.HasPrefix(detectedMIME, "image/") ||
+		strings.HasPrefix(clientMIME, "image/")
+	isHEIC := isHEICBytes(imageBytes)
+
+	if !isImageMIME && !isHEIC {
+		httputil.BadRequest(c, "File harus berupa gambar (JPEG, PNG, WebP, atau HEIC)")
 		return
 	}
 

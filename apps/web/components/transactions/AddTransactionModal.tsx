@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, Modal, ActivityIndicator, Platform,
+  ScrollView, Modal, ActivityIndicator, Platform, Dimensions,
 } from 'react-native'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -62,11 +62,26 @@ const TYPE_OPTIONS: Array<{ value: TransactionType; label: string; color: string
 
 interface Props { visible: boolean; onClose: () => void }
 
+// Breakpoint: ≤600px = mobile bottom-sheet, >600px = centered card
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth > 600 : false
+  )
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = () => setIsDesktop(window.innerWidth > 600)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isDesktop
+}
+
 export function AddTransactionModal({ visible, onClose }: Props) {
   const { data: categories = [] } = useCategories()
   const { data: accounts   = [] } = useAccounts()
   const createMutation            = useCreateTransaction()
   const [serverError, setServerError] = useState('')
+  const isDesktop = useIsDesktop()
 
   const { control, handleSubmit, watch, reset, formState: { errors } } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -96,14 +111,46 @@ export function AddTransactionModal({ visible, onClose }: Props) {
     )
   }
 
-  const content = (
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
-      {/* Handle */}
-      <View style={{ alignItems: 'center', paddingTop: 12 }}>
-        <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
-      </View>
+  // Desktop: full rounded card. Mobile: bottom sheet (top corners only)
+  const cardStyle = isDesktop
+    ? { backgroundColor: C.surface, borderRadius: 24 }
+    : { backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }
 
-      <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: '85%' }}>
+  const content = (
+    <View style={cardStyle}>
+      {/* Handle bar — only on mobile bottom sheet */}
+      {!isDesktop && (
+        <View style={{ alignItems: 'center', paddingTop: 10 }}>
+          <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
+        </View>
+      )}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4,
+      }}>
+        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
+          Tambah Transaksi
+        </Text>
+        <TouchableOpacity
+          onPress={handleClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{
+            width: 32, height: 32, borderRadius: 16,
+            backgroundColor: C.creamSunken,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 16, color: C.fg2, lineHeight: 18 }}>✕</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={{ height: 1, backgroundColor: C.divider, marginHorizontal: 20, marginTop: 8 }} />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ maxHeight: Platform.OS === 'web' ? '88vh' as any : '85%' }}
+        contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 24 : 0 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={{ padding: 20, gap: 16 }}>
 
           {/* Type toggle */}
@@ -117,9 +164,9 @@ export function AddTransactionModal({ visible, onClose }: Props) {
                     <TouchableOpacity
                       key={opt.value}
                       onPress={() => onChange(opt.value)}
-                      style={{ flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
+                      style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 4, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }}>
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }} numberOfLines={1}>
                         {opt.label}
                       </Text>
                     </TouchableOpacity>
@@ -138,9 +185,9 @@ export function AddTransactionModal({ visible, onClose }: Props) {
               control={control} name="amount"
               render={({ field: { value, onChange } }) => (
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                  <Text style={{ fontSize: 22, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black' }}>Rp</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black' }}>Rp</Text>
                   <TextInput
-                    style={{ fontSize: 42, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black', minWidth: 120, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
+                    style={{ fontSize: 36, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black', minWidth: 80, maxWidth: 220, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
                     placeholder="0"
                     placeholderTextColor={typeOpt.color + '55'}
                     keyboardType="numeric"
@@ -304,10 +351,26 @@ export function AddTransactionModal({ visible, onClose }: Props) {
 
   if (Platform.OS === 'web') {
     if (!visible) return null
+
+    if (isDesktop) {
+      // Desktop / tablet: centered modal card
+      return (
+        <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
+          <View style={{ width: '100%', maxWidth: 480, zIndex: 1 }}>
+            {content}
+          </View>
+        </View>
+      )
+    }
+
+    // Mobile web: bottom sheet
     return (
-      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end' }}>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        {content}
+        <View style={{ width: '100%', maxWidth: 520 }}>
+          {content}
+        </View>
       </View>
     )
   }

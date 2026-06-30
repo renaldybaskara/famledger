@@ -5,3 +5,4 @@ paddleocr==2.7.3
 python-multipart==0.0.9
 Pillow==10.3.0
 numpy==1.26.4
+pillow-heif==0.16.0

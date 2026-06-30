@@ -67,10 +67,24 @@ type Step = 'pick' | 'loading' | 'review'
 
 interface Props { visible: boolean; onClose: () => void }
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth > 600 : false
+  )
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = () => setIsDesktop(window.innerWidth > 600)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isDesktop
+}
+
 export function PaymentSlipScanModal({ visible, onClose }: Props) {
   const { data: categories = [] } = useCategories()
   const { data: accounts   = [] } = useAccounts()
   const createMutation            = useCreateTransaction()
+  const isDesktop = useIsDesktop()
 
   const [step, setStep]                   = useState<Step>('pick')
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
@@ -204,9 +218,6 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
   // ── Step 1: image picker ─────────────────────────────────────
   const pickContent = (
     <View style={{ padding: 24, gap: 16, alignItems: 'center' }}>
-      <Text style={{ fontSize: 18, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
-        Scan Slip Pembayaran
-      </Text>
       <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', fontFamily: 'Nunito_500Medium', lineHeight: 20 }}>
         Upload foto struk atau bukti transfer untuk mengisi transaksi otomatis
       </Text>
@@ -234,15 +245,18 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
               Pilih Foto Slip
             </Text>
             <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
-              JPEG, PNG, atau WebP — maks 10 MB
+              JPEG, PNG, WebP, atau HEIC (iOS) — maks 10 MB
             </Text>
           </TouchableOpacity>
 
           {/* Hidden native file input — web only */}
+          {/* accept includes HEIC/HEIF for iOS Safari camera roll */}
+          {/* capture="environment" opens rear camera directly on mobile browsers */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp"
+            capture="environment"
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />
@@ -307,23 +321,70 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
 
   // ── Step 3: review & edit ─────────────────────────────────────
   const reviewContent = (
-    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: '85%' }}>
+    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: Platform.OS === 'web' ? '88vh' as any : '85%' }}
+      contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 24 : 0 }}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={{ padding: 20, gap: 16 }}>
 
-        {/* Slip thumbnail + meta */}
-        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-          {imagePreviewUrl && (
-            <Image
-              source={{ uri: imagePreviewUrl }}
-              resizeMode="cover"
-              style={{ width: 56, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, flexShrink: 0 }}
-            />
+        {/* Type toggle — FIRST so it's immediately visible */}
+        <Controller
+          control={control} name="type"
+          render={({ field: { value, onChange } }) => (
+            <View style={{ flexDirection: 'row', backgroundColor: C.creamSunken, borderRadius: 14, padding: 4 }}>
+              {TYPE_OPTIONS.map((opt) => {
+                const active = value === opt.value
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => onChange(opt.value)}
+                    style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }} numberOfLines={1}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
           )}
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
-              Konfirmasi Transaksi
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+        />
+
+        {/* Amount — SECOND, right below tabs */}
+        <View style={{ alignItems: 'center', paddingVertical: 4 }}>
+          <Text style={labelStyle}>Jumlah</Text>
+          <Controller
+            control={control} name="amount"
+            render={({ field: { value, onChange } }) => (
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black' }}>Rp</Text>
+                <TextInput
+                  style={{ fontSize: 36, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black', minWidth: 80, maxWidth: 220, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
+                  placeholder="0"
+                  placeholderTextColor={typeOpt.color + '55'}
+                  keyboardType="numeric"
+                  value={value}
+                  onChangeText={(t) => onChange(formatAmountInput(t))}
+                />
+              </View>
+            )}
+          />
+          {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_600SemiBold' }}>{errors.amount.message}</Text>}
+        </View>
+
+        <View style={{ height: 1, backgroundColor: C.divider }} />
+
+        {/* Slip meta — compact row: thumbnail + bank badge + accuracy warning */}
+        {(imagePreviewUrl || parsed?.bank || (parsed && parsed.confidence < 0.7)) ? (
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            {imagePreviewUrl && (
+              <Image
+                source={{ uri: imagePreviewUrl }}
+                resizeMode="cover"
+                style={{ width: 44, height: 44, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, flexShrink: 0 }}
+              />
+            )}
+            <View style={{ flex: 1, flexDirection: 'row', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
               {parsed?.bank ? (
                 <View style={{ backgroundColor: C.primarySoft, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: C.heroEnd, fontFamily: 'Nunito_700Bold' }}>
@@ -340,54 +401,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
               ) : null}
             </View>
           </View>
-        </View>
-
-        <View style={{ height: 1, backgroundColor: C.divider }} />
-
-        {/* Type toggle */}
-        <Controller
-          control={control} name="type"
-          render={({ field: { value, onChange } }) => (
-            <View style={{ flexDirection: 'row', backgroundColor: C.creamSunken, borderRadius: 14, padding: 4 }}>
-              {TYPE_OPTIONS.map((opt) => {
-                const active = value === opt.value
-                return (
-                  <TouchableOpacity
-                    key={opt.value}
-                    onPress={() => onChange(opt.value)}
-                    style={{ flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
-            </View>
-          )}
-        />
-
-        {/* Amount */}
-        <View style={{ alignItems: 'center', paddingVertical: 4 }}>
-          <Text style={labelStyle}>Jumlah</Text>
-          <Controller
-            control={control} name="amount"
-            render={({ field: { value, onChange } }) => (
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                <Text style={{ fontSize: 22, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black' }}>Rp</Text>
-                <TextInput
-                  style={{ fontSize: 38, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black', minWidth: 120, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
-                  placeholder="0"
-                  placeholderTextColor={typeOpt.color + '55'}
-                  keyboardType="numeric"
-                  value={value}
-                  onChangeText={(t) => onChange(formatAmountInput(t))}
-                />
-              </View>
-            )}
-          />
-          {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_600SemiBold' }}>{errors.amount.message}</Text>}
-        </View>
+        ) : null}
 
         {/* Category */}
         <View>
@@ -524,12 +538,44 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
     </ScrollView>
   )
 
+  const modalTitles: Record<Step, string> = {
+    pick:    'Scan Slip Pembayaran',
+    loading: 'Memproses...',
+    review:  'Konfirmasi Transaksi',
+  }
+
+  const cardStyle = isDesktop
+    ? { backgroundColor: C.surface, borderRadius: 24 }
+    : { backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }
+
   const content = (
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
-      {/* Handle */}
-      <View style={{ alignItems: 'center', paddingTop: 12 }}>
-        <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
+    <View style={cardStyle}>
+      {/* Handle bar — only on mobile bottom sheet */}
+      {!isDesktop && (
+        <View style={{ alignItems: 'center', paddingTop: 10 }}>
+          <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
+        </View>
+      )}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4,
+      }}>
+        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
+          {modalTitles[step]}
+        </Text>
+        <TouchableOpacity
+          onPress={handleClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{
+            width: 32, height: 32, borderRadius: 16,
+            backgroundColor: C.creamSunken,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 16, color: C.fg2, lineHeight: 18 }}>✕</Text>
+        </TouchableOpacity>
       </View>
+      <View style={{ height: 1, backgroundColor: C.divider, marginHorizontal: 20, marginTop: 8 }} />
 
       {step === 'pick'    && pickContent}
       {step === 'loading' && loadingContent}
@@ -539,10 +585,24 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
 
   if (Platform.OS === 'web') {
     if (!visible) return null
+
+    if (isDesktop) {
+      return (
+        <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
+          <View style={{ width: '100%', maxWidth: 480, zIndex: 1 }}>
+            {content}
+          </View>
+        </View>
+      )
+    }
+
     return (
-      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end' }}>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        {content}
+        <View style={{ width: '100%', maxWidth: 520 }}>
+          {content}
+        </View>
       </View>
     )
   }
