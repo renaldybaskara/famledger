@@ -139,6 +139,21 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
         <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
       </View>
 
+      {/* Header row with close button */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
+        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
+          Detail Transaksi
+        </Text>
+        <TouchableOpacity
+          onPress={onClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.creamSunken, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Text style={{ fontSize: 16, color: C.fg2, lineHeight: 18 }}>✕</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={{ height: 1, backgroundColor: C.divider, marginHorizontal: 20, marginTop: 4, marginBottom: 0, flexShrink: 0 }} />
+
       <ScrollView showsVerticalScrollIndicator={false} style={Platform.OS === 'web' ? { flex: 1, overflowY: 'auto' } as any : undefined}>
         <View style={{ padding: 20 }}>
 
@@ -357,7 +372,9 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 200, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end', overflow: 'hidden' as any }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={onClose} activeOpacity={1} />
-        {content}
+        <View style={{ zIndex: 1 }}>
+          {content}
+        </View>
       </View>
     )
   }
