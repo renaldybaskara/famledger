@@ -32,11 +32,11 @@ export default function TermsPage() {
         <View style={{ padding: 20, gap: 20 }}>
 
           <Section title="1. Penerimaan Syarat">
-            Dengan menggunakan aplikasi FamLedger, Anda menyetujui syarat dan ketentuan ini. Jika Anda tidak setuju, harap hentikan penggunaan aplikasi.
+            Dengan menggunakan aplikasi Budgetin, Anda menyetujui syarat dan ketentuan ini. Jika Anda tidak setuju, harap hentikan penggunaan aplikasi.
           </Section>
 
           <Section title="2. Deskripsi Layanan">
-            {`FamLedger adalah aplikasi manajemen keuangan keluarga yang memungkinkan pengguna untuk:\n\n• Mencatat dan melacak transaksi keuangan pribadi dan keluarga\n• Mengimpor transaksi otomatis dari notifikasi email bank\n• Membuat anggaran dan memantau pengeluaran\n• Berbagi data keuangan dengan anggota keluarga dalam workspace`}
+            {`Budgetin adalah aplikasi manajemen keuangan keluarga yang memungkinkan pengguna untuk:\n\n• Mencatat dan melacak transaksi keuangan pribadi dan keluarga\n• Mengimpor transaksi otomatis dari notifikasi email bank\n• Membuat anggaran dan memantau pengeluaran\n• Berbagi data keuangan dengan anggota keluarga dalam workspace`}
           </Section>
 
           <Section title="3. Akun Pengguna">
@@ -44,7 +44,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="4. Penggunaan yang Diizinkan">
-            {`Anda boleh menggunakan FamLedger untuk:\n\n• Pencatatan keuangan pribadi dan keluarga\n• Berbagi laporan keuangan dengan anggota keluarga atau pasangan\n• Analisis pengeluaran dan perencanaan anggaran`}
+            {`Anda boleh menggunakan Budgetin untuk:\n\n• Pencatatan keuangan pribadi dan keluarga\n• Berbagi laporan keuangan dengan anggota keluarga atau pasangan\n• Analisis pengeluaran dan perencanaan anggaran`}
           </Section>
 
           <Section title="5. Penggunaan yang Dilarang">
@@ -52,15 +52,15 @@ export default function TermsPage() {
           </Section>
 
           <Section title="6. Langganan dan Pembayaran">
-            {`• FamLedger menawarkan paket gratis dengan fitur dasar dan paket Pro dengan fitur lengkap\n• Paket Pro tersedia dengan langganan bulanan, tahunan, atau seumur hidup\n• Pembayaran diproses melalui Midtrans (web) atau App Store/Play Store (mobile)\n• Langganan dapat dibatalkan kapan saja; akses Pro berlaku hingga akhir periode yang dibayar`}
+            {`• Budgetin menawarkan paket gratis dengan fitur dasar dan paket Pro dengan fitur lengkap\n• Paket Pro tersedia dengan langganan bulanan, tahunan, atau seumur hidup\n• Pembayaran diproses melalui Midtrans (web) atau App Store/Play Store (mobile)\n• Langganan dapat dibatalkan kapan saja; akses Pro berlaku hingga akhir periode yang dibayar`}
           </Section>
 
           <Section title="7. Integrasi Pihak Ketiga">
-            {`FamLedger terintegrasi dengan layanan pihak ketiga berikut:\n\n• Google OAuth & Gmail API: untuk login dan import transaksi email\n• Midtrans: untuk pemrosesan pembayaran\n• OpenRouter / OpenAI: untuk kategorisasi otomatis berbasis AI\n\nPenggunaan layanan ini tunduk pada syarat dan ketentuan masing-masing penyedia.`}
+            {`Budgetin terintegrasi dengan layanan pihak ketiga berikut:\n\n• Google OAuth & Gmail API: untuk login dan import transaksi email\n• Midtrans: untuk pemrosesan pembayaran\n• OpenRouter / OpenAI: untuk kategorisasi otomatis berbasis AI\n\nPenggunaan layanan ini tunduk pada syarat dan ketentuan masing-masing penyedia.`}
           </Section>
 
           <Section title="8. Batasan Tanggung Jawab">
-            {`FamLedger tidak bertanggung jawab atas:\n\n• Kesalahan atau ketidakakuratan data transaksi yang diimpor dari email\n• Kerugian finansial yang timbul dari keputusan berdasarkan data di aplikasi\n• Gangguan layanan akibat pemeliharaan atau force majeure\n\nAplikasi ini adalah alat bantu pencatatan, bukan penasihat keuangan profesional.`}
+            {`Budgetin tidak bertanggung jawab atas:\n\n• Kesalahan atau ketidakakuratan data transaksi yang diimpor dari email\n• Kerugian finansial yang timbul dari keputusan berdasarkan data di aplikasi\n• Gangguan layanan akibat pemeliharaan atau force majeure\n\nAplikasi ini adalah alat bantu pencatatan, bukan penasihat keuangan profesional.`}
           </Section>
 
           <Section title="9. Perubahan Syarat">

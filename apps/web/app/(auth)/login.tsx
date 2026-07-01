@@ -5,7 +5,7 @@ import * as WebBrowser from 'expo-web-browser'
 import * as Linking from 'expo-linking'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
-import { FamLedgerIcon } from '../../components/ui/SakuLogo'
+import { BudgetinIcon } from '../../components/ui/SakuLogo'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -170,7 +170,7 @@ export default function LoginScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#41594F', alignItems: 'center', justifyContent: 'center' }}>
-        <FamLedgerIcon size={64} rounded />
+        <BudgetinIcon size={64} rounded />
         <ActivityIndicator size="large" color="rgba(255,255,255,0.9)" style={{ marginTop: 24 }} />
         <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 14, fontSize: 14, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
           Sedang masuk…
@@ -217,7 +217,7 @@ export default function LoginScreen() {
             elevation: 10,
             marginBottom: 18,
           }}>
-            <FamLedgerIcon size={80} rounded />
+            <BudgetinIcon size={80} rounded />
           </View>
 
           <Text style={{
@@ -228,7 +228,7 @@ export default function LoginScreen() {
             letterSpacing: -0.5,
             lineHeight: 36,
           }}>
-            FamLedger
+            Budgetin
           </Text>
 
           <Text style={{
@@ -265,7 +265,7 @@ export default function LoginScreen() {
             fontFamily: 'Nunito_900Black',
             marginBottom: 6,
           }}>
-            Kenapa FamLedger?
+            Kenapa Budgetin?
           </Text>
           <Text style={{
             fontSize: 13,

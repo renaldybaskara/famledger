@@ -12,6 +12,7 @@ import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend, usePaydayTrend } from '../../src/hooks/useDashboard'
 import { useTransactions } from '../../src/hooks/useTransactions'
+import { useBudgets } from '../../src/hooks/useBudgets'
 import { useAuthStore } from '../../src/store/auth.store'
 import { useIsProActive } from '../../src/hooks/useSubscription'
 import { api } from '../../src/lib/api'
@@ -23,8 +24,9 @@ import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipS
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
 
-// ── Saku design tokens ────────────────────────────────────────
+// ── Budgetin design tokens (from Paper "Polite Honey" design) ─
 const C = {
+  // Gradient hero: oklab(52.8% -0.078 0.035) → oklab(43.1% -0.066 0.028)
   heroStart:    '#6B8E6B',
   heroEnd:      '#41594F',
   accent:       '#C97B5C',
@@ -32,123 +34,420 @@ const C = {
   cream:        '#FAF7F2',
   creamSunken:  '#F4EEE3',
   surface:      '#FFFFFF',
+  // Chart bg from Paper: #F7FAFA
+  chartBg:      '#F7FAFA',
   primary:      '#6B8E6B',
   primaryDeep:  '#3D7A56',
   expenseDeep:  '#D4704A',
   primarySoft:  '#DEE8D7',
-  incomeSoft:   '#DEE8D7',
-  expenseSoft:  '#F4DDD0',
+  incomeSoft:   '#F0FAF4',   // Paper: income card bg
+  expenseSoft:  '#FDF2EE',   // Paper: expense card bg
   savingSoft:   '#FBEFD2',
   fg1:          '#2D2A26',
   fg1d:         '#1A2820',
   fg2:          '#55504A',
   fg3:          '#8E887F',
-  fg4:          '#A8A39B',
+  fg4:          '#9DB5A8',   // Paper: subtitle muted
   border:       '#E0DBD2',
-  divider:      '#ECE4D3',
+  divider:      '#F0F4F2',   // Paper: transaction row divider
   mustard:      '#D9A441',
+  // Paper active filter: #6B8E6B, inactive: #EDE8DF
+  filterActive: '#6B8E6B',
+  filterInactive: '#EDE8DF',
 }
 
-// ── Category progress row ─────────────────────────────────────
+// ── Category progress row (Paper design) ─────────────────────
 function CategoryRow({ name, amount, color, pct }: { name: string; amount: number; color: string; pct: number }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: color + '22', alignItems: 'center', justifyContent: 'center' }}>
-        <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: color }} />
+    <View style={{ flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>{name}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: C.expenseDeep, fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+          {formatCurrencyCompact(amount)}
+        </Text>
       </View>
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>{name}</Text>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>{formatCurrencyCompact(amount)}</Text>
+      <View style={{ height: 6, borderRadius: 999, backgroundColor: '#F0EAE6', overflow: 'hidden' }}>
+        <View style={{ width: `${Math.min(pct, 100)}%` as any, height: '100%', backgroundColor: color, borderRadius: 999 }} />
+      </View>
+    </View>
+  )
+}
+
+// ── Trend bar chart (Paper design: side-by-side bars, bg #F7FAFA) ─
+function TrendBarChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense]), 1)
+  const chartH = 72  // Paper chart height
+  const lastIdx = data.length - 1
+
+  // Tooltip only shows when user hovers or taps a bar
+  const activeItem = hoveredIdx !== null ? data[hoveredIdx] : null
+
+  return (
+    <View>
+      {/* Tooltip — only visible when a bar is hovered/tapped */}
+      {activeItem ? (
+        <View style={{
+          backgroundColor: C.fg1d, borderRadius: 12, padding: 12, marginBottom: 14,
+          flexDirection: 'row', alignItems: 'center', gap: 8,
+        }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold', marginRight: 4 }}>
+            {activeItem.label}
+          </Text>
+          <View style={{ width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold' }}>Masuk</Text>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+              {formatCurrencyCompact(activeItem.income)}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.expenseDeep }} />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold' }}>Keluar</Text>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+              {formatCurrencyCompact(activeItem.expense)}
+            </Text>
+          </View>
         </View>
-        <View style={{ height: 6, borderRadius: 999, backgroundColor: C.creamSunken, overflow: 'hidden' }}>
-          <View style={{ width: `${Math.min(pct, 100)}%` as any, height: '100%', backgroundColor: color, borderRadius: 999 }} />
+      ) : (
+        // Placeholder keeps layout stable so chart doesn't jump when tooltip appears
+        <View style={{ height: 0, marginBottom: 14 }} />
+      )}
+
+      {/* Bars — each month: income bar overlapping expense bar (Paper style) */}
+      {/* ScrollView allows horizontal scroll when few months; minWidth prevents stretch */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: chartH, gap: 8 }}>
+        {data.map((item, idx) => {
+          const isCurrent = idx === lastIdx
+          const isHovered = idx === hoveredIdx
+          const incH = Math.max(Math.round((item.income  / maxVal) * chartH), 3)
+          const expH = Math.max(Math.round((item.expense / maxVal) * chartH), 3)
+          // Current month = solid. Hovered = solid. Others = 30% opacity
+          const solid = isCurrent || isHovered
+          const incColor = solid ? C.primaryDeep : C.primaryDeep + '4D'
+          const expColor = solid ? C.expenseDeep : C.expenseDeep + '4D'
+
+          return (
+            <TouchableOpacity
+              key={item.label}
+              activeOpacity={0.8}
+              onPress={() => setHoveredIdx(idx === hoveredIdx ? null : idx)}
+              style={[
+                data.length < 3
+                  ? { width: 32, flexShrink: 0 }
+                  : { flex: 1 },
+                { alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
+              ]}
+              {...(Platform.OS === 'web' ? {
+                onMouseEnter: () => setHoveredIdx(idx),
+                onMouseLeave: () => setHoveredIdx(null),
+              } as any : {})}
+            >
+              <View style={{ width: '100%', alignItems: 'stretch', justifyContent: 'flex-end', height: '100%', position: 'relative' }}>
+                {/* Income bar */}
+                <View style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  height: incH, backgroundColor: incColor,
+                  borderTopLeftRadius: 6, borderTopRightRadius: 6,
+                }} />
+                {/* Expense bar */}
+                <View style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  height: expH, backgroundColor: expColor,
+                  borderTopLeftRadius: 6, borderTopRightRadius: 6,
+                }} />
+              </View>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+
+      {/* Month labels */}
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+        {data.map((item, idx) => {
+          const isCurrent = idx === lastIdx
+          const isHovered = idx === hoveredIdx
+          return (
+            <Text
+              key={item.label}
+              style={[
+                data.length < 3 ? { width: 32, flexShrink: 0 } : { flex: 1 },
+                {
+                  textAlign: 'center',
+                  fontSize: 11,
+                  fontWeight: (isCurrent || isHovered) ? '800' : '600',
+                  color: isHovered ? C.fg1d : isCurrent ? C.fg1d : C.fg4,
+                  fontFamily: (isCurrent || isHovered) ? 'Nunito_800ExtraBold' : 'Nunito_600SemiBold',
+                }
+              ]}
+            >
+              {item.label}
+            </Text>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+// ── Quick Insight pill (Paper: #F0FAF4 bg, Rasio Pengeluaran) ─
+function QuickInsightPill({ totalIncome, totalExpense }: { totalIncome: number; totalExpense: number }) {
+  if (totalIncome <= 0 || totalExpense <= 0) return null
+  const ratio = Math.min(Math.round((totalExpense / totalIncome) * 100), 100)
+  const isWarning  = ratio >= 80 && ratio < 100
+  const isDanger   = ratio >= 100
+  // Paper: normal = #F0FAF4 bg, warning = #FDF5E4, danger = #FEF0F0
+  const bgColor    = isDanger ? '#FEF0F0' : isWarning ? '#FDF5E4' : '#F0FAF4'
+  const barTrack   = isDanger ? '#F8DADA' : isWarning ? '#FBEFD2' : '#D4EAD8'
+  const barColor   = isDanger ? '#C66B6B' : isWarning ? C.mustard : C.primaryDeep
+  const badgeBg    = isDanger ? '#FEF0F0' : isWarning ? '#FDF5E4' : C.primaryDeep
+  const badgeText  = isDanger ? '#C66B6B' : isWarning ? C.mustard : '#FFFFFF'
+  const labelColor = isDanger ? '#C66B6B' : isWarning ? C.mustard : C.primaryDeep
+  const badgeLabel = isDanger ? '⚠️ Melebihi' : isWarning ? '⚡ Hati-hati' : '🟢 Aman'
+
+  return (
+    <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+      <View style={{
+        backgroundColor: bgColor, borderRadius: 14,
+        paddingHorizontal: 16, paddingVertical: 10,
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+      }}>
+        {/* Left: label + bar */}
+        <View style={{ flex: 1, gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{
+              fontSize: 12, fontWeight: '700', color: labelColor,
+              fontFamily: 'Nunito_700Bold', letterSpacing: 0.5,
+              textTransform: 'uppercase',
+            }}>
+              Rasio Pengeluaran
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>
+              {ratio}%
+            </Text>
+          </View>
+          <View style={{ height: 6, borderRadius: 999, backgroundColor: barTrack, overflow: 'hidden' }}>
+            <View style={{ width: `${ratio}%` as any, height: '100%', backgroundColor: barColor, borderRadius: 999 }} />
+          </View>
+        </View>
+        {/* Right: status badge */}
+        <View style={{
+          backgroundColor: badgeBg, borderRadius: 20,
+          paddingHorizontal: 10, paddingVertical: 4, flexShrink: 0,
+        }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: badgeText, fontFamily: 'Nunito_800ExtraBold', letterSpacing: 0.3 }}>
+            {badgeLabel}
+          </Text>
         </View>
       </View>
     </View>
   )
 }
 
-// ── Custom vertical bar chart ─────────────────────────────────
-function TrendBarChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
-  const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense]), 1)
-  const chartH = 100
-  const lastIdx = data.length - 1
+// ── Category breakdown section (Paper: donut + legend + bars) ─
+function CategoryBreakdownSection({
+  cats, colors,
+}: {
+  cats: Array<{ categoryName: string; categoryColor: string; total: number; percentage: number }>
+  colors: string[]
+}) {
+  if (cats.length === 0) return null
+
+  // Normalize: fill in missing names and calculate percentage from totals
+  // (backend doesn't always return percentage; null categoryName = uncategorized)
+  const grandTotal = cats.reduce((s, c) => s + c.total, 0) || 1
+  const normalized = cats.slice(0, 5).map((cat, idx) => ({
+    ...cat,
+    // Null/empty name from DB LEFT JOIN = transactions with no category assigned
+    // Renamed to "Tanpa Kategori" — more accurate than "Lainnya"
+    categoryName: cat.categoryName || 'Tanpa Kategori',
+    // Always use the CAT_COLORS palette for distinct colors
+    resolvedColor: colors[idx % colors.length],
+    // Percentage rounded for display
+    pct: Math.round((cat.total / grandTotal) * 100),
+    // Exact fraction for donut arc (never round — prevents white gap from rounding error)
+    fraction: cat.total / grandTotal,
+  }))
+
+  const maxTotal = normalized[0]?.total ?? 1
+  const r    = 44
+  const circ = 2 * Math.PI * r  // ≈276.5
+  let offset = 0
 
   return (
-    <View>
-      {/* Tooltip area */}
-      {hoveredIdx !== null && (
-        <View style={{
-          backgroundColor: C.fg1d, borderRadius: 10, padding: 10, marginBottom: 10,
-          flexDirection: 'row', justifyContent: 'space-between', gap: 16,
-        }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff', fontFamily: 'Nunito_700Bold' }}>
-            {data[hoveredIdx]?.label}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <View style={{ width: 6, height: 6, borderRadius: 2, backgroundColor: C.primaryDeep }} />
-              <Text style={{ fontSize: 11, color: '#fff', fontFamily: 'Nunito_600SemiBold' }}>
-                {formatCurrencyCompact(data[hoveredIdx]?.income ?? 0)}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <View style={{ width: 6, height: 6, borderRadius: 2, backgroundColor: C.expenseDeep }} />
-              <Text style={{ fontSize: 11, color: '#fff', fontFamily: 'Nunito_600SemiBold' }}>
-                {formatCurrencyCompact(data[hoveredIdx]?.expense ?? 0)}
-              </Text>
-            </View>
+    <View style={{ backgroundColor: C.surface, borderRadius: 18, padding: 16, shadowColor: '#1A2820', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Pengeluaran per Kategori</Text>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Lihat Semua</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Donut + legend row */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 16 }}>
+        {/* Donut chart */}
+        <View style={{ width: 120, height: 120, flexShrink: 0, position: 'relative' }}>
+          {Platform.OS === 'web' ? (
+            <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              {/* Background track — fills any gap caused by rounding or <5 categories */}
+              <circle cx="60" cy="60" r={r}
+                fill="none" stroke="#EDE8DF" strokeWidth="18"
+              />
+              {/* Segments — use exact fraction to avoid white gaps */}
+              {normalized.map((cat) => {
+                // Use exact fraction * circ so all segments sum perfectly
+                const dash = cat.fraction * circ
+                const thisDash = `${dash} ${circ - dash}`
+                const thisOffset = -offset
+                offset += dash
+                return (
+                  <circle key={cat.categoryName}
+                    cx="60" cy="60" r={r}
+                    transform="rotate(-90 60 60)"
+                    fill="none" stroke={cat.resolvedColor} strokeWidth="18"
+                    strokeDasharray={thisDash}
+                    strokeDashoffset={-thisOffset}
+                  />
+                )
+              })}
+            </svg>
+          ) : (
+            <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 18, borderColor: colors[0] }} />
+          )}
+          {/* Center label */}
+          <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -30 }, { translateY: -16 }], alignItems: 'center' }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold' }}>Total</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+              {formatCurrencyCompact(grandTotal)}
+            </Text>
           </View>
         </View>
-      )}
 
-      {/* Bars row */}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: chartH, gap: 16, paddingHorizontal: 4 }}>
-        {data.map((item, idx) => {
-          const isCurrent = idx === lastIdx
-          const incH = Math.max(Math.round((item.income / maxVal) * chartH), 3)
-          const expH = Math.max(Math.round((item.expense / maxVal) * chartH), 3)
-          const incColor = isCurrent ? C.primaryDeep : C.primaryDeep + '55'
-          const expColor = isCurrent ? C.expenseDeep : C.expenseDeep + '55'
-
-          const hoverProps = Platform.OS === 'web' ? {
-            onMouseEnter: () => setHoveredIdx(idx),
-            onMouseLeave: () => setHoveredIdx(null),
-          } : {}
-
-          return (
-            <View
-              key={item.label}
-              style={{ width: 28, alignItems: 'center', gap: 6 }}
-              {...(hoverProps as any)}
-            >
-              {/* Fixed-height bar container — income left, expense right, side by side */}
-              <View style={{ width: 28, height: chartH, flexDirection: 'row', alignItems: 'flex-end', gap: 2 }}>
-                {/* Income bar */}
-                <View style={{
-                  flex: 1, height: incH, backgroundColor: incColor,
-                  borderTopLeftRadius: 3, borderTopRightRadius: 3,
-                }} />
-                {/* Expense bar */}
-                <View style={{
-                  flex: 1, height: expH, backgroundColor: expColor,
-                  borderTopLeftRadius: 3, borderTopRightRadius: 3,
-                }} />
-              </View>
-              {/* Month label */}
-              <Text style={{
-                fontSize: 10, fontWeight: isCurrent ? '800' : '600',
-                color: isCurrent ? C.fg1d : '#9DB5A8',
-                fontFamily: isCurrent ? 'Nunito_800ExtraBold' : 'Nunito_600SemiBold',
-              }}>
-                {item.label}
+        {/* Legend */}
+        <View style={{ flex: 1, gap: 8 }}>
+          {normalized.map((cat) => (
+            <View key={cat.categoryName} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: cat.resolvedColor, flexShrink: 0 }} />
+              <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#3D4A43', fontFamily: 'Nunito_600SemiBold' }} numberOfLines={1}>
+                {cat.categoryName}
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>
+                {cat.pct}%
               </Text>
             </View>
-          )
-        })}
+          ))}
+        </View>
       </View>
+
+      {/* Progress bars per category */}
+      <View style={{ gap: 0 }}>
+        {normalized.map((cat) => (
+          <CategoryRow
+            key={cat.categoryName}
+            name={cat.categoryName}
+            amount={cat.total}
+            color={cat.resolvedColor}
+            pct={Math.round((cat.total / maxTotal) * 100)}
+          />
+        ))}
+      </View>
+
+      {/* Info tip if uncategorized transactions exist */}
+      {normalized.some((c) => c.categoryName === 'Tanpa Kategori') && (
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/transactions')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF9EE', borderRadius: 10, padding: 10, marginTop: 8 }}
+        >
+          <Text style={{ fontSize: 13 }}>💡</Text>
+          <Text style={{ flex: 1, fontSize: 12, color: '#8E6A1A', fontFamily: 'Nunito_600SemiBold' }}>
+            Ada transaksi belum dikategorikan. Tap untuk edit kategorinya.
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  )
+}
+
+// ── Budget snapshot section (Paper design) ───────────────────
+type BudgetStatus = 'safe' | 'warning' | 'danger'
+
+function getBudgetStatus(spent: number, amount: number): BudgetStatus {
+  if (amount <= 0) return 'safe'
+  const ratio = spent / amount
+  if (ratio >= 1)   return 'danger'
+  if (ratio >= 0.8) return 'warning'
+  return 'safe'
+}
+
+function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name: string; amount: number; spent: number; category?: { name: string; color: string } }> }) {
+  if (budgets.length === 0) return null
+
+  const top3 = [...budgets]
+    .filter(b => b.amount > 0)
+    .sort((a, b) => (b.spent / b.amount) - (a.spent / a.amount))
+    .slice(0, 3)
+
+  if (top3.length === 0) return null
+
+  // Paper exact status config
+  const STATUS_CONFIG: Record<BudgetStatus, {
+    label: string; badgeBg: string; badgeColor: string
+    barColor: string; trackColor: string
+  }> = {
+    safe:    { label: 'AMAN',         badgeBg: '#F0FAF4', badgeColor: C.primaryDeep, barColor: C.primaryDeep, trackColor: '#D4EAD8' },
+    warning: { label: 'HAMPIR HABIS', badgeBg: '#FDF0E0', badgeColor: '#D9A441',     barColor: C.mustard,     trackColor: '#F0EAE6' },
+    danger:  { label: 'MELEBIHI',     badgeBg: '#FEF0F0', badgeColor: '#C66B6B',     barColor: '#C66B6B',     trackColor: '#F8DADA' },
+  }
+
+  return (
+    <View style={{ backgroundColor: C.surface, borderRadius: 18, padding: 16, shadowColor: '#1A2820', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Anggaran Bulan Ini</Text>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/budget')}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Kelola</Text>
+        </TouchableOpacity>
+      </View>
+
+      {top3.map((budget, idx) => {
+        const status   = getBudgetStatus(budget.spent, budget.amount)
+        const cfg      = STATUS_CONFIG[status]
+        const barPct   = Math.min((budget.spent / budget.amount) * 100, 100)
+        const catColor = budget.category?.color ?? C.expenseDeep
+        const catName  = budget.category?.name ?? budget.name
+
+        return (
+          <View key={budget.id} style={{ marginBottom: idx < top3.length - 1 ? 14 : 0 }}>
+            {/* Row: icon + name | amount + badge */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {/* Category icon bg */}
+                <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: catColor + '22', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: catColor }} />
+                </View>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }} numberOfLines={1}>
+                  {catName}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold' }}>
+                  {formatCurrencyCompact(budget.spent)} / {formatCurrencyCompact(budget.amount)}
+                </Text>
+                <View style={{ backgroundColor: cfg.badgeBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: cfg.badgeColor, fontFamily: 'Nunito_800ExtraBold', letterSpacing: 0.3 }}>
+                    {cfg.label}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            {/* Progress bar */}
+            <View style={{ height: 6, borderRadius: 999, backgroundColor: cfg.trackColor, overflow: 'hidden' }}>
+              <View style={{ width: `${barPct}%` as any, height: '100%', backgroundColor: cfg.barColor, borderRadius: 999 }} />
+            </View>
+          </View>
+        )
+      })}
     </View>
   )
 }
@@ -340,6 +639,7 @@ export default function DashboardScreen() {
     setRefreshing(true)
     await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     await queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    await queryClient.invalidateQueries({ queryKey: ['budgets'] })
     setRefreshing(false)
   }, [queryClient])
 
@@ -355,9 +655,33 @@ export default function DashboardScreen() {
 
   const displayName = activeWsName ?? (user?.name ?? 'Kamu')
 
-  const topCats   = (categoryData ?? []).slice(0, 4)
+  // Sort so null-named (uncategorized/"Lainnya") rows go last — named categories first
+  const topCats = (categoryData ?? [])
+    .slice()
+    .sort((a, b) => {
+      const aIsNull = !a.categoryName
+      const bIsNull = !b.categoryName
+      if (aIsNull && !bIsNull) return 1
+      if (!aIsNull && bIsNull) return -1
+      return b.total - a.total
+    })
+    .slice(0, 5)
   const maxAmt    = topCats[0]?.total ?? 1
-  const CAT_COLORS = ['#C97B5C','#6B8E6B','#D9A441','#6E97AE','#C66B6B','#7E4F94']
+  const CAT_COLORS = ['#D4704A', '#3D7A56', '#6B8E6B', '#6E97AE', '#7C5CBF', '#A8A39B']
+  // Last color (#A8A39B grey) naturally falls to "Lainnya" since we sort it last
+
+  // ── Budgets for snapshot ────────────────────────────────────
+  const { data: budgetsData } = useBudgets()
+  const budgets = budgetsData ?? []
+  // top 3 budgets sorted by ratio (spent/amount) descending
+  const top3Budgets = [...budgets]
+    .filter(b => b.amount > 0)
+    .sort((a, b) => (b.spent / b.amount) - (a.spent / a.amount))
+    .slice(0, 3)
+
+  // ── Active workspace member count for hero subtitle ─────────
+  const activeWs = workspaces.find((w: any) => w.id === selectedWsIds[0])
+  const activeMemberCount: number = (activeWs as any)?.memberCount ?? (activeWs as any)?.members?.length ?? 0
 
   const trendData = useMemo(() => {
     if (!trendRaw || !Array.isArray(trendRaw)) return []
@@ -502,18 +826,18 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} colors={[C.primary]} />}
       >
-        {/* ── Hero ── */}
+        {/* ── Hero (Paper: rounded bottom, gradient, balance centered) ── */}
         <View style={{
-          backgroundColor: C.heroStart,
-          ...(({ background: `linear-gradient(160deg, ${C.heroStart} 0%, ${C.heroEnd} 100%)` }) as any),
-          paddingTop: 20, paddingBottom: 48, paddingHorizontal: 20,
+          paddingBottom: 28,
           borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+          overflow: 'hidden',
+          ...(Platform.OS === 'web' ? { background: 'linear-gradient(160deg, #6B8E6B 0%, #41594F 100%)' } as any : { backgroundColor: C.heroEnd }),
         }}>
           {/* Top row */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* Greeting + clickable workspace name */}
-            <View>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_600SemiBold' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20 }}>
+            {/* Greeting + workspace name */}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase' }}>
                 {greeting}
               </Text>
               <TouchableOpacity
@@ -539,6 +863,15 @@ export default function DashboardScreen() {
                   </svg>
                 )}
               </TouchableOpacity>
+              {/* Mode indicator dot + label */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activeWsName ? '#6BAE80' : 'rgba(255,255,255,0.4)' }} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: activeWsName ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)', fontFamily: 'Nunito_700Bold', letterSpacing: 0.3 }}>
+                  {activeWsName
+                    ? `Mode Keluarga${activeMemberCount > 0 ? ` · ${activeMemberCount} anggota` : ''}`
+                    : 'Keuangan Pribadi'}
+                </Text>
+              </View>
             </View>
 
             {/* Bell + Avatar */}
@@ -555,7 +888,6 @@ export default function DashboardScreen() {
                 <View style={{ position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#E8A020', borderWidth: 1.5, borderColor: C.heroEnd }} />
               </View>
 
-              {/* Avatar — clickable → ProfilePopup (rendered outside ScrollView) */}
               <TouchableOpacity
                 ref={avatarRef}
                 onPress={() => {
@@ -571,34 +903,35 @@ export default function DashboardScreen() {
               >
                 <View style={{
                   width: 38, height: 38, borderRadius: 19,
-                  backgroundColor: '#F0A830',
-                  ...(({ background: 'linear-gradient(135deg, #F0A830 0%, #E8802A 100%)' }) as any),
                   alignItems: 'center', justifyContent: 'center',
+                  ...(Platform.OS === 'web'
+                    ? { background: 'linear-gradient(135deg, #F0A830 0%, #E8802A 100%)' } as any
+                    : { backgroundColor: '#F0A830' }),
                 }}>
-                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>
-                    {(user?.name ?? 'K').charAt(0).toUpperCase()}
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Nunito_900Black' }}>
+                    {(user?.name ?? 'B').charAt(0).toUpperCase()}
                   </Text>
                 </View>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Balance — CENTERED */}
-          <View style={{ alignItems: 'center', marginTop: 28 }}>
+          {/* Balance — centered (Paper design) */}
+          <View style={{ alignItems: 'center', paddingBottom: 8 }}>
             <Text style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold' }}>
-              Total Saldo Keluarga
+              {activeWsName ? 'Total Saldo Keluarga' : 'Saldo Bulan Ini'}
             </Text>
-            <Text style={{ fontSize: 40, fontWeight: '900', color: '#fff', marginTop: 6, letterSpacing: -0.03 * 40, lineHeight: 48, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+            <Text style={{ fontSize: 40, fontWeight: '900', color: '#fff', marginTop: 4, letterSpacing: -1.2, lineHeight: 48, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
               {summaryLoading ? '—' : formatCurrency(balance)}
             </Text>
             {growthBadge && !summaryLoading && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: 10, gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginTop: 10, gap: 4 }}>
                 {Platform.OS === 'web' ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                    <polyline points={growthBadge.positive ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} stroke="#5DCEA0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points={growthBadge.positive ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} stroke="#5DCEA0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ) : null}
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
                   {growthBadge.positive ? '+' : '-'}{growthBadge.pct}% dari bulan lalu
                 </Text>
               </View>
@@ -606,40 +939,50 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ── Income / Expense cards ── */}
-        <View style={{ flexDirection: 'row', gap: 12, marginHorizontal: 16, marginTop: -22 }}>
-          <View style={{ flex: 1, backgroundColor: '#F0FAF4', borderRadius: 20, padding: 16, shadowColor: '#3D7A56', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4 }}>
-            <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.primaryDeep, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-              {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
+        {/* ── Income / Expense cards (Paper: paddingTop:20, paddingInline:20, gap:12) ── */}
+        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 20 }}>
+          {/* Income card */}
+          <View style={{ flex: 1, backgroundColor: '#F0FAF4', borderRadius: 20, padding: 16, gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.primaryDeep, alignItems: 'center', justifyContent: 'center' }}>
+                {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#5A7066', fontFamily: 'Nunito_700Bold' }}>PEMASUKAN</Text>
             </View>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#5A7066', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold', marginBottom: 3 }}>PEMASUKAN</Text>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.02 * 18 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
               {summaryLoading ? '—' : formatCurrencyCompact(totalIn)}
             </Text>
             {momComparison.incomePct !== null && (
-              <Text style={{ fontSize: 11, fontWeight: '600', color: C.primaryDeep, fontFamily: 'Nunito_600SemiBold', marginTop: 5 }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: C.primaryDeep, fontFamily: 'Nunito_600SemiBold' }}>
                 {momComparison.incomePct >= 0 ? '↑' : '↓'} {Math.abs(momComparison.incomePct)}% vs bln lalu
               </Text>
             )}
           </View>
-          <View style={{ flex: 1, backgroundColor: '#FDF2EE', borderRadius: 20, padding: 16, shadowColor: '#D4704A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4 }}>
-            <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.expenseDeep, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-              {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
+
+          {/* Expense card */}
+          <View style={{ flex: 1, backgroundColor: '#FDF2EE', borderRadius: 20, padding: 16, gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.expenseDeep, alignItems: 'center', justifyContent: 'center' }}>
+                {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#5A7066', fontFamily: 'Nunito_700Bold' }}>PENGELUARAN</Text>
             </View>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#5A7066', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold', marginBottom: 3 }}>PENGELUARAN</Text>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.02 * 18 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
               {summaryLoading ? '—' : formatCurrencyCompact(totalOut)}
             </Text>
             {momComparison.expensePct !== null && (
-              <Text style={{ fontSize: 11, fontWeight: '600', color: C.expenseDeep, fontFamily: 'Nunito_600SemiBold', marginTop: 5 }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: C.expenseDeep, fontFamily: 'Nunito_600SemiBold' }}>
                 {momComparison.expensePct >= 0 ? '↑' : '↓'} {Math.abs(momComparison.expensePct)}% vs bln lalu
               </Text>
             )}
           </View>
         </View>
 
-        {/* ── Period filter pills ── */}
-        <View style={{ flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 16 }}>
+        {/* ── Quick Insight pill ── */}
+        <QuickInsightPill totalIncome={totalIn} totalExpense={totalOut} />
+
+        {/* ── Period filter pills (Paper: paddingInline:20, bg cream #FAF7F2) ── */}
+        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4, backgroundColor: C.cream }}>
           {([
             { key: 'this_month' as Preset, label: 'Bulan ini' },
             { key: 'payday'     as Preset, label: 'Periode Gajian' },
@@ -648,35 +991,45 @@ export default function DashboardScreen() {
             <TouchableOpacity
               key={key}
               onPress={() => key === 'custom' ? setShowPeriod(true) : handlePresetSelect(key)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: preset === key ? '#6B8E6B' : '#EDE8DF' }}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+                paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
+                backgroundColor: preset === key ? C.filterActive : C.filterInactive,
+              }}
             >
               {isCustom && Platform.OS === 'web' && (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="4" width="18" height="18" rx="2" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" strokeLinecap="round" />
+                  <rect x="3" y="4" width="18" height="17" rx="2" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
+                  <line x1="3" y1="9" x2="21" y2="9" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
                   <line x1="8" y1="2" x2="8" y2="6" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" strokeLinecap="round" />
-                  <line x1="3" y1="10" x2="21" y2="10" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" strokeLinecap="round" />
                 </svg>
               )}
-              <Text style={{ fontSize: 12, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: preset === key ? '#fff' : C.fg2 }}>{label}</Text>
+              <Text style={{ fontSize: 13, fontWeight: preset === key ? '700' : '600', fontFamily: preset === key ? 'Nunito_700Bold' : 'Nunito_600SemiBold', color: preset === key ? '#fff' : C.fg2 }}>
+                {label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* ── Quick Actions ── */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginHorizontal: 16, marginTop: 20, paddingVertical: 4 }}>
+        {/* ── Quick Actions (Paper: justifyContent:space-around, paddingInline:16, paddingTop:20) ── */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4 }}>
           {([
-            { label: 'Tambah', bg: '#3D7A56', shadowColor: '#3D7A56', action: () => setAddModalVisible(true),
+            { label: 'Tambah',    bg: '#3D7A56', shadowColor: '#3D7A5659', action: () => setAddModalVisible(true),
               icon: <svg width="24" height="24" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" /><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" /></svg> },
-            { label: 'Workspace', bg: '#7C5CBF', shadowColor: '#7C5CBF', action: () => { if (!isPro) { Alert.alert('Fitur Pro', 'This Feature only for Pro Member', [{ text: 'OK' }]); return; } router.push('/(tabs)/workspace' as any) },
-              icon: <svg width="22" height="22" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" /><circle cx="9" cy="7" r="4" fill="none" stroke="#fff" strokeWidth="2" /></svg> },
-            { label: 'Scan Struk', bg: '#2B7A9E', shadowColor: '#2B7A9E', action: () => setScanModalVisible(true),
+            { label: 'Workspace', bg: '#7C5CBF', shadowColor: '#E8A02059', action: () => { if (!isPro) { Alert.alert('Fitur Pro', 'This Feature only for Pro Member', [{ text: 'OK' }]); return; } router.push('/(tabs)/workspace' as any) },
+              icon: <svg width="22" height="22" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" /><circle cx="9" cy="7" r="4" fill="none" stroke="#fff" strokeWidth="1.8" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" /></svg> },
+            { label: 'Scan Struk',bg: '#2B7A9E', shadowColor: '#5B9BD559', action: () => setScanModalVisible(true),
               icon: <svg width="22" height="22" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="18" rx="2" fill="none" stroke="#fff" strokeWidth="1.8" /><line x1="8" y1="7" x2="16" y2="7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" /><line x1="8" y1="10.5" x2="16" y2="10.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" /><line x1="8" y1="14" x2="12" y2="14" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" /></svg> },
-            { label: 'Lainnya', bg: '#55504A', shadowColor: '#55504A', action: () => setLainnyaVisible(true),
-              icon: <svg width="22" height="22" viewBox="0 0 24 24">{[6,12,18].flatMap(cx => [7,13,19].map(cy => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2" fill="#fff" />))}</svg> },
+            { label: 'Lainnya',   bg: '#55504A', shadowColor: '#9B6ED659', action: () => setLainnyaVisible(true),
+              icon: <svg width="22" height="22" viewBox="0 0 24 24">{[6,12,18].flatMap(cx => [7,13,19].map(cy => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.2" fill="#fff" />))}</svg> },
           ] as const).map(({ icon, label, bg, shadowColor, action }) => (
             <TouchableOpacity key={label} onPress={action} style={{ alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', shadowColor, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5 }}>
+              <View style={{
+                width: 56, height: 56, borderRadius: 18, backgroundColor: bg,
+                alignItems: 'center', justifyContent: 'center',
+                shadowColor: shadowColor, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 16, elevation: 5,
+              }}>
                 {Platform.OS === 'web' ? icon : null}
               </View>
               <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>{label}</Text>
@@ -728,22 +1081,20 @@ export default function DashboardScreen() {
 
         <View style={{ paddingHorizontal: 16, paddingTop: 20, gap: 16 }}>
 
-          {/* ── Tren 6 Bulan ── */}
+          {/* ── Tren 6 Bulan (Paper: bg #F7FAFA, borderRadius 20) ── */}
           {chartData.length > 0 && (
-            <View style={{ backgroundColor: '#F7FAFA', borderRadius: 20, padding: 16 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ backgroundColor: C.chartBg, borderRadius: 20, paddingHorizontal: 12, paddingTop: 16, paddingBottom: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>
                   {preset === 'payday' ? 'Tren Gajian' : 'Tren 6 Bulan'}
-                </Text>
-                <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
-                  {preset === 'payday' ? range.label.replace('Gajian 25 ', '') : '6 bulan terakhir'}
                 </Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Lihat Semua</Text>
                 </TouchableOpacity>
               </View>
               <TrendBarChart data={chartData} />
-              <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 14 }}>
+              {/* Legend (Paper: centered, gap:16) */}
+              <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />
                   <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Nunito_600SemiBold' }}>Pemasukan</Text>
@@ -756,12 +1107,18 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {/* ── Transaksi Terbaru ── */}
-          <View style={{ backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Transaksi Terbaru</Text>
+          {/* ── Pengeluaran per Kategori ── */}
+          <CategoryBreakdownSection cats={topCats} colors={CAT_COLORS} />
+
+          {/* ── Anggaran Bulan Ini (Budget Snapshot) ── */}
+          <BudgetSnapshotSection budgets={budgets} />
+
+          {/* ── Transaksi Terbaru (Paper: white card, divider #F0F4F2) ── */}
+          <View style={{ backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Transaksi Terbaru</Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Lihat semua</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Semua</Text>
               </TouchableOpacity>
             </View>
             {activeRecentLoading ? (
@@ -771,7 +1128,9 @@ export default function DashboardScreen() {
                 {activeRecentTxns.map((txn: any, idx: number) => (
                   <View key={txn.id}>
                     <TransactionItem transaction={txn} onPress={() => setDetailTransaction(txn)} />
-                    {idx < activeRecentTxns.length - 1 && <View style={{ height: 1, backgroundColor: C.divider, marginLeft: 70 }} />}
+                    {idx < activeRecentTxns.length - 1 && (
+                      <View style={{ height: 1, backgroundColor: C.divider }} />
+                    )}
                   </View>
                 ))}
                 <View style={{ height: 8 }} />
@@ -779,7 +1138,7 @@ export default function DashboardScreen() {
             ) : (
               <View style={{ paddingVertical: 32, alignItems: 'center' }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>Belum ada transaksi</Text>
-                <Text style={{ fontSize: 13, color: C.fg3, marginTop: 4 }}>Tambahkan transaksi pertamamu</Text>
+                <Text style={{ fontSize: 13, color: C.fg3, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>Tambahkan transaksi pertamamu</Text>
               </View>
             )}
           </View>

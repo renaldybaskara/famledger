@@ -147,11 +147,11 @@ func (r *transactionRepository) GetCategoryBreakdown(ctx context.Context, userID
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT
 			t.category_id,
-			c.name AS category_name,
-			c.icon AS category_icon,
-			c.color AS category_color,
-			COALESCE(SUM(t.amount), 0) AS total,
-			COUNT(*) AS count
+			COALESCE(c.name, 'Tanpa Kategori') AS category_name,
+			COALESCE(c.icon, 'tag')             AS category_icon,
+			COALESCE(c.color, '#A8A39B')        AS category_color,
+			COALESCE(SUM(t.amount), 0)          AS total,
+			COUNT(*)                             AS count
 		FROM transactions t
 		LEFT JOIN categories c ON t.category_id = c.id
 		WHERE t.user_id = ? AND t.type = ? AND t.deleted_at IS NULL AND t.date BETWEEN ? AND ?
@@ -285,11 +285,11 @@ func (r *transactionRepository) GetCategoryBreakdownByUserIDs(ctx context.Contex
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT
 			t.category_id,
-			c.name AS category_name,
-			c.icon AS category_icon,
-			c.color AS category_color,
-			COALESCE(SUM(t.amount), 0) AS total,
-			COUNT(*) AS count
+			COALESCE(c.name, 'Tanpa Kategori') AS category_name,
+			COALESCE(c.icon, 'tag')             AS category_icon,
+			COALESCE(c.color, '#A8A39B')        AS category_color,
+			COALESCE(SUM(t.amount), 0)          AS total,
+			COUNT(*)                             AS count
 		FROM transactions t
 		LEFT JOIN categories c ON t.category_id = c.id
 		WHERE t.user_id IN ? AND t.type = ? AND t.deleted_at IS NULL AND t.date BETWEEN ? AND ?

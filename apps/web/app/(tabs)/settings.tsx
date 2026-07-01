@@ -17,7 +17,7 @@ import {
   useSubscription, useCancelSubscription, useTrialDaysLeft, useRestorePurchases, useMidtransPayment, useIsProActive,
 } from '../../src/hooks/useSubscription'
 
-// ── Saku tokens ───────────────────────────────────────────────
+// ── Budgetin tokens ───────────────────────────────────────────────
 const C = {
   cream:        '#FAF7F2',
   creamSunken:  '#F4EEE3',
@@ -251,7 +251,7 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
         </SectionCard>
 
         <Text style={{ textAlign: 'center', fontSize: 12, color: '#C8D8D2', fontFamily: 'Nunito_500Medium' }}>
-          Saku v1.0.0 · Self-hosted
+          Budgetin v1.0.0 · Self-hosted
         </Text>
       </View>
       <PaymentSlipScanModal visible={scanVisible} onClose={() => setScanVisible(false)} />
@@ -396,7 +396,7 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
               <FormField label="Port"          value={port}    onChange={setPort}    placeholder="587" keyboardType="numeric" />
               <FormField label="Username"      value={user}    onChange={setUser}    placeholder="user@gmail.com" keyboardType="email-address" />
               <FormField label="Password"      value={pass}    onChange={setPass}    placeholder="Kosongkan jika tidak ingin mengubah" secureTextEntry />
-              <FormField label="From Email"    value={from}    onChange={setFrom}    placeholder="noreply@famledger.app" keyboardType="email-address" divider={false} />
+              <FormField label="From Email"    value={from}    onChange={setFrom}    placeholder="noreply@Budgetin.app" keyboardType="email-address" divider={false} />
             </View>
 
             {/* Buttons */}

@@ -1,47 +1,435 @@
 import { useEffect, useState } from 'react'
-import { View, ActivityIndicator, Platform } from 'react-native'
-import { Redirect, router } from 'expo-router'
+import {
+  View, Text, TouchableOpacity, ScrollView,
+  ActivityIndicator, Platform,
+} from 'react-native'
+import { router } from 'expo-router'
 import { useAuthStore } from '../src/store/auth.store'
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  heroStart:  '#6B8E6B',
+  heroEnd:    '#41594F',
+  cream:      '#FAF7F2',
+  creamSunk:  '#F4EEE3',
+  surface:    '#FFFFFF',
+  fg1:        '#2D2A26',
+  fg2:        '#55504A',
+  fg3:        '#8E887F',
+  border:     '#E0DBD2',
+  divider:    '#ECE4D3',
+  primary:    '#6B8E6B',
+  accent:     '#C97B5C',
+}
+
+// ─── Feature cards ────────────────────────────────────────────────────────────
+const FEATURES = [
+  {
+    bg: '#E8F5EE',
+    iconColor: '#3D7A56',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="#3D7A56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points="22,6 12,13 2,6" fill="none" stroke="#3D7A56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    emoji: '📧',
+    title: 'Auto-import dari email bank',
+    sub: 'BCA, BRI, GoPay, OVO, DANA & lainnya masuk otomatis',
+  },
+  {
+    bg: '#EDF6FF',
+    iconColor: '#5B9BD5',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="#5B9BD5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="9" cy="7" r="4" fill="none" stroke="#5B9BD5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="#5B9BD5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    emoji: '👨‍👩‍👧',
+    title: 'Workspace keluarga',
+    sub: 'Kelola keuangan bersama hingga 5 anggota, dengan role berbeda',
+  },
+  {
+    bg: '#F5EDFF',
+    iconColor: '#9B6ED6',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <line x1="18" y1="20" x2="18" y2="10" stroke="#9B6ED6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="12" y1="20" x2="12" y2="4" stroke="#9B6ED6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="6" y1="20" x2="6" y2="14" stroke="#9B6ED6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    emoji: '📊',
+    title: 'Dashboard & budget',
+    sub: 'Tren bulanan, top kategori, dan alert saat budget hampir habis',
+  },
+  {
+    bg: '#FEF9EE',
+    iconColor: '#E8A020',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="#E8A020" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    emoji: '🔒',
+    title: 'Self-hosted & privat',
+    sub: 'Data di servermu sendiri — bukan di cloud orang lain',
+  },
+]
+
+// ─── Budgetin wordmark logo ───────────────────────────────────────────────────────
+function SakuLogo({ size = 64 }: { size?: number }) {
+  const r = size * 0.22
+  return (
+    <View style={{
+      width: size, height: size, borderRadius: r,
+      backgroundColor: '#41594F',
+      alignItems: 'center', justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.18,
+      shadowRadius: 16,
+      elevation: 8,
+    }}>
+      {Platform.OS === 'web' ? (
+        <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 4C10.268 4 4 10.268 4 18s6.268 14 14 14 14-6.268 14-14S25.732 4 18 4zm0 4a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm-6 8h12v2H12v-2zm2 4h8l-4 6-4-6z" fill="rgba(255,255,255,0.9)" />
+        </svg>
+      ) : (
+        <Text style={{ fontSize: size * 0.38, color: '#fff', fontWeight: '900' }}>S</Text>
+      )}
+    </View>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function Index() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [ready, setReady] = useState(false)
 
+  // Wait for AsyncStorage to hydrate the auth store
   useEffect(() => {
-    // Small delay to let AsyncStorage hydrate the auth store
-    const timer = setTimeout(() => setReady(true), 100)
+    const timer = setTimeout(() => setReady(true), 150)
     return () => clearTimeout(timer)
   }, [])
 
+  // Handle Gmail OAuth callback params (gmail_connected / gmail_error)
   useEffect(() => {
     if (!ready || Platform.OS !== 'web') return
     const params = new URLSearchParams(window.location.search)
     const gmailConnected = params.get('gmail_connected')
-    const gmailError = params.get('gmail_error')
+    const gmailError     = params.get('gmail_error')
 
     if (gmailConnected || gmailError) {
-      // Store result in sessionStorage so email tab can read it
-      if (gmailConnected) {
-        sessionStorage.setItem('gmail_connected', gmailConnected)
-      } else if (gmailError) {
-        sessionStorage.setItem('gmail_error', gmailError)
-      }
-      // Clean URL immediately — no tokens in address bar
+      if (gmailConnected) sessionStorage.setItem('gmail_connected', gmailConnected)
+      if (gmailError)     sessionStorage.setItem('gmail_error', gmailError)
       window.history.replaceState({}, '', '/')
-      // Navigate to email tab if authenticated
       if (isAuthenticated) {
         router.replace('/(tabs)/email-integration' as any)
       }
     }
   }, [ready, isAuthenticated])
 
+  // Redirect authenticated users straight to dashboard
+  useEffect(() => {
+    if (ready && isAuthenticated) {
+      router.replace('/(tabs)' as any)
+    }
+  }, [ready, isAuthenticated])
+
+  // Loading spinner while store hydrates
   if (!ready) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc' }}>
-        <ActivityIndicator size="large" color="#1A2B4A" />
+      <View style={{
+        flex: 1, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: C.heroEnd,
+      }}>
+        <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
       </View>
     )
   }
 
-  return <Redirect href={isAuthenticated ? '/(tabs)' : '/(auth)/login'} />
+  // ── Public landing page (unauthenticated) ──────────────────────────────────
+  return (
+    <View style={{ flex: 1, backgroundColor: C.heroEnd }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* ── HERO ───────────────────────────────────────────────────────── */}
+        <View style={{
+          backgroundColor: C.heroEnd,
+          paddingTop: 64,
+          paddingBottom: 52,
+          alignItems: 'center',
+          paddingHorizontal: 32,
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Decorative blobs */}
+          <View style={{
+            position: 'absolute', top: -60, right: -60,
+            width: 220, height: 220, borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.06)',
+          }} />
+          <View style={{
+            position: 'absolute', bottom: 10, left: -50,
+            width: 170, height: 170, borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.04)',
+          }} />
+
+          <SakuLogo size={84} />
+
+          <Text style={{
+            color: '#FFFFFF',
+            fontFamily: 'Nunito_900Black',
+            fontSize: 36,
+            fontWeight: '900',
+            letterSpacing: -0.5,
+            lineHeight: 40,
+            marginTop: 20,
+          }}>
+            Budgetin
+          </Text>
+
+          <Text style={{
+            color: 'rgba(255,255,255,0.75)',
+            fontSize: 16,
+            fontWeight: '500',
+            fontFamily: 'Nunito_500Medium',
+            textAlign: 'center',
+            lineHeight: 24,
+            marginTop: 10,
+            maxWidth: 280,
+          }}>
+            Pencatatan keuangan keluarga{'\n'}otomatis dari email bank
+          </Text>
+
+          {/* CTA buttons */}
+          <View style={{
+            flexDirection: 'row',
+            gap: 12,
+            marginTop: 32,
+            width: '100%',
+            maxWidth: 320,
+          }}>
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/login' as any)}
+              activeOpacity={0.85}
+              style={{
+                flex: 1,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 6,
+              }}
+            >
+              <Text style={{
+                fontSize: 15,
+                fontWeight: '800',
+                color: C.heroEnd,
+                fontFamily: 'Nunito_800ExtraBold',
+              }}>
+                Masuk
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/login' as any)}
+              activeOpacity={0.85}
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(255,255,255,0.14)',
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: 'center',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.3)',
+              }}
+            >
+              <Text style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: '#FFFFFF',
+                fontFamily: 'Nunito_700Bold',
+              }}>
+                Daftar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── FEATURES ───────────────────────────────────────────────────── */}
+        <View style={{
+          flex: 1,
+          backgroundColor: C.cream,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          marginTop: -20,
+          paddingHorizontal: 24,
+          paddingTop: 32,
+          paddingBottom: 40,
+        }}>
+
+          <Text style={{
+            fontSize: 20,
+            fontWeight: '900',
+            color: C.fg1,
+            fontFamily: 'Nunito_900Black',
+            marginBottom: 6,
+          }}>
+            Kenapa Budgetin?
+          </Text>
+          <Text style={{
+            fontSize: 13,
+            color: C.fg3,
+            fontFamily: 'Nunito_500Medium',
+            marginBottom: 28,
+          }}>
+            Semua yang kamu butuhkan untuk kontrol keuangan keluarga.
+          </Text>
+
+          {FEATURES.map(({ icon, emoji, bg, title, sub }) => (
+            <View key={title} style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 14,
+              marginBottom: 20,
+            }}>
+              <View style={{
+                width: 44, height: 44, borderRadius: 14,
+                backgroundColor: bg,
+                alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {Platform.OS === 'web'
+                  ? icon
+                  : <Text style={{ fontSize: 20 }}>{emoji}</Text>
+                }
+              </View>
+              <View style={{ flex: 1, paddingTop: 2 }}>
+                <Text style={{
+                  fontSize: 14, fontWeight: '700', color: C.fg1,
+                  fontFamily: 'Nunito_700Bold', lineHeight: 20,
+                }}>
+                  {title}
+                </Text>
+                <Text style={{
+                  fontSize: 12, color: C.fg2,
+                  fontFamily: 'Nunito_500Medium', lineHeight: 18, marginTop: 2,
+                }}>
+                  {sub}
+                </Text>
+              </View>
+            </View>
+          ))}
+
+          {/* ── DIVIDER ──────────────────────────────────────────────────── */}
+          <View style={{ height: 1, backgroundColor: C.divider, marginVertical: 24 }} />
+
+          {/* ── SECONDARY CTA ────────────────────────────────────────────── */}
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/login' as any)}
+            activeOpacity={0.88}
+            style={{
+              backgroundColor: C.heroEnd,
+              borderRadius: 16,
+              paddingVertical: 16,
+              alignItems: 'center',
+              shadowColor: C.heroEnd,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              elevation: 6,
+            }}
+          >
+            <Text style={{
+              fontSize: 16, fontWeight: '800', color: '#FFFFFF',
+              fontFamily: 'Nunito_800ExtraBold', letterSpacing: -0.2,
+            }}>
+              Mulai Sekarang — Gratis
+            </Text>
+          </TouchableOpacity>
+
+          {/* ── FOOTER — privacy link visible to Google crawler ──────────── */}
+          {Platform.OS === 'web' ? (
+            /*
+             * Using native <p> + <a> tags so Google's crawler can discover
+             * the privacy policy link without executing JavaScript.
+             * This satisfies Google OAuth homepage requirement #2.
+             */
+            <p style={{
+              color: C.fg3,
+              fontSize: 12,
+              textAlign: 'center',
+              marginTop: 24,
+              lineHeight: '18px',
+              fontFamily: 'Nunito_500Medium, sans-serif',
+            } as any}>
+              Self-hosted · Data di servermu sendiri.{' '}
+              <a
+                href="/privacy"
+                style={{
+                  color: C.primary,
+                  textDecoration: 'underline',
+                  fontFamily: 'Nunito_600SemiBold, sans-serif',
+                } as any}
+              >
+                Kebijakan Privasi
+              </a>
+              {' '}·{' '}
+              <a
+                href="/terms"
+                style={{
+                  color: C.primary,
+                  textDecoration: 'underline',
+                  fontFamily: 'Nunito_600SemiBold, sans-serif',
+                } as any}
+              >
+                Syarat Penggunaan
+              </a>
+            </p>
+          ) : (
+            <Text style={{
+              color: C.fg3, fontSize: 12, textAlign: 'center',
+              marginTop: 24, lineHeight: 18,
+              fontFamily: 'Nunito_500Medium',
+            }}>
+              Self-hosted · Data di servermu sendiri.{' '}
+              <Text
+                onPress={() => router.push('/privacy' as any)}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+              >
+                Kebijakan Privasi
+              </Text>
+              {' '}·{' '}
+              <Text
+                onPress={() => router.push('/terms' as any)}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+              >
+                Syarat Penggunaan
+              </Text>
+            </Text>
+          )}
+
+          {/* ── COPYRIGHT ────────────────────────────────────────────────── */}
+          <Text style={{
+            color: C.fg3, fontSize: 11, textAlign: 'center',
+            marginTop: 12, fontFamily: 'Nunito_500Medium',
+          }}>
+            © 2026 Budgetin · Self-Hosted Financial Tracker
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
+  )
 }

@@ -83,7 +83,7 @@ export function AddTransactionModal({ visible, onClose }: Props) {
   const [serverError, setServerError] = useState('')
   const isDesktop = useIsDesktop()
 
-  const { control, handleSubmit, watch, reset, formState: { errors } } = useForm<TransactionFormData>({
+  const { control, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       type: 'expense', amount: '', categoryId: '', accountId: '',
@@ -93,8 +93,12 @@ export function AddTransactionModal({ visible, onClose }: Props) {
 
   const selectedType = watch('type')
   const typeOpt      = TYPE_OPTIONS.find((t) => t.value === selectedType)!
-  const filteredCats = (categories as Category[]).filter(
-    (c) => c.type === selectedType || selectedType === 'transfer'
+  // Only show categories that match the selected transaction type.
+  // transfer shows both income+expense categories (or categories typed 'transfer').
+  const filteredCats = (categories as Category[]).filter((c) =>
+    selectedType === 'transfer'
+      ? true
+      : c.type === selectedType
   )
 
   const handleClose = () => { reset(); setServerError(''); onClose() }
@@ -112,9 +116,10 @@ export function AddTransactionModal({ visible, onClose }: Props) {
   }
 
   // Desktop: full rounded card. Mobile: bottom sheet (top corners only)
+  // flex+overflow:hidden ensures the card respects its maxHeight container
   const cardStyle = isDesktop
-    ? { backgroundColor: C.surface, borderRadius: 24 }
-    : { backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }
+    ? { backgroundColor: C.surface, borderRadius: 24, overflow: 'hidden' as const }
+    : { backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' as const, flex: 1 as any }
 
   const content = (
     <View style={cardStyle}>
@@ -147,7 +152,13 @@ export function AddTransactionModal({ visible, onClose }: Props) {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        style={{ maxHeight: Platform.OS === 'web' ? '88vh' as any : '85%' }}
+        style={Platform.OS === 'web'
+          ? {
+              // On desktop: limit to 80vh. On mobile: flex:1 fills remaining space inside the 92dvh-capped sheet.
+              ...(isDesktop ? { maxHeight: '80vh' as any } : { flex: 1 }),
+            }
+          : { maxHeight: '82%' as any }
+        }
         contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 24 : 0 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -163,7 +174,13 @@ export function AddTransactionModal({ visible, onClose }: Props) {
                   return (
                     <TouchableOpacity
                       key={opt.value}
-                      onPress={() => onChange(opt.value)}
+                      onPress={() => {
+                        if (opt.value !== value) {
+                          onChange(opt.value)
+                          // Reset category — categories are filtered by type so old selection is invalid
+                          setValue('categoryId', '')
+                        }
+                      }}
                       style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 4, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
                     >
                       <Text style={{ fontSize: 12, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }} numberOfLines={1}>
@@ -216,7 +233,9 @@ export function AddTransactionModal({ visible, onClose }: Props) {
                     </TouchableOpacity>
                     {filteredCats.length === 0 ? (
                       <View style={{ paddingVertical: 9, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 13, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>Buat kategori dulu di Settings</Text>
+                        <Text style={{ fontSize: 13, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+                          {`Belum ada kategori untuk ${selectedType === 'income' ? 'pemasukan' : selectedType === 'expense' ? 'pengeluaran' : 'transfer'} — buat di Settings`}
+                        </Text>
                       </View>
                     ) : filteredCats.map((cat: Category) => {
                       const active = value === cat.id
@@ -364,11 +383,17 @@ export function AddTransactionModal({ visible, onClose }: Props) {
       )
     }
 
-    // Mobile web: bottom sheet
+    // Mobile web: bottom sheet — must be constrained to viewport so top content is never cut off
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ width: '100%', maxWidth: 520 }}>
+        <View style={{
+          width: '100%', maxWidth: 520, zIndex: 1,
+          // Critical: limit height to 92dvh so the sheet never overflows the screen.
+          // This ensures the type tabs + amount input at the top are always reachable.
+          maxHeight: '92dvh' as any,
+          display: 'flex' as any, flexDirection: 'column' as any,
+        }}>
           {content}
         </View>
       </View>

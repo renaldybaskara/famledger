@@ -49,7 +49,7 @@ export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
           <Text style={styles.title}>Fitur Pro</Text>
           <Text style={styles.featureName}>{featureName}</Text>
           <Text style={styles.desc}>
-            Fitur ini tersedia di paket Pro FamLedger.{'\n'}
+            Fitur ini tersedia di paket Pro Budgetin.{'\n'}
             Mulai dengan 14 hari trial gratis — tanpa kartu kredit.
           </Text>
 

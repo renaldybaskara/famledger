@@ -146,7 +146,7 @@ export default function AcceptInviteScreen() {
               Login dulu yuk!
             </Text>
             <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Nunito_500Medium' }}>
-              Kamu diundang untuk bergabung ke workspace FamLedger.{'\n'}
+              Kamu diundang untuk bergabung ke workspace Budgetin.{'\n'}
               Login dengan Google untuk menerima undangan.
             </Text>
             <TouchableOpacity

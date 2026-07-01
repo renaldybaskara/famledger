@@ -4,7 +4,7 @@ import { View, Text, Image } from 'react-native'
 const LOGO = require('../../assets/images/icon.png')
 
 // ── App icon (PNG logo) ───────────────────────────────────────────────────────
-export function FamLedgerIcon({ size = 48, rounded = true }: { size?: number; rounded?: boolean }) {
+export function BudgetinIcon({ size = 48, rounded = true }: { size?: number; rounded?: boolean }) {
   return (
     <Image
       source={LOGO}
@@ -19,7 +19,7 @@ export function FamLedgerIcon({ size = 48, rounded = true }: { size?: number; ro
 }
 
 // ── Mark only (small square logo, e.g. in wordmark) ──────────────────────────
-export function FamLedgerMark({ size = 48 }: { size?: number }) {
+export function BudgetinMark({ size = 48 }: { size?: number }) {
   return (
     <Image
       source={LOGO}
@@ -33,12 +33,12 @@ export function FamLedgerMark({ size = 48 }: { size?: number }) {
   )
 }
 
-// ── Wordmark: icon + "FamLedger" text ────────────────────────────────────────
-export function FamLedgerWordmark({ height = 48 }: { height?: number }) {
+// ── Wordmark: icon + "Budgetin" text ────────────────────────────────────────
+export function BudgetinWordmark({ height = 48 }: { height?: number }) {
   const iconSize = Math.round(height * 0.85)
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <FamLedgerMark size={iconSize} />
+      <BudgetinMark size={iconSize} />
       <Text
         style={{
           fontFamily: 'Nunito_900Black',
@@ -48,7 +48,7 @@ export function FamLedgerWordmark({ height = 48 }: { height?: number }) {
           lineHeight: height,
         }}
       >
-        FamLedger
+        Budgetin
         <Text style={{ color: '#C97B5C' }}>.</Text>
       </Text>
     </View>

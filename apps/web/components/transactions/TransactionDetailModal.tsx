@@ -133,7 +133,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
   }
 
   const content = (
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '90%' }}>
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '90%', flex: 1, overflow: 'hidden' as const }}>
       {/* Handle bar */}
       <View style={{ alignItems: 'center', paddingTop: 12, flexShrink: 0 }}>
         <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
@@ -154,7 +154,12 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
       </View>
       <View style={{ height: 1, backgroundColor: C.divider, marginHorizontal: 20, marginTop: 4, marginBottom: 0, flexShrink: 0 }} />
 
-      <ScrollView showsVerticalScrollIndicator={false} style={Platform.OS === 'web' ? { flex: 1, overflowY: 'auto' } as any : undefined}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={Platform.OS === 'web' ? { flex: 1, overflowY: 'auto' } as any : { flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={{ padding: 20 }}>
 
           {/* Header: amount + type */}
@@ -178,7 +183,12 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                 {TYPE_OPTIONS.map((t) => (
                   <TouchableOpacity
                     key={t.value}
-                    onPress={() => setForm((f) => ({ ...f, type: t.value }))}
+                    onPress={() => setForm((f) => ({
+                      ...f,
+                      type: t.value,
+                      // Reset category when type changes — categories are type-specific
+                      categoryId: f.type !== t.value ? '' : f.categoryId,
+                    }))}
                     style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: form.type === t.value ? typeColor : C.creamSunken, borderWidth: 1.5, borderColor: form.type === t.value ? typeColor : C.border }}
                   >
                     <Text style={{ fontSize: 12, fontWeight: '700', color: form.type === t.value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>
@@ -247,19 +257,24 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                     >
                       <Text style={{ fontSize: 13, fontWeight: '700', color: !form.categoryId ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Tanpa Kategori</Text>
                     </TouchableOpacity>
-                    {(categories as Category[]).map((cat) => {
-                      const active = form.categoryId === cat.id
-                      return (
-                        <TouchableOpacity
-                          key={cat.id}
-                          onPress={() => setForm((f) => ({ ...f, categoryId: cat.id }))}
-                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
-                        >
-                          <Text style={{ fontSize: 16 }}>{resolveIcon(cat.icon)}</Text>
-                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
-                        </TouchableOpacity>
-                      )
-                    })}
+                    {(categories as Category[])
+                      // Filter categories by the currently selected transaction type.
+                      // transfer shows all categories; expense/income only shows matching type.
+                      .filter((c) => form.type === 'transfer' ? true : c.type === form.type)
+                      .map((cat) => {
+                        const active = form.categoryId === cat.id
+                        return (
+                          <TouchableOpacity
+                            key={cat.id}
+                            onPress={() => setForm((f) => ({ ...f, categoryId: cat.id }))}
+                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
+                          >
+                            <Text style={{ fontSize: 16 }}>{resolveIcon(cat.icon)}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                          </TouchableOpacity>
+                        )
+                      })
+                    }
                   </View>
                 </ScrollView>
               ) : (
@@ -372,7 +387,13 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 200, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end', overflow: 'hidden' as any }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={onClose} activeOpacity={1} />
-        <View style={{ zIndex: 1 }}>
+        <View style={{
+          zIndex: 1,
+          // Critical: cap at 92dvh so the sheet never exceeds the viewport on small screens.
+          // The content View inside already has maxHeight:'90%' which resolves relative to this.
+          maxHeight: '92dvh' as any,
+          display: 'flex' as any, flexDirection: 'column' as any,
+        }}>
           {content}
         </View>
       </View>

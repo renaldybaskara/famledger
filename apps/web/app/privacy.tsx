@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
         <View style={{ padding: 20, gap: 20 }}>
 
           <Section title="1. Pendahuluan">
-            FamLedger ("kami", "aplikasi") berkomitmen untuk melindungi privasi pengguna. Kebijakan privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi Anda saat menggunakan aplikasi FamLedger.
+            Budgetin ("kami", "aplikasi") berkomitmen untuk melindungi privasi pengguna. Kebijakan privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi Anda saat menggunakan aplikasi Budgetin.
           </Section>
 
           <Section title="2. Informasi yang Kami Kumpulkan">
@@ -44,11 +44,11 @@ export default function PrivacyPolicyPage() {
           </Section>
 
           <Section title="4. Akses Gmail">
-            {`Jika Anda menghubungkan akun Gmail, FamLedger hanya membaca email notifikasi dari bank dan e-wallet untuk mengimpor transaksi secara otomatis. Kami tidak membaca, menyimpan, atau berbagi konten email lainnya. Akses dapat dicabut kapan saja melalui pengaturan Google Account Anda.`}
+            {`Jika Anda menghubungkan akun Gmail, Budgetin hanya membaca email notifikasi dari bank dan e-wallet untuk mengimpor transaksi secara otomatis. Kami tidak membaca, menyimpan, atau berbagi konten email lainnya. Akses dapat dicabut kapan saja melalui pengaturan Google Account Anda.`}
           </Section>
 
           <Section title="5. Penyimpanan Data">
-            {`Data Anda disimpan di server self-hosted yang Anda kontrol sendiri. FamLedger adalah aplikasi self-hosted, artinya data tidak dikirim ke server pihak ketiga selain layanan yang Anda aktifkan secara eksplisit (seperti OpenRouter AI atau Midtrans Payment).`}
+            {`Data Anda disimpan di server self-hosted yang Anda kontrol sendiri. Budgetin adalah aplikasi self-hosted, artinya data tidak dikirim ke server pihak ketiga selain layanan yang Anda aktifkan secara eksplisit (seperti OpenRouter AI atau Midtrans Payment).`}
           </Section>
 
           <Section title="6. Berbagi Data">
