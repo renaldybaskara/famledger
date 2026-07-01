@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
   RefreshControl, Modal, TextInput, ActivityIndicator,
   Alert, Platform,
 } from 'react-native'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil } from 'lucide-react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { useBudgets, useCreateBudget, useDeleteBudget } from '../../src/hooks/useBudgets'
+import { useBudgets, useCreateBudget, useDeleteBudget, useUpdateBudget } from '../../src/hooks/useBudgets'
 import { useCategories } from '../../src/hooks/useCategories'
 import { Budget, Category } from '../../src/lib/api'
 import { formatCurrencyCompact, formatPercent } from '../../src/lib/format'
@@ -64,7 +64,7 @@ function getBudgetStatus(spent: number, total: number) {
 }
 
 // ── Budget card ───────────────────────────────────────────────
-function BudgetCard({ budget, onDelete }: { budget: Budget; onDelete: () => void }) {
+function BudgetCard({ budget, onDelete, onEdit }: { budget: Budget; onDelete: () => void; onEdit: () => void }) {
   const spent     = budget.spent ?? 0
   const total     = budget.amount
   const rawPct    = total > 0 ? (spent / total) * 100 : 0
@@ -98,6 +98,13 @@ function BudgetCard({ budget, onDelete }: { budget: Budget; onDelete: () => void
             {formatCurrencyCompact(spent)} dari {formatCurrencyCompact(total)}
           </Text>
         </View>
+
+        <TouchableOpacity
+          onPress={onEdit}
+          style={{ width: 30, height: 30, backgroundColor: C.primarySoft, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}
+        >
+          <Pencil size={13} color={C.primary} strokeWidth={2} />
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={onDelete}
@@ -308,6 +315,191 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
   )
 }
 
+// ── Edit Budget Modal ─────────────────────────────────────────
+function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budget: Budget | null; onClose: () => void }) {
+  const { data: categories = [] } = useCategories()
+  const updateMutation            = useUpdateBudget()
+  const [serverError, setServerError] = useState('')
+
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<BudgetFormData>({
+    resolver: zodResolver(budgetSchema),
+    defaultValues: { name: '', amount: '', categoryId: '', period: 'monthly' },
+  })
+
+  // Sync form whenever the target budget changes
+  React.useEffect(() => {
+    if (budget) {
+      reset({
+        name:       budget.name,
+        amount:     String(budget.amount),
+        categoryId: budget.category?.id ?? '',
+        period:     (budget.period as BudgetFormData['period']) ?? 'monthly',
+      })
+    }
+  }, [budget, reset])
+
+  const handleClose = () => { reset(); setServerError(''); onClose() }
+
+  const onSubmit = (data: BudgetFormData) => {
+    if (!budget) return
+    setServerError('')
+    updateMutation.mutate(
+      { id: budget.id, data: { name: data.name, amount: parseFloat(data.amount), categoryId: data.categoryId || undefined, period: data.period } },
+      { onSuccess: handleClose, onError: (err: any) => setServerError(err.response?.data?.message || 'Gagal mengubah anggaran') }
+    )
+  }
+
+  const expenseCats = (categories as Category[]).filter((c) => c.type === 'expense')
+
+  const content = (
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
+      {/* Handle */}
+      <View style={{ alignItems: 'center', paddingTop: 12 }}>
+        <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
+      </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderColor: C.divider }}>
+        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Edit Anggaran</Text>
+        <TouchableOpacity onPress={handleClose} style={{ width: 32, height: 32, backgroundColor: C.creamSunken, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 18, color: C.fg2 }}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+        <View style={{ padding: 20, gap: 16 }}>
+          {serverError ? (
+            <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>{serverError}</Text>
+            </View>
+          ) : null}
+
+          {/* Name */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Nama Anggaran</Text>
+            <Controller
+              control={control} name="name"
+              render={({ field: { value, onChange } }) => (
+                <TextInput
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.name ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}
+                  placeholder="Contoh: Makan & Minum"
+                  placeholderTextColor={C.fg4}
+                  value={value} onChangeText={onChange}
+                />
+              )}
+            />
+            {errors.name && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4 }}>{errors.name.message}</Text>}
+          </View>
+
+          {/* Amount */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Batas Anggaran (Rp)</Text>
+            <Controller
+              control={control} name="amount"
+              render={({ field: { value, onChange } }) => (
+                <TextInput
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.amount ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}
+                  placeholder="0"
+                  placeholderTextColor={C.fg4}
+                  keyboardType="numeric"
+                  value={value} onChangeText={onChange}
+                />
+              )}
+            />
+            {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4 }}>{errors.amount.message}</Text>}
+          </View>
+
+          {/* Period */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Periode</Text>
+            <Controller
+              control={control} name="period"
+              render={({ field: { value, onChange } }) => (
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {PERIOD_OPTIONS.map((opt) => {
+                    const active = value === opt.value
+                    return (
+                      <TouchableOpacity
+                        key={opt.value} onPress={() => onChange(opt.value)}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{opt.label}</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              )}
+            />
+          </View>
+
+          {/* Category */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>
+              Kategori <Text style={{ fontWeight: '500', color: C.fg3 }}>(opsional)</Text>
+            </Text>
+            <Controller
+              control={control} name="categoryId"
+              render={({ field: { value, onChange } }) => (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => onChange('')}
+                      style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: !value ? C.primary : C.creamSunken, borderColor: !value ? C.primary : C.border }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Semua</Text>
+                    </TouchableOpacity>
+                    {expenseCats.map((cat) => {
+                      const active = value === cat.id
+                      return (
+                        <TouchableOpacity
+                          key={cat.id} onPress={() => onChange(cat.id)}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
+                        >
+                          <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                </ScrollView>
+              )}
+            />
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            onPress={handleSubmit(onSubmit)}
+            disabled={updateMutation.isPending}
+            style={{ backgroundColor: updateMutation.isPending ? C.primary + '99' : C.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 4 }}
+          >
+            {updateMutation.isPending
+              ? <ActivityIndicator color="white" size="small" />
+              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>Simpan Perubahan</Text>}
+          </TouchableOpacity>
+          <View style={{ height: 16 }} />
+        </View>
+      </ScrollView>
+    </View>
+  )
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null
+    return (
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
+        <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
+        <View style={{ maxHeight: '90%' }}>{content}</View>
+      </View>
+    )
+  }
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(45,42,38,0.45)' }}>
+        <TouchableOpacity style={{ position: 'absolute', inset: 0 } as any} onPress={handleClose} activeOpacity={1} />
+        <View style={{ maxHeight: '90%' }}>{content}</View>
+      </View>
+    </Modal>
+  )
+}
+
 // ── Budget Screen ─────────────────────────────────────────────
 function DonutSVG({ pct }: { pct: number }) {
   const size = 90
@@ -339,6 +531,7 @@ function DonutSVG({ pct }: { pct: number }) {
 export default function BudgetScreen() {
   const queryClient               = useQueryClient()
   const [addModalVisible, setAddModalVisible] = useState(false)
+  const [editBudget, setEditBudget] = useState<Budget | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const { data: budgets = [], isLoading } = useBudgets()
   const deleteMutation = useDeleteBudget()
@@ -350,6 +543,12 @@ export default function BudgetScreen() {
   }, [queryClient])
 
   const handleDelete = (budget: Budget) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Hapus anggaran "${budget.name}"?`)) {
+        deleteMutation.mutate(budget.id)
+      }
+      return
+    }
     Alert.alert('Hapus Anggaran', `Hapus "${budget.name}"?`, [
       { text: 'Batal', style: 'cancel' },
       { text: 'Hapus', style: 'destructive', onPress: () => deleteMutation.mutate(budget.id) },
@@ -464,13 +663,14 @@ export default function BudgetScreen() {
             </View>
           ) : (
             (budgets as Budget[]).map((budget) => (
-              <BudgetCard key={budget.id} budget={budget} onDelete={() => handleDelete(budget)} />
+              <BudgetCard key={budget.id} budget={budget} onDelete={() => handleDelete(budget)} onEdit={() => setEditBudget(budget)} />
             ))
           )}
         </View>
       </ScrollView>
 
       <AddBudgetModal visible={addModalVisible} onClose={() => setAddModalVisible(false)} />
+      <EditBudgetModal visible={editBudget !== null} budget={editBudget} onClose={() => setEditBudget(null)} />
     </SafeAreaView>
   )
 }

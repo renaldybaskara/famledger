@@ -93,6 +93,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
   const [serverError, setServerError]     = useState('')
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const galleryInputRef = useRef<HTMLInputElement | null>(null)
 
   const { control, handleSubmit, watch, reset, setValue, formState: { errors } } =
     useForm<SlipFormData>({
@@ -158,8 +159,9 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
     fd.append('file', file, file.name)
     await uploadSlip(fd)
 
-    // Reset file input so the same file can be re-selected
+    // Reset file inputs so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = ''
+    if (galleryInputRef.current) galleryInputRef.current.value = ''
   }
 
   const pickNativeImage = async (source: 'camera' | 'gallery') => {
@@ -232,31 +234,54 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
 
       {Platform.OS === 'web' ? (
         <>
+          {/* Camera button — opens rear camera directly on mobile browsers */}
           <TouchableOpacity
             onPress={() => fileInputRef.current?.click()}
             style={{
-              width: '100%', paddingVertical: 40, borderRadius: 18,
+              width: '100%', paddingVertical: 28, borderRadius: 18,
               borderWidth: 2, borderStyle: 'dashed' as any, borderColor: C.border,
-              backgroundColor: C.creamSunken, alignItems: 'center', gap: 10,
+              backgroundColor: C.creamSunken, alignItems: 'center', gap: 8,
             }}
           >
-            <Text style={{ fontSize: 40 }}>📷</Text>
+            <Text style={{ fontSize: 36 }}>📷</Text>
             <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
-              Pilih Foto Slip
-            </Text>
-            <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
-              JPEG, PNG, WebP, atau HEIC (iOS) — maks 10 MB
+              Ambil Foto (Kamera)
             </Text>
           </TouchableOpacity>
 
-          {/* Hidden native file input — web only */}
-          {/* accept includes HEIC/HEIF for iOS Safari camera roll */}
-          {/* capture="environment" opens rear camera directly on mobile browsers */}
+          {/* Gallery / file button — normal file picker, no forced camera */}
+          <TouchableOpacity
+            onPress={() => galleryInputRef.current?.click()}
+            style={{
+              width: '100%', paddingVertical: 28, borderRadius: 18,
+              borderWidth: 2, borderStyle: 'dashed' as any, borderColor: C.border,
+              backgroundColor: C.creamSunken, alignItems: 'center', gap: 8,
+            }}
+          >
+            <Text style={{ fontSize: 36 }}>🖼️</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+              Upload dari Galeri / File
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium', textAlign: 'center' }}>
+            JPEG, PNG, WebP, atau HEIC (iOS) — maks 10 MB
+          </Text>
+
+          {/* Camera input — capture forces rear camera on mobile */}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp"
             capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+          {/* Gallery input — no capture, shows normal file/gallery picker */}
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.jpg,.jpeg,.png,.webp"
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />

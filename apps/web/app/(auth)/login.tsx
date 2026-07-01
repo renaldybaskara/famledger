@@ -382,31 +382,62 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Footer note */}
-          <Text style={{
-            color: C.fg3,
-            fontSize: 12,
-            textAlign: 'center',
-            marginTop: 20,
-            lineHeight: 18,
-            fontFamily: 'Nunito_500Medium',
-          }}>
-            Data tersimpan di servermu sendiri, bukan di cloud kami.{'\n'}
-            Dengan masuk, kamu menyetujui{' '}
-            <Text
-              onPress={() => router.push('/terms' as any)}
-              style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
-            >
-              Syarat Penggunaan
+          {Platform.OS === 'web' ? (
+            // Use real <a> tags on web so Google crawler can detect the privacy policy link
+            <p style={{
+              color: C.fg3,
+              fontSize: 12,
+              textAlign: 'center',
+              marginTop: 20,
+              lineHeight: '18px',
+              fontFamily: 'Nunito_500Medium, sans-serif',
+              margin: '20px 0 0 0',
+              padding: 0,
+            } as any}>
+              Data tersimpan di servermu sendiri, bukan di cloud kami.{' '}
+              Dengan masuk, kamu menyetujui{' '}
+              <a
+                href="/terms"
+                style={{ color: C.primary, textDecoration: 'underline', fontFamily: 'Nunito_600SemiBold, sans-serif' } as any}
+              >
+                Syarat Penggunaan
+              </a>
+              {' '}dan{' '}
+              <a
+                href="/privacy"
+                style={{ color: C.primary, textDecoration: 'underline', fontFamily: 'Nunito_600SemiBold, sans-serif' } as any}
+              >
+                Kebijakan Privasi
+              </a>
+              {' '}kami.
+            </p>
+          ) : (
+            <Text style={{
+              color: C.fg3,
+              fontSize: 12,
+              textAlign: 'center',
+              marginTop: 20,
+              lineHeight: 18,
+              fontFamily: 'Nunito_500Medium',
+            }}>
+              Data tersimpan di servermu sendiri, bukan di cloud kami.{'\n'}
+              Dengan masuk, kamu menyetujui{' '}
+              <Text
+                onPress={() => router.push('/terms' as any)}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+              >
+                Syarat Penggunaan
+              </Text>
+              {' '}dan{' '}
+              <Text
+                onPress={() => router.push('/privacy' as any)}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+              >
+                Kebijakan Privasi
+              </Text>
+              {' '}kami.
             </Text>
-            {' '}dan{' '}
-            <Text
-              onPress={() => router.push('/privacy' as any)}
-              style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
-            >
-              Kebijakan Privasi
-            </Text>
-            {' '}kami.
-          </Text>
+          )}
         </View>
       </ScrollView>
     </View>

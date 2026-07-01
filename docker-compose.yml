@@ -47,8 +47,6 @@ x-api-env: &api-env
   MINIO_SECRET_KEY:      ${MINIO_SECRET_KEY:-changeme}
   MINIO_BUCKET:          ${MINIO_BUCKET:-fintrackr}
   MINIO_USE_SSL:         "false"
-  OLLAMA_BASE_URL:       http://ollama:11434
-  OLLAMA_MODEL:          ${OLLAMA_MODEL:-llama3.2:3b}
   OPENROUTER_API_KEY:    ${OPENROUTER_API_KEY:-}
   OPENROUTER_MODEL:      ${OPENROUTER_MODEL:-google/gemini-2.0-flash-exp:free}
   MIDTRANS_SERVER_KEY:   ${MIDTRANS_SERVER_KEY:-}
