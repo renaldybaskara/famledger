@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "FamLedger",
-    "slug": "famledger",
+    "name": "Budgetin",
+    "slug": "budgetinbudgetin",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/23f48510-bc68-44c1-8594-d9c6737e97dd",
+      "url": "https://u.expo.dev/706b486c-4b5d-455d-8b33-8ad48d45b378",
       "enabled": true,
       "fallbackToCacheTimeout": 0
     },
@@ -95,9 +95,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "23f48510-bc68-44c1-8594-d9c6737e97dd"
+        "projectId": "706b486c-4b5d-455d-8b33-8ad48d45b378"
       }
     },
-    "owner": "renaldybasjara8"
+    "owner": "renaldybaskaras-organization"
   }
 }
