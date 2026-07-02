@@ -1,24 +1,19 @@
 ﻿# ============================================================
-# FinTrackr â€” Production Docker Compose
+# famledger — Production Docker Compose
+# ============================================================
 #
-# Self-Hosted Stack:
-#   Caddy Â· NestJS API Â· Expo Web Â· BullMQ Worker
-#   PostgreSQL 16 + pgvector Â· Valkey (Redis-compatible)
-#   MinIO Â· Ollama Â· Prometheus Â· Grafana Â· Loki Â· Promtail
-#   Node Exporter Â· Postgres Exporter Â· Redis Exporter
-#   Uptime Kuma Â· GlitchTip Â· Plausible Â· Watchtower
+# Services:
+#   Caddy · Web · API · PostgreSQL · Redis
 #
 # Usage:
 #   cp .env.example .env && nano .env
-#   docker compose up -d
+#   docker compose up -d caddy web api postgres redis
 #
-# First time setup:
-#   bash scripts/setup.sh
 # ============================================================
 
-name: fintrackr
+name: famledger
 
-# â”€â”€ Shared YAML anchors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- Shared YAML anchors --==========================================
 x-restart-policy: &restart-policy
   restart: unless-stopped
 
@@ -28,12 +23,12 @@ x-common-env: &common-env
 
 x-api-env: &api-env
   <<: *common-env
-  DATABASE_URL:          postgresql://${POSTGRES_USER:-fintrackr}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-fintrackr}
+  DATABASE_URL:          postgresql://${POSTGRES_USER:-famledger}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-famledger}
   REDIS_URL:             redis://:${REDIS_PASSWORD:-changeme}@redis:6379
   REDIS_HOST:            redis
   REDIS_PORT:            "6379"
   REDIS_PASSWORD:        ${REDIS_PASSWORD:-changeme}
-  JWT_SECRET:            ${JWT_SECRET:?JWT_SECRET is required â€” run scripts/setup.sh}
+  JWT_SECRET:            ${JWT_SECRET:?JWT_SECRET is required}
   JWT_REFRESH_SECRET:    ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
   JWT_EXPIRES_IN:        ${JWT_EXPIRES_IN:-15m}
   JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
@@ -45,7 +40,7 @@ x-api-env: &api-env
   MINIO_PORT:            "9000"
   MINIO_ACCESS_KEY:      ${MINIO_ACCESS_KEY:-minioadmin}
   MINIO_SECRET_KEY:      ${MINIO_SECRET_KEY:-changeme}
-  MINIO_BUCKET:          ${MINIO_BUCKET:-fintrackr}
+  MINIO_BUCKET:          ${MINIO_BUCKET:-famledger}
   MINIO_USE_SSL:         "false"
   OPENROUTER_API_KEY:    ${OPENROUTER_API_KEY:-}
   OPENROUTER_MODEL:      ${OPENROUTER_MODEL:-google/gemini-2.0-flash-exp:free}
@@ -58,34 +53,30 @@ x-api-env: &api-env
   SMTP_PORT:             ${SMTP_PORT:-587}
   SMTP_USER:             ${SMTP_USER:-}
   SMTP_PASS:             ${SMTP_PASS:-}
-  SMTP_FROM:             ${SMTP_FROM:-FinTrackr <noreply@localhost>}
-  APP_URL:               ${APP_URL:-http://localhost}
+  SMTP_FROM:             ${SMTP_FROM:-famledger <noreply@localhost>}
+  APP_URL:               ${APP_URL:-https://famledger.my.id}
   ENCRYPTION_KEY:        ${ENCRYPTION_KEY:-changeme_32_char_hex_placeholder}
   SELF_HOSTED_MODE:      "true"
   DISABLE_TIER_LIMITS:   ${DISABLE_TIER_LIMITS:-true}
   GLITCHTIP_DSN:         ${GLITCHTIP_DSN:-}
 
+# ============================================================
 services:
-
-  # ============================================================
-  # REVERSE PROXY â€” Caddy
-  # Handles TLS termination, routing, compression, access logs
-  # ============================================================
   caddy:
     image: caddy:2-alpine
-    <<: *restart-policy
+    restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
-      - "${HTTPS_PORT:-443}:443/udp"   # HTTP/3 QUIC
-      - "2019:2019"                     # Caddy metrics (internal)
+      - "${HTTPS_PORT:-443}:443/udp"
+      - "2019:2019"
     volumes:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     environment:
-      DOMAIN:      ${DOMAIN:-localhost}
-      CADDY_EMAIL: ${CADDY_EMAIL:-admin@localhost}
+      DOMAIN:      ${DOMAIN:-famledger.my.id}
+      CADDY_EMAIL: ${CADDY_EMAIL:-admin@famledger.my.id}
     networks:
       - public
       - internal
@@ -94,152 +85,62 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
-    healthcheck:
-      test:         ["CMD", "wget", "-qO-", "http://127.0.0.1:2019/metrics"]
-      interval:     30s
-      timeout:      10s
-      retries:      3
-      start_period: 15s
-    labels:
-      com.fintrackr.service: caddy
 
-  # ============================================================
-  # WEB FRONTEND â€” Expo Web (static) served by nginx
-  # ============================================================
   web:
     build:
       context:    apps/web
       dockerfile: Dockerfile
       args:
         EXPO_PUBLIC_API_URL: ${API_URL:-/api}
-    image: fintrackr-web:${IMAGE_TAG:-latest}
-    <<: *restart-policy
+    restart: unless-stopped
     networks:
       - internal
     healthcheck:
-      test:         ["CMD", "wget", "-qO-", "http://127.0.0.1:80"]
-      interval:     30s
-      timeout:      5s
-      retries:      3
-      start_period: 10s
-    labels:
-      com.fintrackr.service: web
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
-  # ============================================================
-  # API â€” Go (Gin + GORM + Clean Architecture) on port 4000
-  # ============================================================
   api:
     build:
       context:    apps/api-go
       dockerfile: Dockerfile
-    image: fintrackr-api:${IMAGE_TAG:-latest}
-    <<: *restart-policy
-    dns:
-      - 172.29.0.254
-    extra_hosts:
-      - "redis:172.29.0.50"
+    restart: unless-stopped
     environment:
       <<: *api-env
     networks:
       - internal
       - public
-      - shared-db
     depends_on:
       postgres:
         condition: service_healthy
-
-      cloudflared:
-        condition: service_started
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
-      ocr:
-        condition: service_started
-    healthcheck:
-      test:         ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
-      interval:     30s
-      timeout:      10s
-      retries:      3
-      start_period: 40s
-    labels:
-      com.fintrackr.service: api
 
-  # ============================================================
-  # DNS-over-HTTPS PROXY — cloudflared
-  # Resolves external names via HTTPS (port 443) because Docker
-  # Desktop for Windows/WSL2 blocks UDP/TCP port 53 egress.
-  # ============================================================
-  cloudflared:
-    image: adguard/dnsproxy:latest
-    command: -l 0.0.0.0 -p 53 -u https://1.1.1.1/dns-query -u https://8.8.8.8/dns-query
-    <<: *restart-policy
-    networks:
-      internal:
-        ipv4_address: 172.29.0.254
-    labels:
-      com.fintrackr.service: cloudflared
-
-  # ============================================================
-  # WORKER — (Go API is monolithic; background workers TBD)
-  # Disabled — uncomment when async job processing is needed
-  # ============================================================
-  # worker: (removed — Go API handles requests synchronously)
-
-
-  # ============================================================
-  # OCR MICROSERVICE â€” PaddleOCR (Python 3.11 + FastAPI)
-  # Internal only â€” not exposed to host. CPU inference ~5-30s.
-  # ============================================================
-  ocr:
-    build:
-      context: apps/ocr-service
-      dockerfile: Dockerfile
-    image: fintrackr-ocr:${IMAGE_TAG:-latest}
-    <<: *restart-policy
-    volumes:
-      - paddle-models:/root/.paddleocr
-    networks:
-      - internal
-      - public   # needs egress to download PaddleOCR models on first start
-    labels:
-      com.fintrackr.service: ocr
-
-  # ============================================================
-  # CACHE & QUEUE â€” Valkey (Redis-compatible, open-source)
-
-  # ============================================================
-  # DATABASE - PostgreSQL 16 + pgvector
-  # On shared-db network so glitchtip/plausible/exporter reach it
-  # ============================================================
   postgres:
-    image: pgvector/pgvector:pg16
-    <<: *restart-policy
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER:-fintrackr}
+      POSTGRES_USER:     ${POSTGRES_USER:-famledger}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB:       ${POSTGRES_DB:-fintrackr}
-      TZ:                ${TZ:-Asia/Jakarta}
+      POSTGRES_DB:       ${POSTGRES_DB:-famledger}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - internal
-      - shared-db
+      - public
     healthcheck:
-      test:     ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fintrackr} -d ${POSTGRES_DB:-fintrackr}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-famledger} -d ${POSTGRES_DB:-famledger}"]
       interval: 10s
-      timeout:  5s
-      retries:  5
-      start_period: 20s
-    labels:
-      com.fintrackr.service: postgres
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
-
-  # ============================================================
   redis:
     image: valkey/valkey:8-alpine
-    <<: *restart-policy
+    restart: unless-stopped
     command: >
       valkey-server
       --requirepass ${REDIS_PASSWORD:-changeme}
@@ -248,387 +149,45 @@ services:
       --save 60 100
       --save 300 10
       --save 900 1
-      --maxmemory ${REDIS_MAXMEMORY:-512mb}
-      --maxmemory-policy allkeys-lru
     volumes:
       - redis-data:/data
     networks:
-      internal:
-        ipv4_address: 172.29.0.50
+      - internal
+      - public
     healthcheck:
-      test:     ["CMD", "valkey-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      test: ["CMD", "valkey-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
       interval: 10s
-      timeout:  5s
-      retries:  5
-    labels:
-      com.fintrackr.service: redis
-
-  # ============================================================
-  # OBJECT STORAGE â€” MinIO (S3-compatible)
-  # ============================================================
-  minio:
-    image: minio/minio:latest
-    <<: *restart-policy
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER:     ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-changeme}
-      MINIO_BROWSER:       "on"
-      TZ:                  ${TZ:-Asia/Jakarta}
-    volumes:
-      - minio-data:/data
-    networks:
-      - internal
-    healthcheck:
-      test:         ["CMD", "mc", "ready", "local"]
-      interval:     30s
-      timeout:      20s
-      retries:      3
+      timeout: 5s
+      retries: 5
       start_period: 15s
-    labels:
-      com.fintrackr.service: minio
 
-  # MinIO bucket initializer â€” runs once on first boot
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      minio:
-        condition: service_healthy
-    networks:
-      - internal
-    entrypoint: >
-      /bin/sh -c "
-        mc alias set local http://minio:9000
-          ${MINIO_ACCESS_KEY:-minioadmin}
-          ${MINIO_SECRET_KEY:-changeme} &&
-        mc mb --ignore-existing local/${MINIO_BUCKET:-fintrackr} &&
-        mc anonymous set download local/${MINIO_BUCKET:-fintrackr}/public &&
-        echo 'MinIO bucket ready'
-      "
-    restart: "no"
-
-  # ============================================================
-  # LOCAL LLM â€” Ollama
-  # ============================================================
-  ollama:
-    image: ollama/ollama:latest
-    <<: *restart-policy
+  ocr:
+    build:
+      context:    apps/ocr-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
     volumes:
-      - ollama-models:/root/.ollama
+      - paddle-models:/root/.paddleocr
     networks:
       - internal
-    # â”€â”€ GPU support â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # Uncomment if your VPS has an NVIDIA GPU:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver:       nvidia
-    #           count:        1
-    #           capabilities: [gpu]
-    healthcheck:
-      test:         ["CMD", "ollama", "list"]
-      interval:     60s
-      timeout:      30s
-      retries:      3
-      start_period: 120s
+      - public
     labels:
-      com.fintrackr.service: ollama
+      com.fintrackr.service: ocr
 
-  # ============================================================
-  # OBSERVABILITY â€” Prometheus (metrics)
-  # ============================================================
-  prometheus:
-    image: prom/prometheus:latest
-    <<: *restart-policy
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=30d"
-      - "--storage.tsdb.retention.size=10GB"
-      - "--web.enable-lifecycle"
-      - "--web.enable-admin-api"
-    volumes:
-      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    networks:
-      - internal
-    healthcheck:
-      test:     ["CMD", "wget", "-qO-", "http://127.0.0.1:9090/-/healthy"]
-      interval: 30s
-      timeout:  10s
-      retries:  3
-    labels:
-      com.fintrackr.service: prometheus
-
-  # â”€â”€ Grafana (dashboards) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  grafana:
-    image: grafana/grafana-oss:latest
-    <<: *restart-policy
-    environment:
-      GF_SECURITY_ADMIN_USER:       ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD:   ${GRAFANA_PASSWORD:-changeme}
-      GF_USERS_ALLOW_SIGN_UP:       "false"
-      GF_ANALYTICS_REPORTING_ENABLED: "false"
-      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
-      TZ:                           ${TZ:-Asia/Jakarta}
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
-    networks:
-      - internal
-    depends_on:
-      - prometheus
-      - loki
-    healthcheck:
-      test:     ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
-      interval: 30s
-      timeout:  10s
-      retries:  3
-    labels:
-      com.fintrackr.service: grafana
-
-  # â”€â”€ Loki (log aggregation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  loki:
-    image: grafana/loki:latest
-    <<: *restart-policy
-    command: -config.file=/etc/loki/config.yml
-    volumes:
-      - ./infra/loki/loki-config.yml:/etc/loki/config.yml:ro
-      - loki-data:/loki
-    networks:
-      - internal
-    healthcheck:
-      test:     ["CMD", "/usr/bin/loki", "--version"]
-      interval: 30s
-      timeout:  10s
-      retries:  5
-      start_period: 30s
-    labels:
-      com.fintrackr.service: loki
-
-  # â”€â”€ Promtail (log shipper) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  promtail:
-    image: grafana/promtail:latest
-    <<: *restart-policy
-    command: -config.file=/etc/promtail/config.yml
-    volumes:
-      - ./infra/loki/promtail-config.yml:/etc/promtail/config.yml:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/log:/var/log:ro
-    networks:
-      - internal
-    depends_on:
-      - loki
-    labels:
-      com.fintrackr.service: promtail
-
-  # â”€â”€ Node Exporter (host OS metrics) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  node-exporter:
-    image: prom/node-exporter:latest
-    <<: *restart-policy
-    command:
-      - "--path.procfs=/host/proc"
-      - "--path.sysfs=/host/sys"
-      - "--path.rootfs=/rootfs"
-      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    # node-exporter needs host networking to see real host metrics
-    network_mode: host
-    pid: host
-    labels:
-      com.fintrackr.service: node-exporter
-
-  # â”€â”€ PostgreSQL Exporter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    <<: *restart-policy
-    environment:
-      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-fintrackr}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-fintrackr}?sslmode=disable
-    networks:
-      - internal
-      - shared-db
-    labels:
-      com.fintrackr.service: postgres-exporter
-
-  # â”€â”€ Redis / Valkey Exporter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    <<: *restart-policy
-    environment:
-      REDIS_ADDR:     redis://redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
-    networks:
-      - internal
-    depends_on:
-      redis:
-        condition: service_healthy
-    labels:
-      com.fintrackr.service: redis-exporter
-
-  # ============================================================
-  # UPTIME KUMA â€” Status page & uptime monitoring
-  # ============================================================
-  uptime-kuma:
-    image: louislam/uptime-kuma:latest
-    <<: *restart-policy
-    volumes:
-      - uptime-kuma-data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - internal
-    healthcheck:
-      test:         ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))\""]
-      interval:     30s
-      timeout:      10s
-      retries:      3
-      start_period: 30s
-    labels:
-      com.fintrackr.service: uptime-kuma
-
-  # ============================================================
-  # GLITCHTIP â€” Self-hosted Sentry-compatible error tracking
-  # ============================================================
-  glitchtip:
-    image: glitchtip/glitchtip:latest
-    <<: *restart-policy
-    environment:
-      DATABASE_URL:              postgresql://${POSTGRES_USER:-fintrackr}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/glitchtip
-      REDIS_URL:                 redis://:${REDIS_PASSWORD:-changeme}@redis:6379/1
-      SECRET_KEY:                ${GLITCHTIP_SECRET:-changeme_glitchtip_secret_min_50_chars_here}
-      EMAIL_URL:                 ${EMAIL_URL:-consolemail://}
-      GLITCHTIP_DOMAIN:          http://errors.${DOMAIN:-localhost}
-      DEFAULT_AUTO_FIELD:        django.db.models.BigAutoField
-      CELERY_WORKER_AUTOSCALE:   "1,3"
-      CELERY_WORKER_MAX_TASKS_PER_CHILD: "10000"
-      ENABLE_OPEN_USER_REGISTRATION: "false"
-    networks:
-      - internal
-      - shared-db
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test:         ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/0/')\" 2>/dev/null || exit 1"]
-      interval:     30s
-      timeout:      10s
-      retries:      3
-      start_period: 60s
-    labels:
-      com.fintrackr.service: glitchtip
-
-  glitchtip-worker:
-    image: glitchtip/glitchtip:latest
-    <<: *restart-policy
-    command: ./bin/run-celery-with-beat.sh
-    environment:
-      DATABASE_URL:  postgresql://${POSTGRES_USER:-fintrackr}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/glitchtip
-      REDIS_URL:     redis://:${REDIS_PASSWORD:-changeme}@redis:6379/1
-      SECRET_KEY:    ${GLITCHTIP_SECRET:-changeme_glitchtip_secret_min_50_chars_here}
-      EMAIL_URL:     ${EMAIL_URL:-consolemail://}
-    networks:
-      - internal
-    depends_on:
-      - glitchtip
-    labels:
-      com.fintrackr.service: glitchtip-worker
-
-  # ============================================================
-  # PLAUSIBLE â€” Privacy-first web analytics
-  # ============================================================
-  plausible:
-    image: ghcr.io/plausible/community-edition:v2
-    <<: *restart-policy
-    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
-    environment:
-      BASE_URL:        http://analytics.${DOMAIN:-localhost}
-      SECRET_KEY_BASE: ${PLAUSIBLE_SECRET:-changeme_plausible_must_be_long_secret_64_chars_min}
-      DATABASE_URL:    postgresql://${POSTGRES_USER:-fintrackr}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/plausible
-      # Plausible CE does not require ClickHouse (removed in v2)
-      DISABLE_REGISTRATION: "invite_only"
-    networks:
-      - internal
-      - shared-db
-    healthcheck:
-      test:         ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/api/health"]
-      interval:     30s
-      timeout:      10s
-      retries:      3
-      start_period: 60s
-    labels:
-      com.fintrackr.service: plausible
-
-  # ============================================================
-  # WATCHTOWER â€” Automatic container image updates
-  # Only updates containers with label "com.centurylinklabs.watchtower.enable=true"
-  # ============================================================
-  watchtower:
-    image: containrrr/watchtower:latest
-    <<: *restart-policy
-    command:
-      - "--interval=86400"     # Check daily
-      - "--cleanup"            # Remove old images after update
-      - "--label-enable"       # Only update labeled containers
-      - "--rolling-restart"    # Update one container at a time
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      # Force Docker API version compatible with Docker Desktop
-      DOCKER_API_VERSION:                        "1.45"
-      # Only enable Slack notifications when SLACK_WEBHOOK is set
-      WATCHTOWER_NOTIFICATIONS:                  ${SLACK_WEBHOOK:+slack}
-      WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL:    ${SLACK_WEBHOOK:-}
-      WATCHTOWER_NOTIFICATION_SLACK_IDENTIFIER:  fintrackr-watchtower
-      TZ:                                        ${TZ:-Asia/Jakarta}
-    labels:
-      com.fintrackr.service: watchtower
-
-# ============================================================
-# VOLUMES
 # ============================================================
 volumes:
-  redis-data:
-    driver: local
   postgres-data:
-    driver: local
-  minio-data:
-    driver: local
-  ollama-models:
-    driver: local
+  redis-data:
   caddy-data:
-    driver: local
   caddy-config:
-    driver: local
-  prometheus-data:
-    driver: local
-  grafana-data:
-    driver: local
-  loki-data:
-    driver: local
-  uptime-kuma-data:
-    driver: local
   paddle-models:
-    driver: local
 
-# ============================================================
-# NETWORKS
 # ============================================================
 networks:
-  # public: faces the host â€” only Caddy sits here
   public:
     driver: bridge
-
-  # internal: service-to-service network (Caddy is the real security perimeter)
   internal:
     driver: bridge
     ipam:
       config:
         - subnet: 172.29.0.0/16
-
-  # shared-db: managed by postgres-shared compose — external to this project
-  shared-db:
-    external: true
-    name: shared-db
