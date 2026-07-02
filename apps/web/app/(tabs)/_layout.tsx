@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Tabs, Redirect } from 'expo-router'
-import { View, Text, Platform } from 'react-native'
+import { View, Text, Platform, ActivityIndicator } from 'react-native'
 import { useAuthStore } from '../../src/store/auth.store'
 import { configurePurchases } from '../../src/lib/purchases'
 import { useSubscription } from '../../src/hooks/useSubscription'
@@ -36,6 +36,20 @@ export default function TabsLayout() {
   const user = useAuthStore((s) => s.user)
   const { data: sub, isLoading: subLoading } = useSubscription()
   const [showTrialPopup, setShowTrialPopup] = useState(false)
+  // Wait for Zustand AsyncStorage hydration before acting on auth state.
+  // Without this, static-rendered HTML always has isAuthenticated=false and
+  // immediately redirects to /login before the persisted token is loaded.
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    // useAuthStore.persist.hasHydrated() is true synchronously if already done
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true)
+    } else {
+      const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true))
+      return unsub
+    }
+  }, [])
 
   useEffect(() => {
     if (user?.id) {
@@ -51,6 +65,15 @@ export default function TabsLayout() {
       setShowTrialPopup(true)
     }
   }, [subLoading, sub, isAuthenticated])
+
+  // Don't render until hydration is complete — prevents premature redirect to /login
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#41594F' }}>
+        <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
+      </View>
+    )
+  }
 
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />
 
