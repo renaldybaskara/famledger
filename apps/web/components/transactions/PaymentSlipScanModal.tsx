@@ -14,7 +14,7 @@ import { useAccounts } from '../../src/hooks/useAccounts'
 import { resolveIcon } from '../../src/lib/iconMap'
 import { paymentSlipsApi, ParsedSlip, TransactionType, Category, Account } from '../../src/lib/api'
 
-// ── Saku tokens ────────────────────────────────────────────────
+// ── Budgetin tokens ────────────────────────────────────────────────
 const C = {
   cream:        '#FAF7F2',
   creamSunken:  '#F4EEE3',
@@ -346,7 +346,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
 
   // ── Step 3: review & edit ─────────────────────────────────────
   const reviewContent = (
-    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: Platform.OS === 'web' ? '88vh' as any : '85%' }}
+    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: Platform.OS === 'web' ? '75vh' as any : '85%' }}
       contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 24 : 0 }}
       keyboardShouldPersistTaps="handled"
     >
@@ -625,7 +625,11 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 1000, backgroundColor: 'rgba(45,42,38,0.5)', justifyContent: 'flex-end', alignItems: 'center' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ width: '100%', maxWidth: 520 }}>
+        <View style={{
+          width: '100%', maxWidth: 520, zIndex: 1,
+          maxHeight: '92dvh' as any,
+          display: 'flex' as any, flexDirection: 'column' as any,
+        }}>
           {content}
         </View>
       </View>

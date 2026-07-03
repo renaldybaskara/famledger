@@ -5,7 +5,7 @@ import * as WebBrowser from 'expo-web-browser'
 import * as Linking from 'expo-linking'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
-import { BudgetinIcon } from '../../components/ui/SakuLogo'
+import { BudgetinIcon } from '../../components/ui/BudgetinLogo'
 
 WebBrowser.maybeCompleteAuthSession()
 

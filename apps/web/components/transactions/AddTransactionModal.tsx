@@ -13,7 +13,7 @@ import { useAccounts } from '../../src/hooks/useAccounts'
 import { TransactionType, Category, Account } from '../../src/lib/api'
 import { format } from 'date-fns'
 
-// ── Saku tokens ────────────────────────────────────────────────
+// ── Budgetin tokens ────────────────────────────────────────────────
 const C = {
   cream:       '#FAF7F2',
   creamSunken: '#F4EEE3',

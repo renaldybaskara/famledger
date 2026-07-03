@@ -11,7 +11,7 @@ const API_KEYS = {
   android: 'test_PpsxWCFPfYmfWodOkdirQYrcgAs',
 }
 
-export const ENTITLEMENT_ID = 'MyFamLedger Pro'
+export const ENTITLEMENT_ID = 'MyBudgetin Pro'
 
 export const PRODUCT_IDS = {
   monthly: 'monthly',
@@ -23,7 +23,7 @@ let configured = false
 
 /**
  * Call once at app startup (after the user is authenticated).
- * Pass the Saku user UUID as appUserID so RevenueCat webhooks
+ * Pass the Budgetin user UUID as appUserID so RevenueCat webhooks
  * can map purchases back to the correct backend user.
  */
 export async function configurePurchases(userID: string): Promise<void> {
@@ -63,7 +63,7 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
   }
 }
 
-/** Returns true if the user has an active "MySaku Pro" entitlement. */
+/** Returns true if the user has an active "MyBudgetin Pro" entitlement. */
 export async function isProEntitlementActive(): Promise<boolean> {
   const info = await getCustomerInfo()
   if (!info) return false

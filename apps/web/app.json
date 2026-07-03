@@ -21,16 +21,16 @@
       "backgroundColor": "#6B8E6B"
     },
     "ios": {
-      "bundleIdentifier": "com.famledger.app",
+      "bundleIdentifier": "com.budgetin.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "FamLedger butuh akses kamera untuk memfoto slip pembayaran.",
-        "NSPhotoLibraryUsageDescription": "FamLedger butuh akses galeri untuk memilih foto slip pembayaran.",
+        "NSCameraUsageDescription": "Budgetin butuh akses kamera untuk memfoto slip pembayaran.",
+        "NSPhotoLibraryUsageDescription": "Budgetin butuh akses galeri untuk memilih foto slip pembayaran.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.famledger.app",
+      "package": "com.budgetin.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -68,8 +68,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "FamLedger butuh akses galeri untuk memilih foto slip pembayaran.",
-          "cameraPermission": "FamLedger butuh akses kamera untuk memfoto slip pembayaran."
+          "photosPermission": "Budgetin butuh akses galeri untuk memilih foto slip pembayaran.",
+          "cameraPermission": "Budgetin butuh akses kamera untuk memfoto slip pembayaran."
         }
       ],
       [

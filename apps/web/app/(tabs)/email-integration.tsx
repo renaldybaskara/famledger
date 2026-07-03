@@ -630,7 +630,7 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
               Login dengan Google
             </Text>
             <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium' }}>
-              Izinkan Saku membaca email notifikasi transaksi dari inbox Gmail kamu. Kami hanya membaca — tidak bisa kirim atau hapus.
+              Izinkan Budgetin membaca email notifikasi transaksi dari inbox Gmail kamu. Kami hanya membaca — tidak bisa kirim atau hapus.
             </Text>
           </View>
 

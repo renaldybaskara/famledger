@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { router } from 'expo-router'
 import { useAuthStore } from '../src/store/auth.store'
+import { BudgetinIcon } from '../components/ui/BudgetinLogo'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '/api'
 
@@ -37,7 +38,7 @@ const FEATURES = [
     ),
     emoji: '📧',
     title: 'Auto-import dari email bank',
-    sub: 'BCA, BRI, GoPay, OVO, DANA & lainnya masuk otomatis',
+    sub: 'BRI, BCA, BNI, Mandiri, CIMB, dll masuk otomatis',
   },
   {
     bg: '#EDF6FF',
@@ -81,30 +82,6 @@ const FEATURES = [
   },
 ]
 
-// ─── Budgetin wordmark logo ───────────────────────────────────────────────────────
-function SakuLogo({ size = 64 }: { size?: number }) {
-  const r = size * 0.22
-  return (
-    <View style={{
-      width: size, height: size, borderRadius: r,
-      backgroundColor: '#41594F',
-      alignItems: 'center', justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.18,
-      shadowRadius: 16,
-      elevation: 8,
-    }}>
-      {Platform.OS === 'web' ? (
-        <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 4C10.268 4 4 10.268 4 18s6.268 14 14 14 14-6.268 14-14S25.732 4 18 4zm0 4a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm-6 8h12v2H12v-2zm2 4h8l-4 6-4-6z" fill="rgba(255,255,255,0.9)" />
-        </svg>
-      ) : (
-        <Text style={{ fontSize: size * 0.38, color: '#fff', fontWeight: '900' }}>S</Text>
-      )}
-    </View>
-  )
-}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Index() {
@@ -192,7 +169,7 @@ export default function Index() {
             backgroundColor: 'rgba(255,255,255,0.04)',
           }} />
 
-          <SakuLogo size={84} />
+          <BudgetinIcon size={84} />
 
           <Text style={{
             color: '#FFFFFF',

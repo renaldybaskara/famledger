@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ── Saku primary: sage green ──────────────────────────
+        // ── Budgetin primary: sage green ──────────────────────────
         primary: {
           DEFAULT: '#6B8E6B',
           50:  '#F1F5EE',
@@ -23,7 +23,7 @@ module.exports = {
           800: '#2F4338',
           900: '#1F2D26',
         },
-        // ── Saku accent: clay/terracotta ─────────────────────
+        // ── Budgetin accent: clay/terracotta ─────────────────────
         accent: {
           DEFAULT: '#C97B5C',
           50:  '#FBF1EC',
@@ -35,7 +35,7 @@ module.exports = {
           600: '#A8624A',
           700: '#834C39',
         },
-        // ── Saku canvas: warm cream ───────────────────────────
+        // ── Budgetin canvas: warm cream ───────────────────────────
         canvas: {
           DEFAULT: '#FAF7F2',
           50:  '#FDFBF7',
@@ -45,14 +45,14 @@ module.exports = {
           400: '#DDD2BD',
           500: '#C7B89E',
         },
-        // ── Saku mustard ──────────────────────────────────────
+        // ── Budgetin mustard ──────────────────────────────────────
         mustard: {
           DEFAULT: '#D9A441',
           400: '#E3B25A',
           500: '#D9A441',
           600: '#B98C30',
         },
-        // ── Saku ink (neutrals) ──────────────────────────────
+        // ── Budgetin ink (neutrals) ──────────────────────────────
         ink: {
           50:  '#F5F1E8',
           100: '#ECE7DD',
@@ -107,9 +107,9 @@ module.exports = {
         'micro':   ['11px', { lineHeight: '1.4'  }],
       },
       boxShadow: {
-        'saku-sm': '0 2px 6px rgba(45,42,38,0.05)',
-        'saku-md': '0 6px 16px rgba(45,42,38,0.07)',
-        'saku-lg': '0 14px 32px rgba(45,42,38,0.09)',
+        'Budgetin-sm': '0 2px 6px rgba(45,42,38,0.05)',
+        'Budgetin-md': '0 6px 16px rgba(45,42,38,0.07)',
+        'Budgetin-lg': '0 14px 32px rgba(45,42,38,0.09)',
       },
     },
   },

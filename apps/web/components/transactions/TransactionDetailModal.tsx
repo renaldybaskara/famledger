@@ -11,7 +11,7 @@ import { Transaction, TransactionType, Category, Account } from '../../src/lib/a
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
-// ── Saku tokens ────────────────────────────────────────────────
+// ── Budgetin tokens ────────────────────────────────────────────────
 const C = {
   cream:       '#FAF7F2',
   creamSunken: '#F4EEE3',

@@ -17,7 +17,7 @@ import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipS
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
 
-// ── Saku tokens ───────────────────────────────────────────────
+// ── Budgetin tokens ───────────────────────────────────────────────
 const C = {
   cream:       '#FAF7F2',
   creamSunken: '#F4EEE3',

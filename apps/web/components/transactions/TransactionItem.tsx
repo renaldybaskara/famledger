@@ -4,7 +4,7 @@ import { Transaction } from '../../src/lib/api'
 import { formatCurrency, formatDateShort } from '../../src/lib/format'
 import { resolveIcon } from '../../src/lib/iconMap'
 
-// ── Saku tokens ───────────────────────────────────────────────
+// ── Budgetin tokens ───────────────────────────────────────────────
 const C = {
   surface:       '#FFFFFF',
   incomeBg:      '#F0FAF4',

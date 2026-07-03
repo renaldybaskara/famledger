@@ -18,7 +18,7 @@ import { Budget, Category } from '../../src/lib/api'
 import { formatCurrencyCompact, formatPercent } from '../../src/lib/format'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 
-// ── Saku tokens ───────────────────────────────────────────────
+// ── Budgetin tokens ───────────────────────────────────────────────
 const C = {
   cream:        '#FAF7F2',
   creamSunken:  '#F4EEE3',
@@ -301,7 +301,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ maxHeight: '90%' }}>{content}</View>
+        <View style={{ maxHeight: '90%', zIndex: 1 }}>{content}</View>
       </View>
     )
   }
@@ -486,7 +486,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ maxHeight: '90%' }}>{content}</View>
+        <View style={{ maxHeight: '90%', zIndex: 1 }}>{content}</View>
       </View>
     )
   }

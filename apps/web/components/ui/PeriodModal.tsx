@@ -247,7 +247,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={onClose} activeOpacity={1} />
-        {modalContent}
+        <View style={{ zIndex: 1 }}>{modalContent}</View>
       </View>
     )
   }

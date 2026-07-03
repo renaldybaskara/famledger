@@ -62,7 +62,7 @@ export function TrialOnboardingPopup({ visible, onDismiss }: Props) {
           <View style={{ alignItems: 'center', gap: 6 }}>
             <Text style={{ fontSize: 36 }}>✨</Text>
             <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center' }}>
-              Coba Saku Pro Gratis
+              Coba Budgetin Pro Gratis
             </Text>
             <View style={{ backgroundColor: C.mustardSoft, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 5 }}>
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#7A5C1E', fontFamily: 'Nunito_800ExtraBold' }}>
