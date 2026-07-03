@@ -4,6 +4,11 @@ import {
   ActivityIndicator, Platform,
 } from 'react-native'
 import { router } from 'expo-router'
+import * as WebBrowser from 'expo-web-browser'
+import * as Linking from 'expo-linking'
+import { api } from '../src/lib/api'
+
+WebBrowser.maybeCompleteAuthSession()
 import { useAuthStore } from '../src/store/auth.store'
 import { BudgetinIcon } from '../components/ui/BudgetinLogo'
 
@@ -86,7 +91,10 @@ const FEATURES = [
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Index() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const setAuth = useAuthStore((s) => s.setAuth)
   const [ready, setReady] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   // Wait for AsyncStorage to hydrate the auth store
   useEffect(() => {
@@ -118,22 +126,61 @@ export default function Index() {
     }
   }, [ready, isAuthenticated])
 
-  const handleGoogleLogin = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.location.href = `${API_URL}/auth/google`
-    } else {
-      router.push('/(auth)/login' as any)
+  const handleGoogleLogin = async () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        window.location.href = `${API_URL}/auth/google`
+      }
+      return
+    }
+    try {
+      setLoading(true)
+      const redirectUrl = Linking.createURL('auth/callback')
+      const result = await WebBrowser.openAuthSessionAsync(
+        `${API_URL}/auth/google?mobile=1`,
+        redirectUrl
+      )
+      if (result.type !== 'success' || !result.url) { setLoading(false); return }
+      const parsed = Linking.parse(result.url)
+      const code = parsed.queryParams?.code as string | undefined
+      const err  = parsed.queryParams?.error as string | undefined
+      if (err) {
+        const messages: Record<string, string> = {
+          google_not_configured: 'Login Google belum dikonfigurasi.',
+          oauth_exchange_failed: 'Gagal verifikasi ke Google. Coba lagi.',
+          login_failed: 'Login gagal. Coba lagi.',
+        }
+        setError(messages[err] ?? 'Terjadi kesalahan. Coba lagi.')
+        setLoading(false)
+        return
+      }
+      if (!code) { setLoading(false); return }
+      const { data } = await api.post('/auth/exchange', { code })
+      const { accessToken, refreshToken } = data.data ?? data
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+      const { data: meData } = await api.get('/auth/me')
+      setAuth(meData.user, accessToken, refreshToken)
+      router.replace('/(tabs)')
+    } catch {
+      setError('Login gagal. Coba lagi.')
+      setLoading(false)
     }
   }
 
-  // Loading spinner while store hydrates
-  if (!ready) {
+  // Loading spinner while store hydrates or logging in
+  if (!ready || loading) {
     return (
       <View style={{
         flex: 1, alignItems: 'center', justifyContent: 'center',
         backgroundColor: C.heroEnd,
       }}>
-        <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
+        <BudgetinIcon size={64} rounded />
+        <ActivityIndicator size="large" color="rgba(255,255,255,0.9)" style={{ marginTop: 24 }} />
+        {loading && (
+          <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 14, fontSize: 14, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
+            Sedang masuk…
+          </Text>
+        )}
       </View>
     )
   }
@@ -306,6 +353,28 @@ export default function Index() {
 
           {/* ── DIVIDER ──────────────────────────────────────────────────── */}
           <View style={{ height: 1, backgroundColor: C.divider, marginVertical: 24 }} />
+
+          {/* Error banner */}
+          {error ? (
+            <View style={{
+              backgroundColor: 'rgba(198,107,107,0.1)',
+              borderWidth: 1,
+              borderColor: '#C66B6B',
+              borderRadius: 14,
+              padding: 14,
+              marginBottom: 16,
+            }}>
+              <Text style={{
+                color: '#C66B6B',
+                fontSize: 13,
+                textAlign: 'center',
+                fontWeight: '600',
+                fontFamily: 'Nunito_600SemiBold',
+              }}>
+                {error}
+              </Text>
+            </View>
+          ) : null}
 
           {/* ── SECONDARY CTA ────────────────────────────────────────────── */}
           <TouchableOpacity
