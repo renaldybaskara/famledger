@@ -9,7 +9,7 @@
     "updates": {
       "url": "https://u.expo.dev/706b486c-4b5d-455d-8b33-8ad48d45b378",
       "enabled": true,
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 10000
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
