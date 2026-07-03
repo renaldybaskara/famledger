@@ -1,0 +1,5 @@
+{
+  "name": "famledger",
+  "private": true,
+  "workspaces": ["apps/web"]
+}
