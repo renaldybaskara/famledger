@@ -1,16 +1,26 @@
-﻿import * as Sentry from '@sentry/react-native'
-
-const DSN = 'https://e70d288ffe67e99d827e7c14345a1f3a@o4511618709585920.ingest.us.sentry.io/4511618735734784'
-
 export function initSentry() {
-  Sentry.init({
-    dsn: DSN,
-    enableNative: true,
-    enableAutoSessionTracking: true,
-    debug: __DEV__,
-    tracesSampleRate: 0.2,
-    environment: __DEV__ ? 'development' : 'production',
-  })
+  if (typeof globalThis !== 'undefined' && globalThis.__sentryInitialized) return
+  if (typeof globalThis !== 'undefined') globalThis.__sentryInitialized = true
+  try {
+    if (typeof console !== 'undefined' && console.log) console.log('[sentry-shim] init called, reporting disabled for this build')
+  } catch {}
 }
 
-export { Sentry }
+const sentryShim = {
+  init: initSentry,
+  wrap: (component: any) => component,
+  captureException: (err: any) => {
+    try { if (typeof console !== 'undefined' && console.warn) console.warn('[sentry-shim] captureException', err) } catch {}
+  },
+  captureMessage: (msg: string) => {
+    try { if (typeof console !== 'undefined' && console.warn) console.warn('[sentry-shim] captureMessage', msg) } catch {}
+  },
+  setUser: () => {},
+  setTag: () => {},
+  addBreadcrumb: () => {},
+  setContext: () => {},
+  withScope: () => {},
+  configureScope: () => {},
+}
+
+export { sentryShim as Sentry }

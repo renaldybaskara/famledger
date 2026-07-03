@@ -1,2 +1,7 @@
+allowBuilds:
+  '@sentry/cli': true
+minimumReleaseAgeExclude:
+  - '@sentry/expo-upload-sourcemaps@8.17.0'
+  - '@sentry/react-native@8.17.0'
 onlyBuiltDependencies:
   - "@sentry/cli"
