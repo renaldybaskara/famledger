@@ -41,8 +41,12 @@ func (s *DynamicSMTPService) resolve() (*smtpService, error) {
 	port := coalesce(settings[entity.SettingKeySmtpPort], s.envFallback.SMTPPort, "587")
 	user := coalesce(settings[entity.SettingKeySmtpUser], s.envFallback.SMTPUser)
 	pass := coalesce(settings[entity.SettingKeySmtpPass], s.envFallback.SMTPPass)
-	from := coalesce(settings[entity.SettingKeySmtpFrom], user)
 	appURL := coalesce(settings[entity.SettingKeyAppURL], s.appURL)
+
+	// From: DB setting → SMTP_FROM env → fall back to bare user address.
+	// This controls the "From:" display name in delivered emails.
+	// Example values: "Budgetin <noreply@yourdomain.com>" or just "you@gmail.com"
+	from := coalesce(settings[entity.SettingKeySmtpFrom], s.envFallback.SMTPFrom, user)
 
 	return &smtpService{
 		host:    host,

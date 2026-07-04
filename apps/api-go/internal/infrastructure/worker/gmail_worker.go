@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	"github.com/fintrackr/api/internal/domain/entity"
 	domainrepo "github.com/fintrackr/api/internal/domain/repository"
 	domainuc "github.com/fintrackr/api/internal/domain/usecase"
+	"github.com/fintrackr/api/internal/infrastructure/logger"
 	"github.com/fintrackr/api/internal/usecase"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -92,7 +92,7 @@ func (w *GmailWorker) Start(ctx context.Context) {
 func (w *GmailWorker) syncIntegrations(ctx context.Context) {
 	integrations, err := w.integrationRepo.FindAllActive(ctx)
 	if err != nil {
-		log.Printf("[GmailWorker] failed to load integrations: %v", err)
+		logger.Worker.Printf("[GmailWorker] failed to load integrations: %v", err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (w *GmailWorker) syncIntegrations(ctx context.Context) {
 		}
 		if !w.subUC.IsProActive(ctx, integ.UserID) {
 			w.StopIntegration(integ.ID)
-			log.Printf("[GmailWorker] skipping integration %s (%s) — user no longer Pro", integ.ID, integ.Email)
+			logger.Worker.Printf("[GmailWorker] skipping integration %s (%s) — user no longer Pro", integ.ID, integ.Email)
 			continue
 		}
 		w.mu.Lock()
@@ -115,7 +115,7 @@ func (w *GmailWorker) syncIntegrations(ctx context.Context) {
 		}
 	}
 	if newCount > 0 {
-		log.Printf("[GmailWorker] started %d new Gmail integration(s) (total: %d)", newCount, len(w.cancels))
+		logger.Worker.Printf("[GmailWorker] started %d new Gmail integration(s) (total: %d)", newCount, len(w.cancels))
 	}
 }
 
@@ -141,16 +141,16 @@ func (w *GmailWorker) StopIntegration(id uuid.UUID) {
 
 func (w *GmailWorker) pollLoop(ctx context.Context, integ entity.EmailIntegration) {
 	label := fmt.Sprintf("[GmailWorker %s <%s>]", integ.ID, integ.Email)
-	log.Printf("%s starting poll loop", label)
+	logger.Worker.Printf("%s starting poll loop", label)
 
 	ticker := time.NewTicker(gmailPollInterval)
 	defer ticker.Stop()
 
 	for {
 		if err := w.poll(ctx, integ); err != nil {
-			log.Printf("%s poll error: %v", label, err)
+			logger.Worker.Printf("%s poll error: %v", label, err)
 			if isUnrecoverableTokenError(err) {
-				log.Printf("%s unrecoverable token error — soft-deleting integration", label)
+				logger.Worker.Printf("%s unrecoverable token error — soft-deleting integration", label)
 				_ = w.integrationRepo.Delete(ctx, integ.ID)
 				delete(w.cancels, integ.ID)
 				return
@@ -164,7 +164,7 @@ func (w *GmailWorker) pollLoop(ctx context.Context, integ entity.EmailIntegratio
 
 		select {
 		case <-ctx.Done():
-			log.Printf("%s stopped", label)
+			logger.Worker.Printf("%s stopped", label)
 			return
 		case <-ticker.C:
 		}
@@ -214,7 +214,7 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	// This prevents the worker from fetching a large batch before the user
 	// has had a chance to choose how far back to import.
 	if integ.LastSyncAt == nil {
-		log.Printf("[GmailWorker %s] last_sync_at not set yet — waiting for user to pick a start date", integ.Email)
+		logger.Worker.Printf("[GmailWorker %s] last_sync_at not set yet — waiting for user to pick a start date", integ.Email)
 		return nil
 	}
 	since := *integ.LastSyncAt
@@ -233,14 +233,18 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 		gmailPageSize,
 	)
 
-	log.Printf("[GmailWorker] polling since %s (epoch %d), query: %s", since.Format("2006-01-02 15:04"), sinceEpoch, query)
-	msgIDs, err := w.listAllMessageIDs(ctx, httpClient, baseListURL)
+	logger.Worker.Printf("[GmailWorker] polling since %s (epoch %d), query: %s", since.Format("2006-01-02 15:04"), sinceEpoch, query)
+	msgIDs, capHit, err := w.listAllMessageIDs(ctx, httpClient, baseListURL)
 	if err != nil {
 		return fmt.Errorf("list messages: %w", err)
 	}
-	log.Printf("[GmailWorker] found %d message(s) for %s", len(msgIDs), integ.Email)
+	if capHit {
+		logger.Worker.Printf("[GmailWorker] ⚠️  cap hit (%d) for %s — more messages exist, will continue next cycle",
+			gmailMaxMessages, integ.Email)
+	}
+	logger.Worker.Printf("[GmailWorker] found %d message(s) for %s", len(msgIDs), integ.Email)
 	if len(msgIDs) == 0 {
-		_ = w.updateLastSync(ctx, integ.ID)
+		_ = w.updateLastSyncTo(ctx, integ.ID, time.Now())
 		return nil
 	}
 
@@ -255,7 +259,7 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 		}
 		gMsg, err := w.fetchMessage(ctx, httpClient, gmailID)
 		if err != nil {
-			log.Printf("[GmailWorker] fetch %s: %v", gmailID, err)
+			logger.Worker.Printf("[GmailWorker] fetch %s: %v", gmailID, err)
 			continue
 		}
 
@@ -264,7 +268,7 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 	}
 
 	if len(newMsgs) == 0 {
-		_ = w.updateLastSync(ctx, integ.ID)
+		_ = w.updateLastSyncTo(ctx, integ.ID, time.Now())
 		return nil
 	}
 
@@ -274,12 +278,24 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 
 	for i := range newMsgs {
 		if err := w.importSvc.ProcessMessage(ctx, &newMsgs[i]); err != nil {
-			log.Printf("[GmailWorker] import error for %s: %v", newMsgs[i].MessageID, err)
+			logger.Worker.Printf("[GmailWorker] import error for %s: %v", newMsgs[i].MessageID, err)
 		}
 	}
 
-	_ = w.updateLastSync(ctx, integ.ID)
-	log.Printf("[GmailWorker %s] processed %d message(s)", integ.Email, len(newMsgs))
+	// Advance the bookmark:
+	// - Cap NOT hit → all available messages processed → advance to now (normal).
+	// - Cap WAS hit → more messages still exist beyond the cap → advance only to
+	//   the oldest receivedAt in this batch so the next cycle picks up from there,
+	//   not from now (which would skip the remaining messages permanently).
+	if capHit {
+		oldest := oldestReceivedAt(newMsgs)
+		logger.Worker.Printf("[GmailWorker %s] cap hit — advancing last_sync_at to oldest processed (%s), next cycle will continue from there",
+			integ.Email, oldest.Format("2006-01-02 15:04"))
+		_ = w.updateLastSyncTo(ctx, integ.ID, oldest)
+	} else {
+		_ = w.updateLastSyncTo(ctx, integ.ID, time.Now())
+	}
+	logger.Worker.Printf("[GmailWorker %s] processed %d message(s)", integ.Email, len(newMsgs))
 	return nil
 }
 
@@ -321,23 +337,29 @@ type gmailMessage struct {
 
 // listAllMessageIDs fetches all message IDs matching the query by following nextPageToken pagination.
 // Stops early if gmailMaxMessages is reached to avoid flooding on initial sync.
-func (w *GmailWorker) listAllMessageIDs(ctx context.Context, c *http.Client, baseURL string) ([]string, error) {
+// Returns the list of IDs and capHit=true when the cap was reached (meaning more messages exist
+// beyond the cap that were not fetched — the caller should NOT advance last_sync_at to now).
+func (w *GmailWorker) listAllMessageIDs(ctx context.Context, c *http.Client, baseURL string) (ids []string, capHit bool, err error) {
 	var allIDs []string
 	pageURL := baseURL
 	for {
 		result, err := w.listOnePage(ctx, c, pageURL)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		for _, m := range result.Messages {
 			allIDs = append(allIDs, m.ID)
 		}
-		if result.NextPageToken == "" || len(allIDs) >= gmailMaxMessages {
+		if len(allIDs) >= gmailMaxMessages {
+			// Cap reached — there may be more messages beyond this point.
+			return allIDs, true, nil
+		}
+		if result.NextPageToken == "" {
 			break
 		}
 		pageURL = baseURL + "&pageToken=" + result.NextPageToken
 	}
-	return allIDs, nil
+	return allIDs, false, nil
 }
 
 func (w *GmailWorker) listOnePage(ctx context.Context, c *http.Client, url string) (*gmailListResponse, error) {
@@ -488,11 +510,26 @@ func extractGmailBody(msg *gmailMessage) (plain, html string) {
 	return strings.TrimSpace(plain), strings.TrimSpace(html)
 }
 
-func (w *GmailWorker) updateLastSync(ctx context.Context, id uuid.UUID) error {
+// updateLastSyncTo sets last_sync_at to an explicit time.
+// Use time.Now() for normal cycles, or the oldest processed message date when the cap was hit.
+func (w *GmailWorker) updateLastSyncTo(ctx context.Context, id uuid.UUID, t time.Time) error {
 	_, err := w.integrationRepo.Update(ctx, id, map[string]interface{}{
-		"last_sync_at": time.Now(),
+		"last_sync_at": t,
 	})
 	return err
+}
+
+// oldestReceivedAt returns the earliest ReceivedAt timestamp across a batch of messages.
+// Used to set the bookmark when the message cap is hit, so the next cycle continues
+// from where this one left off rather than jumping to now.
+func oldestReceivedAt(msgs []entity.EmailMessage) time.Time {
+	oldest := msgs[0].ReceivedAt
+	for _, m := range msgs[1:] {
+		if m.ReceivedAt.Before(oldest) {
+			oldest = m.ReceivedAt
+		}
+	}
+	return oldest
 }
 
 func encodeQuery(q string) string {
@@ -547,9 +584,9 @@ func (s *savingTokenSource) Token() (*oauth2.Token, error) {
 			updates["watch_expiration"] = tok.Expiry
 		}
 		if _, dbErr := s.repo.Update(s.ctx, s.integID, updates); dbErr != nil {
-			log.Printf("[savingTokenSource] failed to persist rotated token: %v", dbErr)
+			logger.Worker.Printf("[savingTokenSource] failed to persist rotated token: %v", dbErr)
 		} else {
-			log.Printf("[savingTokenSource] persisted rotated access token for integration %s", s.integID)
+			logger.Worker.Printf("[savingTokenSource] persisted rotated access token for integration %s", s.integID)
 		}
 	}
 	return tok, nil

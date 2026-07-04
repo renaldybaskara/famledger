@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/fintrackr/api/internal/delivery/http/handler"
@@ -13,6 +14,7 @@ import (
 	"github.com/fintrackr/api/internal/infrastructure/database"
 	aisvc    "github.com/fintrackr/api/internal/infrastructure/ai"
 	emailsvc "github.com/fintrackr/api/internal/infrastructure/email"
+	"github.com/fintrackr/api/internal/infrastructure/logger"
 	ocrsvc   "github.com/fintrackr/api/internal/infrastructure/ocr"
 	"github.com/fintrackr/api/internal/infrastructure/payment"
 	"github.com/fintrackr/api/internal/infrastructure/tokenstore"
@@ -26,6 +28,18 @@ import (
 func main() {
 	// Load .env (ignore error — env vars may be set directly in Docker)
 	_ = godotenv.Load()
+
+	// ── Logging ──────────────────────────────────────────────
+	// LOG_DIR env var sets where log files are written.
+	// In Docker it is set to /app/logs (mounted as ./logs on the host).
+	// If LOG_DIR is unset the logger falls back to stdout-only — safe for CI/tests.
+	logDir := os.Getenv("LOG_DIR")
+	cleanupLogger := logger.Init(logDir)
+	defer cleanupLogger()
+
+	if logDir != "" {
+		log.Printf("📂 Log files: %s/{app,worker,http}.log", logDir)
+	}
 
 	// Load config
 	cfg := config.Load()
@@ -91,6 +105,21 @@ func main() {
 
 	// ── Email Service (dynamic — reads SMTP config from DB, falls back to env) ──
 	emailService := emailsvc.NewDynamicSMTPService(settingRepo, cfg)
+
+	// Log SMTP + APP_URL on startup so misconfiguration is immediately visible in app.log
+	if cfg.SMTPHost != "" && cfg.SMTPUser != "" {
+		log.Printf("✅ SMTP configured (host: %s:%s, user: %s)", cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser)
+		if cfg.SMTPFrom != "" {
+			log.Printf("   📧 SMTP From: %s", cfg.SMTPFrom)
+		}
+	} else {
+		log.Println("⚠️  SMTP not configured — emails will be printed to stdout only")
+	}
+	log.Printf("🌍 APP_URL: %s", cfg.AppURL)
+	if cfg.AppURL == "http://localhost" || cfg.AppURL == "http://localhost:3000" {
+		log.Println("⚠️  APP_URL is set to localhost — invite/reset links in emails will only work on this machine!")
+		log.Println("   Set APP_URL to your VPS domain or IP in .env, e.g. APP_URL=https://yourdomain.com")
+	}
 
 	// ── Use Cases ────────────────────────────────────────────
 	authUC := usecase.NewAuthUseCase(
@@ -170,7 +199,8 @@ func main() {
 	// Trust all proxies — safe behind Caddy/ngrok in a private Docker network.
 	r.SetTrustedProxies(nil)
 	r.Use(gin.Recovery())
-	r.Use(gin.Logger())
+	// Wire Gin's access log to http.log (also mirrors to stdout via logger.HTTP).
+	r.Use(gin.LoggerWithWriter(logger.HTTP.Writer()))
 	r.Use(middleware.ForwardedProto())
 	r.Use(middleware.CORS(cfg.AppURL))
 

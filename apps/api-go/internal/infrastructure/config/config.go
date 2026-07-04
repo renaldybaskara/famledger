@@ -24,6 +24,7 @@ type Config struct {
 	SMTPPort string
 	SMTPUser string
 	SMTPPass string
+	SMTPFrom string // display name + address, e.g. "Budgetin <noreply@yourdomain.com>"
 	// OpenRouter AI (optional — for ambiguous email parsing & auto-categorisation)
 	OpenRouterAPIKey string
 	OpenRouterModel  string
@@ -65,6 +66,7 @@ func Load() *Config {
 		SMTPPort:            getEnv("SMTP_PORT", "587"),
 		SMTPUser:            getEnv("SMTP_USER", ""),
 		SMTPPass:            getEnv("SMTP_PASS", ""),
+		SMTPFrom:            getEnv("SMTP_FROM", ""),
 		OpenRouterAPIKey:    getEnv("OPENROUTER_API_KEY", ""),
 		OpenRouterModel:     getEnv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free"),
 		OCRServiceURL:        getEnv("OCR_SERVICE_URL", "http://ocr:5000"),

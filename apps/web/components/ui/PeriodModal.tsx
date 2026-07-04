@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, Modal, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Modal, Platform, useWindowDimensions } from 'react-native'
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import { id } from 'date-fns/locale'
 
@@ -98,11 +98,16 @@ interface PeriodModalProps {
 
 export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }: PeriodModalProps) {
   const now = new Date()
+  const { height: screenHeight } = useWindowDimensions()
   const [customStart, setCustomStart] = useState(format(startOfMonth(now), 'yyyy-MM-dd'))
   const [customEnd, setCustomEnd]     = useState(format(endOfMonth(now), 'yyyy-MM-dd'))
   const [showCustom, setShowCustom]   = useState(false)
   const [showPayday, setShowPayday]   = useState(false)
   const [paydayInput, setPaydayInput] = useState(String(paydayDate))
+
+  // Leave at least 80px at the top so the modal never covers the full screen.
+  // On small screens (< 600px) use 90% of screen height; on larger screens cap at 600px.
+  const maxModalHeight = Math.min(screenHeight * 0.90, 600)
 
   const presets: { key: Preset; label: string }[] = [
     { key: 'this_month', label: 'Bulan Ini'        },
@@ -115,7 +120,8 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
   ]
 
   const modalContent = (
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
+    // maxHeight caps the whole sheet — ScrollView inside will scroll when content overflows
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: maxModalHeight }}>
       <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
         <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
       </View>
@@ -126,8 +132,9 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
         </Text>
       </View>
 
-      <ScrollView style={{ maxHeight: 480 }}>
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+      {/* flex: 1 + minHeight: 0 lets ScrollView shrink inside the capped container */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
+        <View>
           {presets.map((p) => {
             const active = current === p.key
             return (
@@ -236,7 +243,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
               </TouchableOpacity>
             </View>
           )}
-          <View style={{ height: 32 }} />
+          <View style={{ height: 8 }} />
         </View>
       </ScrollView>
     </View>

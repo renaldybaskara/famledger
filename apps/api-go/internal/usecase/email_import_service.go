@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 	domainrepo "github.com/fintrackr/api/internal/domain/repository"
 	aisvc "github.com/fintrackr/api/internal/infrastructure/ai"
 	"github.com/fintrackr/api/internal/infrastructure/emailparser"
+	"github.com/fintrackr/api/internal/infrastructure/logger"
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 )
@@ -65,7 +65,7 @@ func (s *EmailImportService) loadRules(ctx context.Context) []entity.BankParserR
 	}
 	rules, err := s.ruleRepo.FindAllActive(ctx)
 	if err != nil {
-		log.Printf("[EmailImport] failed to load parser rules: %v — using cached rules", err)
+		logger.Worker.Printf("[EmailImport] failed to load parser rules: %v — using cached rules", err)
 		return s.ruleCache
 	}
 	s.ruleCache = rules
@@ -141,9 +141,9 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 		if merchantUnclear && !cls.SkipAI {
 			aiResult, err := s.aiSvc.ParseEmailContent(ctx, msg.Subject, body)
 			if err != nil {
-				log.Printf("[AI] parse error for msg %s: %v", msg.MessageID, err)
+				logger.Worker.Printf("[AI] parse error for msg %s: %v", msg.MessageID, err)
 			} else {
-				log.Printf("[AI] msg %s → merchant=%q type=%q category=%q",
+				logger.Worker.Printf("[AI] msg %s → merchant=%q type=%q category=%q",
 					msg.MessageID, aiResult.Merchant, aiResult.Type, aiResult.Category)
 
 				if aiResult.Merchant != "" {
@@ -178,7 +178,7 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 			after,
 		)
 		if err != nil {
-			log.Printf("[EmailImport] fuzzy-dedup check error for msg %s: %v", msg.MessageID, err)
+			logger.Worker.Printf("[EmailImport] fuzzy-dedup check error for msg %s: %v", msg.MessageID, err)
 		} else if dup {
 			return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy match: same bank/type/amount/merchant within 30d)")
 		}
@@ -547,9 +547,9 @@ func (s *EmailImportService) matchCategory(
 	if s.aiSvc != nil && s.aiSvc.Enabled() && target != "" {
 		aiCat, err := s.aiSvc.CategorizeTransaction(ctx, parsed.Merchant, parsed.Description, parsed.Type)
 		if err != nil {
-			log.Printf("[AI-Cat] categorize error: %v", err)
+			logger.Worker.Printf("[AI-Cat] categorize error: %v", err)
 		} else if aiCat != "" {
-			log.Printf("[AI-Cat] merchant=%q type=%q → category=%q", parsed.Merchant, parsed.Type, aiCat)
+			logger.Worker.Printf("[AI-Cat] merchant=%q type=%q → category=%q", parsed.Merchant, parsed.Type, aiCat)
 			fragment := aiCat
 			if normalised, found := aiCategoryAliases[fragment]; found {
 				fragment = normalised
@@ -572,17 +572,17 @@ func (s *EmailImportService) matchCategory(
 func (s *EmailImportService) tryAIFull(ctx context.Context, msg *entity.EmailMessage, body string, ruleID uint) error {
 	aiResult, err := s.aiSvc.ParseEmailFull(ctx, msg.Subject, body)
 	if err != nil {
-		log.Printf("[AI-Full] error for msg %s: %v", msg.MessageID, err)
+		logger.Worker.Printf("[AI-Full] error for msg %s: %v", msg.MessageID, err)
 		return s.markSkipped(ctx, msg.ID, "no matching bank parser")
 	}
 
 	amount, ok := aisvc.ValidateFullParseResult(aiResult)
 	if !ok {
-		log.Printf("[AI-Full] low-confidence result for msg %s: type=%q amount=%q", msg.MessageID, aiResult.Type, aiResult.Amount)
+		logger.Worker.Printf("[AI-Full] low-confidence result for msg %s: type=%q amount=%q", msg.MessageID, aiResult.Type, aiResult.Amount)
 		return s.markSkipped(ctx, msg.ID, "no matching bank parser (ai: low confidence)")
 	}
 
-	log.Printf("[AI-Full] msg %s → type=%q amount=%.2f merchant=%q category=%q",
+	logger.Worker.Printf("[AI-Full] msg %s → type=%q amount=%.2f merchant=%q category=%q",
 		msg.MessageID, aiResult.Type, amount, aiResult.Merchant, aiResult.Category)
 
 	// Graduate or auto-create a DB rule so future emails from this sender skip AI.
@@ -597,9 +597,9 @@ func (s *EmailImportService) tryAIFull(ctx context.Context, msg *entity.EmailMes
 				"amount_regex": `(?i)Rp\.?\s*(?P<amount>[\d.,]+)`,
 				"default_type": defaultType,
 			}); updateErr != nil {
-				log.Printf("[ParserRule] failed to graduate rule %d: %v", ruleID, updateErr)
+				logger.Worker.Printf("[ParserRule] failed to graduate rule %d: %v", ruleID, updateErr)
 			} else {
-				log.Printf("[ParserRule] graduated rule %d → defaultType=%s", ruleID, defaultType)
+				logger.Worker.Printf("[ParserRule] graduated rule %d → defaultType=%s", ruleID, defaultType)
 			}
 		} else {
 			// Unknown sender: auto-create a rule so next email from this domain skips AI.
@@ -616,9 +616,9 @@ func (s *EmailImportService) tryAIFull(ctx context.Context, msg *entity.EmailMes
 				}
 				if createErr := s.ruleRepo.Create(ctx, newRule); createErr != nil {
 					// Name conflict means rule already exists — not an error.
-					log.Printf("[ParserRule] auto-create for %q skipped: %v", domain, createErr)
+					logger.Worker.Printf("[ParserRule] auto-create for %q skipped: %v", domain, createErr)
 				} else {
-					log.Printf("[ParserRule] auto-created rule %q → defaultType=%s", newRule.Name, defaultType)
+					logger.Worker.Printf("[ParserRule] auto-created rule %q → defaultType=%s", newRule.Name, defaultType)
 				}
 			}
 		}
@@ -646,7 +646,7 @@ func (s *EmailImportService) tryAIFull(ctx context.Context, msg *entity.EmailMes
 			after,
 		)
 		if err != nil {
-			log.Printf("[AI-Full] dedup check error for msg %s: %v", msg.MessageID, err)
+			logger.Worker.Printf("[AI-Full] dedup check error for msg %s: %v", msg.MessageID, err)
 		} else if dup {
 			return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy match: same bank/type/amount/merchant within 2h)")
 		}

@@ -25,6 +25,9 @@ infra/volumes/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+# Keep the logs/ folder structure in git, but not the actual log files
+# logs/*.log is covered by *.log above; explicitly un-ignore the placeholder
+!logs/.gitkeep
 
 # OS
 .DS_Store

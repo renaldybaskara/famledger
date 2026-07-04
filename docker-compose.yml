@@ -109,6 +109,14 @@ services:
     restart: unless-stopped
     environment:
       <<: *api-env
+      # LOG_DIR tells the Go logger where to write log files.
+      # The path must match the container-side target of the volume below.
+      LOG_DIR: /app/logs
+    volumes:
+      # Mount ./logs on the host into /app/logs inside the container.
+      # Log files (app.log, worker.log, http.log) will appear in ./logs/
+      # on your local machine / VPS after the container starts.
+      - ./logs:/app/logs
     networks:
       - internal
       - public
@@ -117,6 +125,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        # Keep Docker's own log buffer small — real logs go to ./logs/*.log
+        max-size: "10m"
+        max-file: "3"
 
   postgres:
     image: postgres:16-alpine
