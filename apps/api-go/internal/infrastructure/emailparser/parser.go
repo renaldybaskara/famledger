@@ -424,6 +424,11 @@ func extractBRIKet(combined string) string {
 
 var briKetKKRe = regexp.MustCompile(`(?i)^KK\s+\d+`)  // "KK 436502..." → credit card payment
 
+// briKKInlineRe matches the plain-text credit card usage notification format sent by BRI:
+// "Kartu Kredit BRI 436502xxxxxx2609 di SHOPEE sejumlah Rp 34.000 pada 04-07-2026 12:51:19"
+// Groups: merchant (store name), amount, date
+var briKKInlineRe = regexp.MustCompile(`(?i)Kartu\s+Kredit\s+BRI\s+[\dXx*]+\s+di\s+(?P<merchant>[A-Za-z0-9][A-Za-z0-9 &'.,-]{1,60}?)\s+sejumlah\s+Rp\s*(?P<amount>[\d.,]+)\s+pada\s+(?P<date>\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})`)
+
 // extractBRINotifMerchant cleans the Ket. value into a readable merchant name.
 func extractBRINotifMerchant(ket string) string {
 	if ket == "" {
@@ -507,11 +512,16 @@ func (p *briParser) Matches(from, subject, combined string) bool {
 		return true
 	}
 
-	// Supplementary transfer/BRIVA emails → skip (Notification BRI is canonical source).
-	// KK payment is NOT skipped — it's a separate transfer event (bank → credit card).
-	if briSubjectBRIVA.MatchString(subj) ||
-		briSubjectTransfer.MatchString(subj) {
+	// Supplementary transfer emails:
+	// - BRIVA Payment → skip (Notification BRI Ket.: BRIVA... is canonical, has correct tx date)
+	// - Transfer Between BRI / Pemindahan Dana → RE-ENABLED: has recipient name which Notification BRI
+	//   may not always have cleanly. Idempotency key (bank+type+amount+date+merchant) prevents
+	//   double-import when Notification BRI is also present for the same transaction.
+	if briSubjectBRIVA.MatchString(subj) {
 		return false
+	}
+	if briSubjectTransfer.MatchString(subj) {
+		return true
 	}
 
 	return false
@@ -641,6 +651,25 @@ func (p *briParser) parseNotification(subject, combined string) ParseResult {
 	if briCrRe.MatchString(lower) && !briTypeRe.MatchString(lower) {
 		txType = "income"
 	}
+
+	// ── Inline credit card usage format ──────────────────────────────────────
+	// "Kartu Kredit BRI 436502xxxxxx2609 di SHOPEE sejumlah Rp 34.000 pada 04-07-2026 12:51:19"
+	// This format has no Ket.: field — merchant and amount are embedded inline.
+	if kkGroups := namedGroups(briKKInlineRe, combined); kkGroups["merchant"] != "" {
+		amount, ok := parseAmount(kkGroups["amount"])
+		if ok && amount > 0 {
+			return ParseResult{Matched: true, Data: &ParsedTransaction{
+				Bank:     "BRI",
+				Type:     "expense", // credit card spending = expense
+				Amount:   amount,
+				Merchant: strings.TrimSpace(kkGroups["merchant"]),
+				Description: "BRI KK: " + strings.TrimSpace(kkGroups["merchant"]),
+				Date:     parseIDDate(kkGroups["date"]),
+				RawFields: map[string]string{"subject": subject, "email_type": "kk_inline"},
+			}}
+		}
+	}
+
 	amountStr := extractFirst(briAmountRe, combined)
 	amount, ok := parseAmount(amountStr)
 	if !ok || amount <= 0 {

@@ -284,11 +284,23 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
   const reprocessMut = useMutation({
     mutationFn: (id: string) => emailApi.reprocess(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['email-messages'] })
-      qc.invalidateQueries({ queryKey: ['transactions'] })
+      // Use exact:false so ['email-messages'] matches ['email-messages', statusFilter]
+      qc.invalidateQueries({ queryKey: ['email-messages'], exact: false })
       qc.invalidateQueries({ queryKey: ['email-stats-imported'] })
+      qc.invalidateQueries({ queryKey: ['email-stats-skipped'] })
+      qc.invalidateQueries({ queryKey: ['transactions'] })
     },
   })
+
+  // Track which specific message ID is being reprocessed so only that card shows loading
+  const [reprocessingId, setReprocessingId] = useState<string | null>(null)
+
+  const handleReprocess = (id: string) => {
+    setReprocessingId(id)
+    reprocessMut.mutate(id, {
+      onSettled: () => setReprocessingId(null),
+    })
+  }
 
   const handleDelete = (id: string, email: string) => {
     if (Platform.OS === 'web') {
@@ -551,15 +563,21 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
               {/* Reprocess button */}
               {(msg.parseStatus === 'failed' || msg.parseStatus === 'skipped') && (
                 <TouchableOpacity
-                  onPress={() => reprocessMut.mutate(msg.id)}
-                  disabled={reprocessMut.isPending}
+                  onPress={() => handleReprocess(msg.id)}
+                  disabled={reprocessingId === msg.id}
                   style={{
                     marginTop: 8, paddingVertical: 7, paddingHorizontal: 12,
-                    backgroundColor: C.primarySoft, borderRadius: 9, alignSelf: 'flex-start',
+                    backgroundColor: reprocessingId === msg.id ? C.border : C.primarySoft,
+                    borderRadius: 9, alignSelf: 'flex-start',
+                    flexDirection: 'row', alignItems: 'center', gap: 6,
                   }}
                 >
+                  {reprocessingId === msg.id
+                    ? <ActivityIndicator size={12} color={C.primary} />
+                    : <Text style={{ fontSize: 12 }}>↺</Text>
+                  }
                   <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
-                    ↺ Proses ulang
+                    {reprocessingId === msg.id ? 'Memproses...' : 'Proses ulang'}
                   </Text>
                 </TouchableOpacity>
               )}
