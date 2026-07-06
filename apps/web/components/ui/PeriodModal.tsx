@@ -133,8 +133,8 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
 
       <ScrollView
         style={{ flex: 1, minHeight: 0 } as any}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48 }}
+        showsVerticalScrollIndicator={true}
       >
         <View>
           {presets.map((p) => {
@@ -254,11 +254,11 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
   if (Platform.OS === 'web') {
     if (!visible) return null
     return (
-      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end', alignItems: 'center' }}>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 70 }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={onClose} activeOpacity={1} />
         <View style={{
           width: '100%', maxWidth: 520, zIndex: 1,
-          maxHeight: '92dvh' as any,
+          maxHeight: '75dvh' as any,
           display: 'flex' as any, flexDirection: 'column' as any,
         }}>
           {modalContent}
