@@ -167,7 +167,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
   const expenseCats = (categories as Category[]).filter((c) => c.type === 'expense')
 
   const content = (
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' as any, flex: 1 as any }}>
       {/* Handle */}
       <View style={{ alignItems: 'center', paddingTop: 12 }}>
         <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
@@ -301,7 +301,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ maxHeight: '90%', zIndex: 1 }}>{content}</View>
+        <View style={{ width: '100%', maxHeight: '92dvh' as any, zIndex: 1, display: 'flex' as any, flexDirection: 'column' as any }}>{content}</View>
       </View>
     )
   }
@@ -352,7 +352,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
   const expenseCats = (categories as Category[]).filter((c) => c.type === 'expense')
 
   const content = (
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}>
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' as any, flex: 1 as any }}>
       {/* Handle */}
       <View style={{ alignItems: 'center', paddingTop: 12 }}>
         <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
@@ -486,7 +486,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
     return (
       <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ maxHeight: '90%', zIndex: 1 }}>{content}</View>
+        <View style={{ width: '100%', maxHeight: '92dvh' as any, zIndex: 1, display: 'flex' as any, flexDirection: 'column' as any }}>{content}</View>
       </View>
     )
   }

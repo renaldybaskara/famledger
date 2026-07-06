@@ -120,8 +120,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
   ]
 
   const modalContent = (
-    // maxHeight caps the whole sheet — ScrollView inside will scroll when content overflows
-    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: maxModalHeight }}>
+    <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' as any, flex: 1 as any }}>
       <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
         <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: C.border }} />
       </View>
@@ -132,8 +131,11 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
         </Text>
       </View>
 
-      {/* flex: 1 + minHeight: 0 lets ScrollView shrink inside the capped container */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
+      <ScrollView
+        style={{ flex: 1, minHeight: 0 } as any}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View>
           {presets.map((p) => {
             const active = current === p.key
@@ -252,9 +254,15 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
   if (Platform.OS === 'web') {
     if (!visible) return null
     return (
-      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end', alignItems: 'center' }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={onClose} activeOpacity={1} />
-        <View style={{ zIndex: 1 }}>{modalContent}</View>
+        <View style={{
+          width: '100%', maxWidth: 520, zIndex: 1,
+          maxHeight: '92dvh' as any,
+          display: 'flex' as any, flexDirection: 'column' as any,
+        }}>
+          {modalContent}
+        </View>
       </View>
     )
   }
