@@ -219,6 +219,45 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
           />
         </SectionCard>
 
+        {/* Bantuan & Feedback */}
+        <SectionCard title="Bantuan">
+          <SettingRow
+            icon={Platform.OS === 'web' ? (
+              <svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="#6B8E6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : <Text style={{ fontSize: 14 }}>💬</Text>}
+            iconBg="#E8F5EE"
+            label="Kirim Feedback"
+            sub="Saran, laporan bug, atau pertanyaan"
+            onPress={() => {
+              const subject = encodeURIComponent('Feedback Budgetin App')
+              const body = encodeURIComponent(`\n\n---\nDari: ${user?.name ?? ''} (${user?.email ?? ''})\nVersi: v1.0.0`)
+              if (Platform.OS === 'web') {
+                window.open(`mailto:renaldybaskara8@gmail.com?subject=${subject}&body=${body}`, '_self')
+              }
+            }}
+          />
+          <SettingRow
+            icon={Platform.OS === 'web' ? (
+              <svg width="17" height="17" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#5B9BD5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" fill="none" stroke="#5B9BD5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="17" x2="12.01" y2="17" stroke="#5B9BD5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : <Text style={{ fontSize: 14 }}>❓</Text>}
+            iconBg="#EDF6FF"
+            label="Hubungi Kami"
+            sub="renaldybaskara8@gmail.com"
+            onPress={() => {
+              if (Platform.OS === 'web') {
+                window.open('mailto:renaldybaskara8@gmail.com', '_self')
+              }
+            }}
+            divider={false}
+          />
+        </SectionCard>
+
         {/* Sistem */}
         <SectionCard title="Sistem">
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 }}>
