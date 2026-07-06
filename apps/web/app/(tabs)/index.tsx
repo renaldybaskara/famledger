@@ -1161,6 +1161,35 @@ export default function DashboardScreen() {
           )}
 
           <View style={{ height: 24 }} />
+
+          {/* Feedback / Contact */}
+          <TouchableOpacity
+            onPress={() => {
+              const subject = encodeURIComponent('Feedback Budgetin App')
+              const body = encodeURIComponent('\n\n---\nVersi: v1.0.0')
+              if (Platform.OS === 'web') window.open(`mailto:renaldybaskara8@gmail.com?subject=${subject}&body=${body}`, '_self')
+            }}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 12,
+              backgroundColor: C.surface, borderRadius: 16, padding: 14,
+              borderWidth: 1, borderColor: C.border,
+            }}
+          >
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#E8F5EE', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 16 }}>💬</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Ada saran atau kendala?</Text>
+              <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginTop: 1 }}>Kirim feedback ke kami</Text>
+            </View>
+            {Platform.OS === 'web' && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <polyline points="9 18 15 12 9 6" stroke={C.fg4} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </TouchableOpacity>
+
+          <View style={{ height: 24 }} />
         </View>
       </ScrollView>
 
