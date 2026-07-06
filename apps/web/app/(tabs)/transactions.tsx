@@ -89,7 +89,9 @@ export default function TransactionsScreen() {
     if (p === 'custom' && custom) setCustomRange(custom)
     if (p === 'payday' && payday) setPaydayDate(payday)
     setPage(1)
+    setWsPage(1)
     queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    queryClient.invalidateQueries({ queryKey: ['ws-transactions-tab'] })
   }
 
   const { data: workspacesData } = useQuery({
@@ -106,11 +108,15 @@ export default function TransactionsScreen() {
     endDate:   range.endDate,
   })
 
+  const [wsPage, setWsPage] = useState(1)
+  const WS_LIMIT = 200
+
   const { data: wsTxData, isLoading: wsTxLoading } = useQuery({
-    queryKey: ['ws-transactions-tab', selectedWsId, typeFilter, search, range.startDate, range.endDate],
+    queryKey: ['ws-transactions-tab', selectedWsId, typeFilter, search, range.startDate, range.endDate, wsPage],
     queryFn: () => api.get<any>(`/workspaces/${selectedWsId}/transactions`, {
       params: {
-        limit: 50,
+        page: wsPage,
+        limit: WS_LIMIT,
         type: typeFilter || undefined,
         search: search.length >= 2 ? search : undefined,
         startDate: range.startDate,
@@ -125,14 +131,17 @@ export default function TransactionsScreen() {
   const activeTransactions: Transaction[] = selectedWsId
     ? (wsTxData?.data ?? [])
     : (data?.data ?? [])
-  const total   = selectedWsId ? (wsTxData?.pagination?.total ?? 0) : (data?.total ?? 0)
-  const loading = selectedWsId ? wsTxLoading : isLoading
+  const total      = selectedWsId ? (wsTxData?.pagination?.total ?? 0) : (data?.total ?? 0)
+  const totalPages = selectedWsId ? (wsTxData?.pagination?.totalPages ?? 1) : 1
+  const loading    = selectedWsId ? wsTxLoading : isLoading
   const transactions = activeTransactions
   const grouped      = useMemo(() => groupTransactionsByDate(transactions), [transactions])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    setWsPage(1)
     await queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    await queryClient.invalidateQueries({ queryKey: ['ws-transactions-tab'] })
     setRefreshing(false)
   }, [queryClient])
 
@@ -489,7 +498,16 @@ export default function TransactionsScreen() {
           contentContainerStyle={{ paddingVertical: 8, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
-            isFetching && !refreshing
+            selectedWsId && wsPage < totalPages ? (
+              <TouchableOpacity
+                onPress={() => setWsPage(p => p + 1)}
+                style={{ marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 14, backgroundColor: C.primarySoft, alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                  Muat lebih banyak ({transactions.length} / {total})
+                </Text>
+              </TouchableOpacity>
+            ) : isFetching && !refreshing
               ? <View style={{ padding: 16, alignItems: 'center' }}><Text style={{ color: C.fg4, fontSize: 13 }}>Memuat...</Text></View>
               : null
           }

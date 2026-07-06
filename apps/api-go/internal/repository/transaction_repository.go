@@ -39,7 +39,7 @@ func (r *transactionRepository) FindAll(ctx context.Context, userID uuid.UUID, q
 		db = db.Where("account_id = ?", q.AccountID)
 	}
 	if q.Search != "" {
-		db = db.Where("description ILIKE ?", "%"+q.Search+"%")
+		db = db.Where("(description ILIKE ? OR merchant ILIKE ?)", "%"+q.Search+"%", "%"+q.Search+"%")
 	}
 
 	var total int64
@@ -217,7 +217,7 @@ func (r *transactionRepository) FindAllByUserIDs(ctx context.Context, userIDs []
 		db = db.Where("account_id = ?", q.AccountID)
 	}
 	if q.Search != "" {
-		db = db.Where("description ILIKE ?", "%"+q.Search+"%")
+		db = db.Where("(description ILIKE ? OR merchant ILIKE ?)", "%"+q.Search+"%", "%"+q.Search+"%")
 	}
 
 	var total int64
@@ -230,8 +230,8 @@ func (r *transactionRepository) FindAllByUserIDs(ctx context.Context, userIDs []
 		page = 1
 	}
 	limit := q.Limit
-	if limit < 1 || limit > 100 {
-		limit = 20
+	if limit < 1 || limit > 500 {
+		limit = 50
 	}
 	offset := (page - 1) * limit
 

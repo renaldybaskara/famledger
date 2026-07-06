@@ -119,7 +119,7 @@ export default function EmailIntegrationScreen() {
 
   if (!subLoading && !isPro) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.cream, ...(Platform.OS === 'web' ? { height: '100vh' as any, overflow: 'hidden' as any } : {}) }} edges={['top']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <View style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: '#FBEFD2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
             <Text style={{ fontSize: 32 }}>🔒</Text>
@@ -141,7 +141,7 @@ export default function EmailIntegrationScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.cream, ...(Platform.OS === 'web' ? { height: '100vh' as any, overflow: 'hidden' as any } : {}) }} edges={['top']}>
       {/* ── Date picker modal ── */}
       <Modal visible={!!sincePicker} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -155,27 +155,59 @@ export default function EmailIntegrationScreen() {
             </Text>
 
             {Platform.OS === 'web' ? (
-              <input
-                type="date"
-                value={sinceDate}
-                min={minSinceDate}
-                max={maxSinceDate}
-                onClick={e => (e.target as HTMLInputElement).showPicker?.()}
-                onChange={e => { if (e.target.value >= minSinceDate && e.target.value <= maxSinceDate) setSinceDate(e.target.value) }}
-                style={{
-                  width: '100%', padding: '10px 14px', borderRadius: 12,
-                  border: '1.5px solid #E0DBD2', fontSize: 15, marginBottom: 20,
-                  backgroundColor: '#FAF7F2', fontFamily: 'inherit', color: '#2D2A26',
-                  boxSizing: 'border-box', cursor: 'pointer',
-                } as any}
-              />
+              <>
+                {/* Inject CSS so out-of-range dates are visually greyed and non-interactive */}
+                <style>{`
+                  input[type="date"].saku-date::-webkit-calendar-picker-indicator { cursor: pointer; }
+                  input[type="date"].saku-date:out-of-range { color: #A8A39B; text-decoration: line-through; }
+                  input[type="date"].saku-date[data-outofrange="true"] { border-color: #C66B6B; background-color: #FFF0F0; }
+                `}</style>
+                <input
+                  type="date"
+                  className="saku-date"
+                  value={sinceDate}
+                  min={minSinceDate}
+                  max={maxSinceDate}
+                  data-outofrange={sinceDate < minSinceDate || sinceDate > maxSinceDate ? 'true' : 'false'}
+                  onClick={e => (e.target as HTMLInputElement).showPicker?.()}
+                  onChange={e => {
+                    const v = e.target.value
+                    if (!v) return
+                    // Hard-clamp: if user somehow picks out-of-range, snap to nearest boundary
+                    if (v < minSinceDate) { setSinceDate(minSinceDate); return }
+                    if (v > maxSinceDate) { setSinceDate(maxSinceDate); return }
+                    setSinceDate(v)
+                  }}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: 12,
+                    border: '1.5px solid #E0DBD2', fontSize: 15, marginBottom: 4,
+                    backgroundColor: '#FAF7F2', fontFamily: 'inherit', color: '#2D2A26',
+                    boxSizing: 'border-box', cursor: 'pointer',
+                  } as any}
+                />
+                {/* Range hint shown below the picker */}
+                <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium', marginBottom: 16 }}>
+                  Rentang yang diizinkan: {minSinceDate} s/d {maxSinceDate}
+                </Text>
+              </>
             ) : (
-              <TextInput
-                value={sinceDate}
-                onChangeText={v => { if (v >= minSinceDate && v <= maxSinceDate) setSinceDate(v) }}
-                placeholder="YYYY-MM-DD"
-                style={{ borderWidth: 1.5, borderColor: C.border, borderRadius: 12, padding: 12, marginBottom: 20, fontSize: 14, color: C.fg1 }}
-              />
+              <>
+                <TextInput
+                  value={sinceDate}
+                  onChangeText={v => {
+                    if (!v) return
+                    if (v < minSinceDate) { setSinceDate(minSinceDate); return }
+                    if (v > maxSinceDate) { setSinceDate(maxSinceDate); return }
+                    setSinceDate(v)
+                  }}
+                  placeholder={`YYYY-MM-DD (${minSinceDate} s/d ${maxSinceDate})`}
+                  placeholderTextColor={C.fg4}
+                  style={{ borderWidth: 1.5, borderColor: C.border, borderRadius: 12, padding: 12, marginBottom: 4, fontSize: 14, color: C.fg1 }}
+                />
+                <Text style={{ fontSize: 11, color: C.fg4, marginBottom: 16 }}>
+                  Rentang yang diizinkan: {minSinceDate} s/d {maxSinceDate}
+                </Text>
+              </>
             )}
 
             <TouchableOpacity
@@ -635,7 +667,7 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
   }
 
   return (
-    <ScrollView style={{ flex: 1 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
       <View style={{ padding: 20 }}>
         <PageHeader title="Hubungkan Gmail" onBack={onBack} />
 

@@ -349,7 +349,7 @@ var (
 	// Valid: info@bri.co.id, notifikasi@bri.co.id — Invalid: promo@kk.bri.co.id
 	briFromRe    = regexp.MustCompile(`(?i)@bri\.co\.id`)
 	briSubjectRe = regexp.MustCompile(`(?i)(bri|brimo|notifikasi (debit|kredit)|transaksi bri)`)
-	briAmountRe  = regexp.MustCompile(`(?i)(?:sebesar|jumlah|nominal|Rp\.?)\s*(?P<amount>[\d.,]+)`)
+	briAmountRe  = regexp.MustCompile(`(?i)(?:(?:debit|kredit)\s*:\s*)?(?:sebesar|jumlah|nominal|Rp\.?|IDR\.?)\s*(?P<amount>[\d.,]+)`)
 	briTypeRe    = regexp.MustCompile(`(?i)(debit|debet|keluar|pembayaran|transfer ke|belanja|pembelian|tarik tunai|penarikan)`)
 	briCrRe      = regexp.MustCompile(`(?i)(kredit|masuk|diterima|transfer dari|top.?up|setoran|setor tunai)`)
 	// "Ket.: QRIS-WARUNG MAKAN PADANG" or "Ket.: NBMB RENALDY TO FLIPTECH"
@@ -382,7 +382,7 @@ var (
 	briSubjectBRIVA      = regexp.MustCompile(`(?i)^briva payment successful`)
 	briSubjectTransfer   = regexp.MustCompile(`(?i)(transfer between bri|pemindahan dana sesama rekening bri|transfer to other domestic bank)`)
 	briSubjectKK         = regexp.MustCompile(`(?i)(pembayaran kk bri|credit card)`)
-	briSubjectNotif      = regexp.MustCompile(`(?i)^notification bri$`)
+	briSubjectNotif      = regexp.MustCompile(`(?i)^notification\s+bri`)
 
 	// Ket. field patterns inside "Notification BRI"
 	briKetQRISRe         = regexp.MustCompile(`(?i)Ket\.\s*:\s*QRIS`)

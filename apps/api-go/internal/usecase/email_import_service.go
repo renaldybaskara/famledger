@@ -166,10 +166,10 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 
 	// Fuzzy-dedup: some banks (e.g. BRI) send the same notification twice with slightly
 	// different dates (one correct, one set to the re-delivery date). If a transaction with
-	// the same bank/type/amount/merchant already exists within a 2-hour window, skip.
-	// Keep the window short (2h) to avoid falsely skipping legitimate repeat purchases.
+	// the same bank/type/amount/merchant already exists within a 30-minute window, skip.
+	// Keep the window short (30min) to avoid falsely skipping legitimate repeat purchases.
 	if result.Data.Merchant != "" {
-		after := msg.ReceivedAt.Add(-2 * time.Hour)
+		after := msg.ReceivedAt.Add(-30 * time.Minute)
 		dup, err := s.txRepo.ExistsByAmountMerchantWindow(
 			ctx, msg.UserID,
 			result.Data.Bank, result.Data.Type,
@@ -180,7 +180,7 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 		if err != nil {
 			logger.Worker.Printf("[EmailImport] fuzzy-dedup check error for msg %s: %v", msg.MessageID, err)
 		} else if dup {
-			return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy match: same bank/type/amount/merchant within 30d)")
+			return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy match: same bank/type/amount/merchant within 30min)")
 		}
 	}
 
