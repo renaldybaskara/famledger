@@ -180,7 +180,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ padding: 20, gap: 16 }}>
           {serverError ? (
             <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
@@ -299,9 +299,9 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
   if (Platform.OS === 'web') {
     if (!visible) return null
     return (
-      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end', paddingBottom: 70 }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ width: '100%', maxHeight: '92dvh' as any, zIndex: 1, display: 'flex' as any, flexDirection: 'column' as any }}>{content}</View>
+        <View style={{ width: '100%', maxHeight: '75dvh' as any, zIndex: 1, display: 'flex' as any, flexDirection: 'column' as any }}>{content}</View>
       </View>
     )
   }
@@ -365,7 +365,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ padding: 20, gap: 16 }}>
           {serverError ? (
             <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
@@ -484,9 +484,9 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
   if (Platform.OS === 'web') {
     if (!visible) return null
     return (
-      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end' }}>
+      <View style={{ position: 'fixed' as any, inset: 0, zIndex: 100, backgroundColor: 'rgba(45,42,38,0.45)', justifyContent: 'flex-end', paddingBottom: 70 }}>
         <TouchableOpacity style={{ position: 'absolute' as any, inset: 0 }} onPress={handleClose} activeOpacity={1} />
-        <View style={{ width: '100%', maxHeight: '92dvh' as any, zIndex: 1, display: 'flex' as any, flexDirection: 'column' as any }}>{content}</View>
+        <View style={{ width: '100%', maxHeight: '75dvh' as any, zIndex: 1, display: 'flex' as any, flexDirection: 'column' as any }}>{content}</View>
       </View>
     )
   }

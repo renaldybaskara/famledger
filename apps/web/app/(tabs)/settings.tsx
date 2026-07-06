@@ -91,7 +91,17 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
   })
   const workspaces: any[] = Array.isArray(workspacesRaw) ? workspacesRaw : (workspacesRaw as any)?.data ?? []
   const myWorkspace = workspaces[0]
-  const memberCount = myWorkspace?.members?.length ?? 0
+
+  const { data: membersData } = useQuery({
+    queryKey: ['workspace-members', myWorkspace?.id],
+    queryFn: () => api.get<any[]>(`/workspaces/${myWorkspace.id}/members`).then(r => {
+      const d = r.data
+      return Array.isArray(d) ? d : (d as any)?.data ?? []
+    }),
+    enabled: !!myWorkspace?.id,
+    staleTime: 60_000,
+  })
+  const memberCount = membersData?.length ?? 0
 
   return (
     <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
