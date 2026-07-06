@@ -255,6 +255,9 @@ func (w *GmailWorker) poll(ctx context.Context, integ entity.EmailIntegration) e
 
 	for _, gmailID := range msgIDs {
 		if knownIDs[gmailID] {
+			// Check if existing record has missing body — re-fetch and update if so.
+			// This fixes old records where extractGmailBody failed due to MIME type mismatch.
+			w.refetchBodyIfMissing(ctx, integ, gmailID, httpClient)
 			continue
 		}
 		gMsg, err := w.fetchMessage(ctx, httpClient, gmailID)
@@ -453,20 +456,23 @@ func buildEmailMessage(integ entity.EmailIntegration, gmailID string, gMsg *gmai
 
 // extractGmailBody walks the Gmail message payload to find text/plain and text/html parts.
 func extractGmailBody(msg *gmailMessage) (plain, html string) {
-	// Single-part message.
+	// Single-part message — body data sits directly in Payload.Body.
 	if msg.Payload.Body.Data != "" {
 		decoded, err := base64.URLEncoding.DecodeString(msg.Payload.Body.Data)
 		if err == nil {
-			switch msg.Payload.MimeType {
-			case "text/plain":
-				plain = string(decoded)
-			case "text/html":
+			mt := strings.ToLower(strings.TrimSpace(msg.Payload.MimeType))
+			if mt == "text/html" {
 				html = string(decoded)
+			} else {
+				// Treat text/plain, empty, or any unrecognized MIME type as plain text.
+				// BRI sends bare plain-text emails where Gmail sometimes reports
+				// MimeType as "" or just "text" instead of "text/plain".
+				plain = string(decoded)
 			}
 		}
 	}
 
-	// Walk parts.
+	// Walk parts (multipart/alternative, multipart/mixed).
 	for _, part := range msg.Payload.Parts {
 		data := part.Body.Data
 		if data == "" {
@@ -479,7 +485,7 @@ func extractGmailBody(msg *gmailMessage) (plain, html string) {
 				if err != nil {
 					continue
 				}
-				switch nested.MimeType {
+				switch strings.ToLower(strings.TrimSpace(nested.MimeType)) {
 				case "text/plain":
 					if plain == "" {
 						plain = string(decoded)
@@ -496,7 +502,7 @@ func extractGmailBody(msg *gmailMessage) (plain, html string) {
 		if err != nil {
 			continue
 		}
-		switch part.MimeType {
+		switch strings.ToLower(strings.TrimSpace(part.MimeType)) {
 		case "text/plain":
 			if plain == "" {
 				plain = string(decoded)
@@ -508,6 +514,65 @@ func extractGmailBody(msg *gmailMessage) (plain, html string) {
 		}
 	}
 	return strings.TrimSpace(plain), strings.TrimSpace(html)
+}
+
+// refetchBodyIfMissing checks if an existing email_message has NULL body fields.
+// If so, it re-fetches the message from Gmail API, extracts the body, and updates the DB.
+// This fixes old records where extractGmailBody failed due to MIME type issues.
+func (w *GmailWorker) refetchBodyIfMissing(ctx context.Context, integ entity.EmailIntegration, gmailID string, httpClient *http.Client) {
+	msg, err := w.msgRepo.FindByMessageID(ctx, integ.UserID, gmailID)
+	if err != nil || msg == nil {
+		return
+	}
+	// Only fix if body is missing AND status is skipped/failed/pending (not already imported)
+	if msg.BodyText != nil || msg.BodyHTML != nil {
+		return
+	}
+	if msg.ParseStatus != "skipped" && msg.ParseStatus != "failed" && msg.ParseStatus != "pending" {
+		return
+	}
+
+	// Re-fetch from Gmail
+	gMsg, err := w.fetchMessage(ctx, httpClient, gmailID)
+	if err != nil {
+		logger.Worker.Printf("[GmailWorker] refetch body for %s: %v", gmailID, err)
+		return
+	}
+
+	plain, html := extractGmailBody(gMsg)
+	if plain == "" && html == "" {
+		return
+	}
+
+	// Update the DB record with the body
+	updates := map[string]interface{}{}
+	if plain != "" {
+		updates["body_text"] = plain
+	}
+	if html != "" {
+		updates["body_html"] = html
+	}
+	// Reset to pending so next "Proses ulang" or auto-reprocess picks it up
+	updates["parse_status"] = "pending"
+	updates["skip_reason"] = nil
+	updates["parse_error"] = nil
+
+	if err := w.msgRepo.UpdateStatus(ctx, msg.ID, updates); err != nil {
+		logger.Worker.Printf("[GmailWorker] update body for %s: %v", gmailID, err)
+		return
+	}
+
+	// Auto-reprocess immediately
+	msg.BodyText = &plain
+	if html != "" {
+		msg.BodyHTML = &html
+	}
+	msg.ParseStatus = "pending"
+	if err := w.importSvc.ProcessMessage(ctx, msg); err != nil {
+		logger.Worker.Printf("[GmailWorker] reprocess after body fix for %s: %v", gmailID, err)
+	} else {
+		logger.Worker.Printf("[GmailWorker] fixed missing body and reprocessed %s", gmailID)
+	}
 }
 
 // updateLastSyncTo sets last_sync_at to an explicit time.
