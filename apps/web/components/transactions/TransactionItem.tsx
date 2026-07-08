@@ -3,22 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import { Transaction } from '../../src/lib/api'
 import { formatCurrency, formatDateShort } from '../../src/lib/format'
 import { resolveIcon } from '../../src/lib/iconMap'
-
-// ── Budgetin tokens ───────────────────────────────────────────────
-const C = {
-  surface:       '#FFFFFF',
-  incomeBg:      '#F0FAF4',
-  expenseBg:     '#FDF2EE',
-  transferBg:    '#F3F7FA',
-  income:        '#3D7A56',
-  expense:       '#D4704A',
-  transfer:      '#6E97AE',
-  fg1:      '#2D2A26',
-  fg2:      '#55504A',
-  fg3:      '#8E887F',
-  fg4:      '#A8A39B',
-  divider:  '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 interface TransactionItemProps {
   transaction: Transaction
@@ -44,6 +29,7 @@ function CategoryBubble({ color, icon }: { color: string; icon: string }) {
 }
 
 export function TransactionItem({ transaction, onPress, onLongPress, showDate = true, memberName }: TransactionItemProps) {
+  const C = useTheme()
   const isIncome   = transaction.type === 'income'
   const isTransfer = transaction.type === 'transfer'
   const amountColor = isIncome ? C.income : isTransfer ? C.transfer : C.expense
@@ -112,6 +98,7 @@ export function TransactionItem({ transaction, onPress, onLongPress, showDate = 
 export function TransactionGroup({ date, transactions, onPressItem }: {
   date: string; transactions: Transaction[]; onPressItem?: (t: Transaction) => void
 }) {
+  const C = useTheme()
   const totalIn  = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const totalOut = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
   const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)

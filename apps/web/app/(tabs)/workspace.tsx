@@ -13,17 +13,7 @@ import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { TransactionItem } from '../../components/transactions/TransactionItem'
 import { formatCurrency } from '../../src/lib/format'
-
-// ─── Design Tokens ────────────────────────────────────────────────────────────
-const C = {
-  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
-  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
-  accent: '#C97B5C', accentSoft: '#F4DDD0',
-  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
-  mustard: '#D9A441', mustardSoft: '#FBEFD2',
-  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
-  border: '#E0DBD2', divider: '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Workspace {
@@ -97,6 +87,7 @@ const ROLES = [
 ]
 
 function RoleIcon({ role }: { role: string }) {
+  const C = useTheme()
   if (role === 'owner') return <Text style={{ fontSize: 14 }}>👑</Text>
   if (role === 'admin') return <Text style={{ fontSize: 14 }}>🛡</Text>
   if (role === 'contributor') return <Text style={{ fontSize: 14 }}>✎</Text>
@@ -109,6 +100,7 @@ function roleLabel(role: string) {
 
 // ─── Create Workspace Modal ───────────────────────────────────────────────────
 function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const C = useTheme()
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
@@ -198,6 +190,7 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
 
 // ─── Invite Modal ─────────────────────────────────────────────────────────────
 function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: string; onClose: () => void }) {
+  const C = useTheme()
   const qc = useQueryClient()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('contributor')
@@ -289,6 +282,7 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
 
 // ─── Workspace Detail ─────────────────────────────────────────────────────────
 function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) {
+  const C = useTheme()
   const qc = useQueryClient()
   const currentUser = useAuthStore((s) => s.user)
   const [tab, setTab] = useState<'members' | 'invites' | 'summary' | 'transactions'>('members')
@@ -611,6 +605,7 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
 
 // ─── Pending Invite Banner ────────────────────────────────────────────────────
 function PendingInviteBanner() {
+  const C = useTheme()
   const qc = useQueryClient()
 
   const { data: pending } = useQuery({
@@ -678,6 +673,7 @@ function PendingInviteBanner() {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function WorkspaceScreen() {
+  const C = useTheme()
   const isPro = useIsProActive()
   const { isPending: subPending, isError: subError } = useSubscription()
   const [showCreate, setShowCreate] = useState(false)

@@ -10,17 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../src/lib/api'
 import { useIsProActive, useSubscription } from '../../src/hooks/useSubscription'
-
-// ── Design tokens ──────────────────────────────────────────────
-const C = {
-  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
-  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
-  accent: '#C97B5C', accentSoft: '#F4DDD0',
-  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
-  mustard: '#D9A441', mustardSoft: '#FBEFD2',
-  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
-  border: '#E0DBD2', divider: '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 const KNOWN_BANKS = ['BCA', 'BRI', 'GoPay', 'Shopee', 'Mandiri', 'BNI', 'OVO', 'DANA', 'BSI', 'CIMB', 'Jenius', 'Permata', 'Flip', 'LinkAja', 'Danamon', 'BTN']
 
@@ -54,6 +44,7 @@ const emailApi = {
 
 // ── Main Screen ────────────────────────────────────────────────
 export default function EmailIntegrationScreen() {
+  const C = useTheme()
   const isPro = useIsProActive()
   const { isLoading: subLoading } = useSubscription()
   const [view, setView] = useState<'main' | 'add-gmail'>('main')
@@ -258,6 +249,7 @@ export default function EmailIntegrationScreen() {
 
 // ── Unified Main View ──────────────────────────────────────────
 function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
+  const C = useTheme()
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const [refreshing, setRefreshing] = useState(false)
@@ -544,7 +536,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
             <View key={msg.id} style={{
               backgroundColor: C.surface, borderRadius: 16, padding: 14, marginBottom: 10,
               shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
-              borderLeftWidth: 3, borderLeftColor: statusBorderColor(msg.parseStatus),
+              borderLeftWidth: 3, borderLeftColor: statusBorderColor(msg.parseStatus, C),
             }}>
               {/* Status + AI + bank + date row */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
@@ -623,6 +615,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
 
 // ── Stat card ──────────────────────────────────────────────────
 function StatCard({ label, value, valueColor, bg }: { label: string; value: number; valueColor?: string; bg?: string }) {
+  const C = useTheme()
   return (
     <View style={{
       flex: 1, backgroundColor: bg ?? C.surface, borderRadius: 16, padding: 12, alignItems: 'center',
@@ -638,7 +631,7 @@ function StatCard({ label, value, valueColor, bg }: { label: string; value: numb
   )
 }
 
-function statusBorderColor(status: string) {
+function statusBorderColor(status: string, C: { primary: string; danger: string; mustard: string; border: string }) {
   if (status === 'imported') return C.primary
   if (status === 'failed') return C.danger
   if (status === 'pending') return C.mustard
@@ -647,6 +640,7 @@ function statusBorderColor(status: string) {
 
 // ── Connect Gmail ──────────────────────────────────────────────
 function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
+  const C = useTheme()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -752,6 +746,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function PageHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  const C = useTheme()
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
       <TouchableOpacity onPress={onBack} style={{ marginRight: 10, width: 34, height: 34, borderRadius: 10, backgroundColor: C.creamSunken, alignItems: 'center', justifyContent: 'center' }}>
@@ -763,6 +758,7 @@ function PageHeader({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 function FormField({ label, ...props }: { label: string } & React.ComponentProps<typeof TextInput>) {
+  const C = useTheme()
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: 'Nunito_700Bold' }}>{label}</Text>

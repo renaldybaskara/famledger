@@ -6,25 +6,11 @@ import * as Linking from 'expo-linking'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
 import { BudgetinIcon } from '../../components/ui/BudgetinLogo'
+import { useTheme } from '../../src/lib/theme'
 
 WebBrowser.maybeCompleteAuthSession()
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost/api'
-
-const C = {
-  heroStart:  '#6B8E6B',
-  heroEnd:    '#41594F',
-  accent:     '#C97B5C',
-  cream:      '#FAF7F2',
-  creamSunk:  '#F4EEE3',
-  surface:    '#FFFFFF',
-  fg1:        '#2D2A26',
-  fg2:        '#55504A',
-  fg3:        '#8E887F',
-  border:     '#E0DBD2',
-  divider:    '#ECE4D3',
-  primary:    '#6B8E6B',
-}
 
 const FEATURES = [
   {
@@ -87,6 +73,7 @@ function GoogleIcon() {
 }
 
 export default function LoginScreen() {
+  const C = useTheme()
   const setAuth = useAuthStore((s) => s.setAuth)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

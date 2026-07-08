@@ -16,35 +16,14 @@ import {
 import {
   useSubscription, useCancelSubscription, useTrialDaysLeft, useRestorePurchases, useMidtransPayment, useIsProActive,
 } from '../../src/hooks/useSubscription'
-
-// ── Budgetin tokens ───────────────────────────────────────────────
-const C = {
-  cream:        '#FAF7F2',
-  creamSunken:  '#F4EEE3',
-  surface:      '#FFFFFF',
-  primary:      '#6B8E6B',
-  primarySoft:  '#DEE8D7',
-  heroStart:    '#6B8E6B',
-  heroEnd:      '#41594F',
-  accent:       '#C97B5C',
-  accentSoft:   '#F4DDD0',
-  danger:       '#C66B6B',
-  dangerSoft:   '#F5D9D9',
-  mustard:      '#D9A441',
-  mustardSoft:  '#FBEFD2',
-  infoSoft:     '#DEEAF1',
-  fg1:          '#2D2A26',
-  fg2:          '#55504A',
-  fg3:          '#8E887F',
-  fg4:          '#A8A39B',
-  border:       '#E0DBD2',
-  divider:      '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
+import { useThemeStore } from '../../src/store/theme.store'
 
 type Section = 'main' | 'account' | 'smtp' | 'bank-rules' | 'billing'
 
 // ── Settings Screen ───────────────────────────────────────────
 export default function SettingsScreen() {
+  const C = useTheme()
   const { user, logout, refreshToken } = useAuthStore()
   const [section, setSection] = useState<Section>('main')
   const queryClient = useQueryClient()
@@ -76,8 +55,9 @@ export default function SettingsScreen() {
 
 // ── Main Settings ─────────────────────────────────────────────
 function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () => void; onNavigate: (s: Section) => void }) {
+  const C = useTheme()
+  const { isDark, toggle: toggleDark } = useThemeStore()
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? 'U'
-  const [darkMode, setDarkMode] = useState(false)
   const [scanVisible, setScanVisible] = useState(false)
 
   const { data: sub } = useSubscription()
@@ -282,7 +262,7 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
               <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Mode Gelap</Text>
               <Text style={{ fontSize: 12, color: C.fg3, marginTop: 1, fontFamily: 'Nunito_500Medium' }}>Ikuti tema sistem</Text>
             </View>
-            <Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ false: C.border, true: C.primary }} thumbColor="#fff" />
+            <Switch value={isDark} onValueChange={toggleDark} trackColor={{ false: C.border, true: C.primary }} thumbColor="#fff" />
           </View>
           <View style={{ height: 1, backgroundColor: C.divider, marginLeft: 64 }} />
           <TouchableOpacity onPress={onLogout} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 }}>
@@ -310,6 +290,7 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
 
 // ── Account Section ───────────────────────────────────────────
 function AccountSection({ user, onBack }: { user: any; onBack: () => void }) {
+  const C = useTheme()
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? 'U'
   return (
     <ScrollView style={{ flex: 1 }}>
@@ -341,6 +322,7 @@ function AccountSection({ user, onBack }: { user: any; onBack: () => void }) {
 
 // ── SMTP Section ──────────────────────────────────────────────
 function SmtpSection({ onBack }: { onBack: () => void }) {
+  const C = useTheme()
   const { data: smtp, isLoading } = useSmtpConfig()
   const updateSmtp = useUpdateSmtpConfig()
   const testSmtp   = useTestSmtp()
@@ -494,6 +476,7 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
 
 // ── Bank Rules Section ────────────────────────────────────────
 function BankRulesSection({ onBack }: { onBack: () => void }) {
+  const C = useTheme()
   const { data: rules = [], isLoading } = useParserRules()
   const createRule = useCreateParserRule()
   const toggleRule = useToggleParserRule()
@@ -764,6 +747,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
 
 // ── Billing Row (inline card in Main Settings) ────────────────
 function BillingRow({ onNavigate }: { onNavigate: (s: Section) => void }) {
+  const C = useTheme()
   const { data: sub } = useSubscription()
   const daysLeft = useTrialDaysLeft()
 
@@ -807,6 +791,7 @@ function BillingRow({ onNavigate }: { onNavigate: (s: Section) => void }) {
 
 // ── Billing Section ───────────────────────────────────────────
 function BillingSection({ onBack }: { onBack: () => void }) {
+  const C = useTheme()
   const { data: sub, isLoading } = useSubscription()
   const restore  = useRestorePurchases()
   const daysLeft = useTrialDaysLeft()
@@ -1073,6 +1058,7 @@ function RevenueCatCustomerCenter({ onDismiss }: { onDismiss: () => void }) {
 
 // ── Shared sub-components ─────────────────────────────────────
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  const C = useTheme()
   return (
     <View style={{ backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 }}>
@@ -1088,6 +1074,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 function SettingRow({ icon, iconBg, label, sub, onPress, divider = true, badge }: {
   icon: ReactNode; iconBg: string; label: string; sub?: string; onPress: () => void; divider?: boolean; badge?: string
 }) {
+  const C = useTheme()
   return (
     <>
       {divider && <View style={{ height: 1, backgroundColor: C.divider, marginLeft: 64 }} />}
@@ -1120,6 +1107,7 @@ function SettingRow({ icon, iconBg, label, sub, onPress, divider = true, badge }
 }
 
 function SectionHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  const C = useTheme()
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 }}>
       <TouchableOpacity

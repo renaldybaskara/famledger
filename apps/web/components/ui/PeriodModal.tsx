@@ -2,22 +2,9 @@ import { useState } from 'react'
 import { View, Text, TouchableOpacity, ScrollView, Modal, Platform, useWindowDimensions } from 'react-native'
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { useTheme } from '../../src/lib/theme'
 
 export type Preset = 'this_month' | 'last_month' | 'last_3' | 'last_6' | 'this_year' | 'payday' | 'custom'
-
-const C = {
-  surface:     '#FFFFFF',
-  cream:       '#FAF7F2',
-  creamSunken: '#F4EEE3',
-  primary:     '#6B8E6B',
-  primarySoft: '#DEE8D7',
-  heroEnd:     '#41594F',
-  fg1:         '#2D2A26',
-  fg2:         '#55504A',
-  fg3:         '#8E887F',
-  border:      '#E0DBD2',
-  mustard:     '#D9A441',
-}
 
 export function getPresetRange(
   preset: Preset,
@@ -97,6 +84,7 @@ interface PeriodModalProps {
 }
 
 export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }: PeriodModalProps) {
+  const C = useTheme()
   const now = new Date()
   const { height: screenHeight } = useWindowDimensions()
   const [customStart, setCustomStart] = useState(format(startOfMonth(now), 'yyyy-MM-dd'))

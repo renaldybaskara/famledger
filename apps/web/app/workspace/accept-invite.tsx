@@ -4,23 +4,9 @@ import { router, useLocalSearchParams } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
+import { useTheme } from '../../src/lib/theme'
 
 const PENDING_INVITE_KEY = 'pending_invite_token'
-
-const C = {
-  cream:       '#FAF7F2',
-  heroStart:   '#6B8E6B',
-  heroEnd:     '#41594F',
-  accent:      '#C97B5C',
-  primary:     '#6B8E6B',
-  primarySoft: '#DEE8D7',
-  danger:      '#C66B6B',
-  dangerSoft:  '#F5D9D9',
-  fg1:         '#2D2A26',
-  fg2:         '#55504A',
-  fg3:         '#8E887F',
-  surface:     '#FFFFFF',
-}
 
 type State = 'loading' | 'success' | 'error' | 'need-login'
 
@@ -44,6 +30,7 @@ async function popPendingToken(): Promise<string | null> {
 }
 
 export default function AcceptInviteScreen() {
+  const C = useTheme()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [state, setState] = useState<State>('loading')
   const [message, setMessage] = useState('')

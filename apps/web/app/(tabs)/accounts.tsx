@@ -9,16 +9,7 @@ import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } fro
 import { formatCurrency } from '../../src/lib/format'
 import { useAuthStore } from '../../src/store/auth.store'
 import type { Account } from '../../src/lib/api'
-
-const C = {
-  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
-  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
-  accent: '#C97B5C', accentSoft: '#F4DDD0',
-  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
-  mustard: '#D9A441', mustardSoft: '#FBEFD2',
-  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
-  border: '#E0DBD2', divider: '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 // ─── 3 account types only ────────────────────────────────────────────────────
 const ACCOUNT_TYPES = [
@@ -88,6 +79,7 @@ function AccountFormModal({
   account: Account | null
   onClose: () => void
 }) {
+  const C = useTheme()
   const isEdit = !!account
   const [form, setForm] = useState<AccountForm>(
     account ? {
@@ -345,6 +337,7 @@ function InvestmentUpdatePopup({
   accounts: Account[]
   userId: string
 }) {
+  const C = useTheme()
   const updateMutation = useUpdateAccount()
   const investments = accounts.filter((a) => a.type === 'investment')
 
@@ -434,6 +427,7 @@ function InvestmentUpdatePopup({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function AccountsScreen() {
+  const C = useTheme()
   const { data: accounts, isLoading } = useAccounts()
   const deleteMutation = useDeleteAccount()
   const [showForm, setShowForm] = useState(false)

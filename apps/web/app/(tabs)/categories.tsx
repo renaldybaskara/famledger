@@ -8,16 +8,7 @@ import { router } from 'expo-router'
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../../src/hooks/useCategories'
 import type { Category, TransactionType } from '../../src/lib/api'
 import { resolveIcon } from '../../src/lib/iconMap'
-
-const C = {
-  cream: '#FAF7F2', creamSunken: '#F4EEE3', surface: '#FFFFFF',
-  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
-  accent: '#C97B5C', accentSoft: '#F4DDD0',
-  danger: '#C66B6B', dangerSoft: 'rgba(198,107,107,0.1)',
-  mustard: '#D9A441', mustardSoft: '#FBEFD2',
-  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F', fg4: '#A8A39B',
-  border: '#E0DBD2', divider: '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const CATEGORY_ICONS = [
@@ -45,6 +36,7 @@ function CategoryFormModal({
   category: Category | null
   onClose: () => void
 }) {
+  const C = useTheme()
   const isEdit = !!category
   const [name, setName] = useState(category?.name ?? '')
   const [icon, setIcon] = useState(category?.icon ?? '💰')
@@ -197,6 +189,7 @@ function CategoryFormModal({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function CategoriesScreen() {
+  const C = useTheme()
   const { data: categories, isLoading } = useCategories()
   const deleteMutation = useDeleteCategory()
   const [showForm, setShowForm] = useState(false)

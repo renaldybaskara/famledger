@@ -3,13 +3,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { subscriptionApi } from '../src/lib/api'
 import { useAuthStore } from '../src/store/auth.store'
-
-const C = {
-  cream: '#FAF7F2', surface: '#FFFFFF',
-  primary: '#6B8E6B', primarySoft: '#DEE8D7', heroEnd: '#41594F',
-  accent: '#C97B5C', mustard: '#D9A441', mustardSoft: '#FBEFD2',
-  fg1: '#2D2A26', fg2: '#55504A', fg3: '#8E887F',
-}
+import { useTheme } from '../src/lib/theme'
 
 const BENEFITS = [
   ['✉️', 'Auto-import transaksi dari Gmail'],
@@ -25,6 +19,7 @@ interface Props {
 }
 
 export function TrialOnboardingPopup({ visible, onDismiss }: Props) {
+  const C = useTheme()
   const [loading, setLoading] = useState(false)
   const qc = useQueryClient()
   const { setAuth, user, accessToken, refreshToken } = useAuthStore()

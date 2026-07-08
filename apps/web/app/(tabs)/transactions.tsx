@@ -16,25 +16,7 @@ import { TransactionDetailModal } from '../../components/transactions/Transactio
 import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipScanModal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
-
-// ── Budgetin tokens ───────────────────────────────────────────────
-const C = {
-  cream:       '#FAF7F2',
-  creamSunken: '#F4EEE3',
-  surface:     '#FFFFFF',
-  primary:     '#6B8E6B',
-  primarySoft: '#DEE8D7',
-  heroEnd:     '#41594F',
-  accent:      '#C97B5C',
-  income:      '#3D7A56',
-  expense:     '#D4704A',
-  fg1:         '#2D2A26',
-  fg2:         '#55504A',
-  fg3:         '#8E887F',
-  fg4:         '#A8A39B',
-  border:      '#E0DBD2',
-  divider:     '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 type TypeFilter = '' | TransactionType
 
@@ -67,6 +49,7 @@ function fmtIDR(n: number) {
 }
 
 export default function TransactionsScreen() {
+  const C = useTheme()
   const queryClient = useQueryClient()
   const [search, setSearch]           = useState('')
   const [typeFilter, setTypeFilter]   = useState<TypeFilter>('')

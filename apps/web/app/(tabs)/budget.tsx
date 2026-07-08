@@ -17,28 +17,7 @@ import { useCategories } from '../../src/hooks/useCategories'
 import { Budget, Category } from '../../src/lib/api'
 import { formatCurrencyCompact, formatPercent } from '../../src/lib/format'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
-
-// ── Budgetin tokens ───────────────────────────────────────────────
-const C = {
-  cream:        '#FAF7F2',
-  creamSunken:  '#F4EEE3',
-  surface:      '#FFFFFF',
-  primary:      '#6B8E6B',
-  primarySoft:  '#DEE8D7',
-  heroStart:    '#6B8E6B',
-  heroEnd:      '#41594F',
-  accent:       '#C97B5C',
-  mustard:      '#D9A441',
-  mustardSoft:  '#FBEFD2',
-  danger:       '#C66B6B',
-  dangerSoft:   '#F5D9D9',
-  fg1:          '#2D2A26',
-  fg2:          '#55504A',
-  fg3:          '#8E887F',
-  fg4:          '#A8A39B',
-  border:       '#E0DBD2',
-  divider:      '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 // ── Budget form ───────────────────────────────────────────────
 const budgetSchema = z.object({
@@ -56,7 +35,7 @@ const PERIOD_OPTIONS = [
   { value: 'yearly',  label: 'Tahunan'  },
 ] as const
 
-function getBudgetStatus(spent: number, total: number) {
+function getBudgetStatus(spent: number, total: number, C: { danger: string; dangerSoft: string; mustard: string; mustardSoft: string; primary: string; primarySoft: string }) {
   const pct = total > 0 ? (spent / total) * 100 : 0
   if (pct > 100) return { color: C.danger,  barColor: C.danger,  bg: C.dangerSoft,  label: 'Melebihi',    cardBg: '#FFF5F5', cardBorder: '#FFDDDD', iconBg: '#FFE8E8' }
   if (pct >= 80) return { color: C.mustard, barColor: C.mustard, bg: C.mustardSoft, label: 'Hampir habis', cardBg: '#FFF8F5', cardBorder: '#FAEAE3', iconBg: '#FDF2EE' }
@@ -65,12 +44,13 @@ function getBudgetStatus(spent: number, total: number) {
 
 // ── Budget card ───────────────────────────────────────────────
 function BudgetCard({ budget, onDelete, onEdit }: { budget: Budget; onDelete: () => void; onEdit: () => void }) {
+  const C = useTheme()
   const spent     = budget.spent ?? 0
   const total     = budget.amount
   const rawPct    = total > 0 ? (spent / total) * 100 : 0
   const pct       = Math.min(rawPct, 100)
   const remaining = total - spent
-  const status    = getBudgetStatus(spent, total)
+  const status    = getBudgetStatus(spent, total, C)
   const catColor  = budget.category?.color ?? C.primary
   const catIcon   = budget.category?.icon ?? '💰'
 
@@ -144,6 +124,7 @@ function BudgetCard({ budget, onDelete, onEdit }: { budget: Budget; onDelete: ()
 
 // ── Add Budget Modal ──────────────────────────────────────────
 function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const C = useTheme()
   const { data: categories = [] } = useCategories()
   const createMutation            = useCreateBudget()
   const [serverError, setServerError] = useState('')
@@ -317,6 +298,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
 
 // ── Edit Budget Modal ─────────────────────────────────────────
 function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budget: Budget | null; onClose: () => void }) {
+  const C = useTheme()
   const { data: categories = [] } = useCategories()
   const updateMutation            = useUpdateBudget()
   const [serverError, setServerError] = useState('')
@@ -529,6 +511,7 @@ function DonutSVG({ pct }: { pct: number }) {
 }
 
 export default function BudgetScreen() {
+  const C = useTheme()
   const queryClient               = useQueryClient()
   const [addModalVisible, setAddModalVisible] = useState(false)
   const [editBudget, setEditBudget] = useState<Budget | null>(null)

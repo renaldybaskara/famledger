@@ -10,29 +10,7 @@ import { useAccounts } from '../../src/hooks/useAccounts'
 import { Transaction, TransactionType, Category, Account } from '../../src/lib/api'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
-
-// ── Budgetin tokens ────────────────────────────────────────────────
-const C = {
-  cream:       '#FAF7F2',
-  creamSunken: '#F4EEE3',
-  surface:     '#FFFFFF',
-  primary:     '#6B8E6B',
-  primarySoft: '#DEE8D7',
-  heroEnd:     '#41594F',
-  accent:      '#C97B5C',
-  accentSoft:  '#F4DDD0',
-  income:      '#6B8E6B',
-  expense:     '#C97B5C',
-  transfer:    '#6E97AE',
-  danger:      '#C66B6B',
-  dangerSoft:  '#F5D9D9',
-  fg1:         '#2D2A26',
-  fg2:         '#55504A',
-  fg3:         '#8E887F',
-  fg4:         '#A8A39B',
-  border:      '#E0DBD2',
-  divider:     '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 function fmtIDR(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -55,6 +33,9 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
 ]
 
 export function TransactionDetailModal({ transaction, visible, onClose, onDeleted }: Props) {
+  const C = useTheme()
+  const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Nunito_700Bold' }
+  const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }
   const [editing, setEditing] = useState(false)
   const [form, setForm]       = useState({ merchant: '', note: '', amount: '', type: 'expense' as TransactionType, categoryId: '', accountId: '', date: '' })
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -409,13 +390,13 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
 }
 
 // ── Sub-components ─────────────────────────────────────────────
-const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Nunito_700Bold' }
-const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }
-
 function DetailRow({ label, editing, value, displayValue, onChangeText, placeholder, multiline }: {
   label: string; editing: boolean; value: string; displayValue: string
   onChangeText: (v: string) => void; placeholder: string; multiline?: boolean
 }) {
+  const C = useTheme()
+  const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Nunito_700Bold' }
+  const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }
   return (
     <View>
       <Text style={labelStyle}>{label}</Text>

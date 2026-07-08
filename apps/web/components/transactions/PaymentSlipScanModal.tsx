@@ -13,30 +13,7 @@ import { useCategories } from '../../src/hooks/useCategories'
 import { useAccounts } from '../../src/hooks/useAccounts'
 import { resolveIcon } from '../../src/lib/iconMap'
 import { paymentSlipsApi, ParsedSlip, TransactionType, Category, Account } from '../../src/lib/api'
-
-// ── Budgetin tokens ────────────────────────────────────────────────
-const C = {
-  cream:        '#FAF7F2',
-  creamSunken:  '#F4EEE3',
-  surface:      '#FFFFFF',
-  primary:      '#6B8E6B',
-  primarySoft:  '#DEE8D7',
-  heroEnd:      '#41594F',
-  accent:       '#C97B5C',
-  accentSoft:   '#F4DDD0',
-  transfer:     '#6E97AE',
-  transferSoft: '#DEEAF1',
-  danger:       '#C66B6B',
-  dangerSoft:   '#F5D9D9',
-  warning:      '#D9A441',
-  warningSoft:  '#FBEFD2',
-  fg1:          '#2D2A26',
-  fg2:          '#55504A',
-  fg3:          '#8E887F',
-  fg4:          '#A8A39B',
-  border:       '#E0DBD2',
-  divider:      '#ECE4D3',
-}
+import { useTheme } from '../../src/lib/theme'
 
 function formatAmountInput(text: string): string {
   const digits = text.replace(/\D/g, '')
@@ -57,12 +34,6 @@ const slipSchema = z.object({
 
 type SlipFormData = z.infer<typeof slipSchema>
 
-const TYPE_OPTIONS: Array<{ value: TransactionType; label: string; color: string; soft: string }> = [
-  { value: 'expense',  label: '↑ Keluar',   color: C.accent,   soft: C.accentSoft   },
-  { value: 'income',   label: '↓ Masuk',    color: C.primary,  soft: C.primarySoft  },
-  { value: 'transfer', label: '⇄ Transfer', color: C.transfer, soft: C.transferSoft },
-]
-
 type Step = 'pick' | 'loading' | 'review'
 
 interface Props { visible: boolean; onClose: () => void }
@@ -81,6 +52,12 @@ function useIsDesktop() {
 }
 
 export function PaymentSlipScanModal({ visible, onClose }: Props) {
+  const C = useTheme()
+  const TYPE_OPTIONS: Array<{ value: TransactionType; label: string; color: string; soft: string }> = [
+    { value: 'expense',  label: '↑ Keluar',   color: C.accent,   soft: C.accentSoft   },
+    { value: 'income',   label: '↓ Masuk',    color: C.primary,  soft: C.primarySoft  },
+    { value: 'transfer', label: '⇄ Transfer', color: (C as any).transfer ?? '#6E97AE', soft: (C as any).transferSoft ?? '#DEEAF1' },
+  ]
   const { data: categories = [] } = useCategories()
   const { data: accounts   = [] } = useAccounts()
   const createMutation            = useCreateTransaction()
