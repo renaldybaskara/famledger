@@ -23,41 +23,11 @@ import { AddTransactionModal } from '../../components/transactions/AddTransactio
 import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipScanModal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
-
-// ── Budgetin design tokens (from Paper "Polite Honey" design) ─
-const C = {
-  // Gradient hero: oklab(52.8% -0.078 0.035) → oklab(43.1% -0.066 0.028)
-  heroStart:    '#6B8E6B',
-  heroEnd:      '#41594F',
-  accent:       '#C97B5C',
-  accentSoft:   '#F4DDD0',
-  cream:        '#FAF7F2',
-  creamSunken:  '#F4EEE3',
-  surface:      '#FFFFFF',
-  // Chart bg from Paper: #F7FAFA
-  chartBg:      '#F7FAFA',
-  primary:      '#6B8E6B',
-  primaryDeep:  '#3D7A56',
-  expenseDeep:  '#D4704A',
-  primarySoft:  '#DEE8D7',
-  incomeSoft:   '#F0FAF4',   // Paper: income card bg
-  expenseSoft:  '#FDF2EE',   // Paper: expense card bg
-  savingSoft:   '#FBEFD2',
-  fg1:          '#2D2A26',
-  fg1d:         '#1A2820',
-  fg2:          '#55504A',
-  fg3:          '#8E887F',
-  fg4:          '#9DB5A8',   // Paper: subtitle muted
-  border:       '#E0DBD2',
-  divider:      '#F0F4F2',   // Paper: transaction row divider
-  mustard:      '#D9A441',
-  // Paper active filter: #6B8E6B, inactive: #EDE8DF
-  filterActive: '#6B8E6B',
-  filterInactive: '#EDE8DF',
-}
+import { useTheme } from '../../src/lib/theme'
 
 // ── Category progress row (Paper design) ─────────────────────
 function CategoryRow({ name, amount, color, pct }: { name: string; amount: number; color: string; pct: number }) {
+  const C = useTheme()
   return (
     <View style={{ flexDirection: 'column', gap: 4, marginBottom: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -75,6 +45,7 @@ function CategoryRow({ name, amount, color, pct }: { name: string; amount: numbe
 
 // ── Trend bar chart (Paper design: side-by-side bars, bg #F7FAFA) ─
 function TrendBarChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
+  const C = useTheme()
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense]), 1)
   const chartH = 72  // Paper chart height
@@ -144,18 +115,18 @@ function TrendBarChart({ data }: { data: { label: string; income: number; expens
                 onMouseLeave: () => setHoveredIdx(null),
               } as any : {})}
             >
-              <View style={{ width: '100%', alignItems: 'stretch', justifyContent: 'flex-end', height: '100%', position: 'relative' }}>
+              <View style={{ width: '100%', flexDirection: 'row', alignItems: 'flex-end', height: '100%', gap: 2 }}>
                 {/* Income bar */}
                 <View style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  flex: 1,
                   height: incH, backgroundColor: incColor,
-                  borderTopLeftRadius: 6, borderTopRightRadius: 6,
+                  borderTopLeftRadius: 4, borderTopRightRadius: 4,
                 }} />
                 {/* Expense bar */}
                 <View style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  flex: 1,
                   height: expH, backgroundColor: expColor,
-                  borderTopLeftRadius: 6, borderTopRightRadius: 6,
+                  borderTopLeftRadius: 4, borderTopRightRadius: 4,
                 }} />
               </View>
             </TouchableOpacity>
@@ -193,6 +164,7 @@ function TrendBarChart({ data }: { data: { label: string; income: number; expens
 
 // ── Quick Insight pill (Paper: #F0FAF4 bg, Rasio Pengeluaran) ─
 function QuickInsightPill({ totalIncome, totalExpense }: { totalIncome: number; totalExpense: number }) {
+  const C = useTheme()
   if (totalIncome <= 0 || totalExpense <= 0) return null
   const ratio = Math.min(Math.round((totalExpense / totalIncome) * 100), 100)
   const isWarning  = ratio >= 80 && ratio < 100
@@ -252,6 +224,7 @@ function CategoryBreakdownSection({
   cats: Array<{ categoryName: string; categoryColor: string; total: number; percentage: number }>
   colors: string[]
 }) {
+  const C = useTheme()
   if (cats.length === 0) return null
 
   // Normalize: fill in missing names and calculate percentage from totals
@@ -382,6 +355,7 @@ function getBudgetStatus(spent: number, amount: number): BudgetStatus {
 }
 
 function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name: string; amount: number; spent: number; category?: { name: string; color: string } }> }) {
+  const C = useTheme()
   if (budgets.length === 0) return null
 
   const top3 = [...budgets]
@@ -456,6 +430,7 @@ function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name:
 function LainnyaSheet({ visible, onClose, onAdd, onScan }: {
   visible: boolean; onClose: () => void; onAdd: () => void; onScan: () => void
 }) {
+  const C = useTheme()
   const isPro = useIsProActive()
 
   const proGate = (action: () => void) => () => {
@@ -521,6 +496,7 @@ function LainnyaSheet({ visible, onClose, onAdd, onScan }: {
 
 // ── Main Dashboard ────────────────────────────────────────────
 export default function DashboardScreen() {
+  const C = useTheme()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const queryClient = useQueryClient()
