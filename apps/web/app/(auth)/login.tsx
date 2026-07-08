@@ -7,6 +7,7 @@ import { api } from '../../src/lib/api'
 import { useAuthStore } from '../../src/store/auth.store'
 import { BudgetinIcon } from '../../components/ui/BudgetinLogo'
 import { useTheme } from '../../src/lib/theme'
+import { useThemeStore } from '../../src/store/theme.store'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -184,6 +185,16 @@ export default function LoginScreen() {
           position: 'relative',
           overflow: 'hidden',
         }}>
+          {/* Dark mode toggle */}
+          <TouchableOpacity
+            onPress={() => useThemeStore.getState().toggle()}
+            style={{ position: 'absolute', top: 20, right: 20, width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+          >
+            {Platform.OS === 'web' && (C.isDark
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="#F0C860" strokeWidth="2" /><line x1="12" y1="1" x2="12" y2="3" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="12" y1="21" x2="12" y2="23" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="1" y1="12" x2="3" y2="12" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="21" y1="12" x2="23" y2="12" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /></svg>
+              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            )}
+          </TouchableOpacity>
           {/* Decorative circle blobs inside hero */}
           <View style={{
             position: 'absolute', top: -60, right: -60,

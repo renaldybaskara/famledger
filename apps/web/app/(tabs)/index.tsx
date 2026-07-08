@@ -24,6 +24,7 @@ import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipS
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
 import { useTheme } from '../../src/lib/theme'
+import { useThemeStore } from '../../src/store/theme.store'
 
 // ── Category progress row (Paper design) ─────────────────────
 function CategoryRow({ name, amount, color, pct }: { name: string; amount: number; color: string; pct: number }) {
@@ -850,19 +851,16 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* Bell + Avatar */}
+            {/* Dark mode toggle + Avatar */}
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <View style={{ position: 'relative' }}>
+              <TouchableOpacity onPress={() => useThemeStore.getState().toggle()} style={{ position: 'relative' }}>
                 <View style={{ width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  {Platform.OS === 'web' ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                  {Platform.OS === 'web' ? (C.isDark
+                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="#F0C860" strokeWidth="2" /><line x1="12" y1="1" x2="12" y2="3" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="12" y1="21" x2="12" y2="23" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="1" y1="12" x2="3" y2="12" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="21" y1="12" x2="23" y2="12" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="#F0C860" strokeWidth="2" strokeLinecap="round" /></svg>
+                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   ) : null}
                 </View>
-                <View style={{ position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#E8A020', borderWidth: 1.5, borderColor: C.heroEnd }} />
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 ref={avatarRef}
