@@ -450,6 +450,10 @@ func extractBRINotifMerchant(ket string) string {
 	if briKetQRISCleanRe.MatchString(ket) {
 		return strings.TrimSpace(briKetQRISCleanRe.ReplaceAllString(ket, ""))
 	}
+	// "QRIS<digits>#<digits>" or "QRISRNS<digits>#<digits>" → just a reference number, no merchant name
+	if matched, _ := regexp.MatchString(`(?i)^QRIS\w*\d+[#\d]*$`, ket); matched {
+		return "QRIS"
+	}
 	// "KK 436502XXXXXXXX09NBMB..." → "Kartu Kredit"
 	if briKetKKRe.MatchString(ket) {
 		return "Kartu Kredit"
@@ -500,15 +504,10 @@ func (p *briParser) Matches(from, subject, combined string) bool {
 		return true
 	}
 
-	// Notification BRI: canonical source — accept ALL except:
-	// 1. NBMB...TO (transfer) → we use "Transfer Between BRI Account" for those (has recipient name)
-	// Wait — Transfer Between BRI does NOT have tx date. So use Notification BRI for transfers too.
-	// Accept Notification BRI for everything EXCEPT QRIS (covered above).
+	// Notification BRI: canonical source for all BRI transactions.
+	// Accept ALL Notification BRI emails — the datetime-based idempotency key handles
+	// dedup with "Pembelian QRIS Berhasil" or other supplementary emails if both arrive.
 	if briSubjectNotif.MatchString(subj) {
-		// Skip: QRIS in Notification BRI — covered by "Pembelian QRIS Berhasil"
-		if briKetQRISRe.MatchString(combined) {
-			return false
-		}
 		return true
 	}
 

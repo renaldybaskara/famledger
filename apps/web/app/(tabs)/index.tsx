@@ -290,9 +290,9 @@ function CategoryBreakdownSection({
             <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 18, borderColor: colors[0] }} />
           )}
           {/* Center label */}
-          <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -30 }, { translateY: -16 }], alignItems: 'center' }}>
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold' }}>Total</Text>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any, textAlign: 'center' }}>
               {formatCurrencyCompact(grandTotal)}
             </Text>
           </View>
@@ -395,7 +395,7 @@ function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name:
           <View key={budget.id} style={{ marginBottom: idx < top3.length - 1 ? 14 : 0 }}>
             {/* Row: icon + name | amount + badge */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 }}>
                 {/* Category icon bg */}
                 <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: catColor + '22', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: catColor }} />
@@ -404,11 +404,11 @@ function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name:
                   {catName}
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold', fontVariant: ['tabular-nums'] as any }} numberOfLines={1}>
                   {formatCurrencyCompact(budget.spent)} / {formatCurrencyCompact(budget.amount)}
                 </Text>
-                <View style={{ backgroundColor: cfg.badgeBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <View style={{ backgroundColor: cfg.badgeBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0 }}>
                   <Text style={{ fontSize: 10, fontWeight: '800', color: cfg.badgeColor, fontFamily: 'Nunito_800ExtraBold', letterSpacing: 0.3 }}>
                     {cfg.label}
                   </Text>

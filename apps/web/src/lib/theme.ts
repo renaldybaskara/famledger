@@ -32,6 +32,10 @@ export interface ThemeColors {
   mustard: string
   mustardSoft: string
   infoSoft: string
+  // Filter pills & chart containers
+  filterActive: string
+  filterInactive: string
+  chartBg: string
   // Raw dark flag (for conditional logic)
   isDark: boolean
 }
@@ -62,6 +66,9 @@ export const lightColors: ThemeColors = {
   mustard:      '#D9A441',
   mustardSoft:  '#FBEFD2',
   infoSoft:     '#DEEAF1',
+  filterActive:   '#3D7A56',
+  filterInactive: '#F4EEE3',
+  chartBg:        '#F7FAFA',
   isDark:       false,
 }
 
@@ -91,6 +98,9 @@ export const darkColors: ThemeColors = {
   mustard:      '#D9A441',
   mustardSoft:  '#2E2410',
   infoSoft:     '#1A2A38',
+  filterActive:   '#5EA87A',
+  filterInactive: '#252220',
+  chartBg:        '#1E1B18',
   isDark:       true,
 }
 

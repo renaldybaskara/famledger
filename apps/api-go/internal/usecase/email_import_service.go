@@ -164,26 +164,6 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 		}
 	}
 
-	// Fuzzy-dedup: some banks (e.g. BRI) send the same notification twice with slightly
-	// different dates (one correct, one set to the re-delivery date). If a transaction with
-	// the same bank/type/amount/merchant already exists within a 30-minute window, skip.
-	// Keep the window short (30min) to avoid falsely skipping legitimate repeat purchases.
-	if result.Data.Merchant != "" {
-		after := msg.ReceivedAt.Add(-30 * time.Minute)
-		dup, err := s.txRepo.ExistsByAmountMerchantWindow(
-			ctx, msg.UserID,
-			result.Data.Bank, result.Data.Type,
-			int64(result.Data.Amount*100),
-			strings.ToLower(strings.TrimSpace(result.Data.Merchant)),
-			after,
-		)
-		if err != nil {
-			logger.Worker.Printf("[EmailImport] fuzzy-dedup check error for msg %s: %v", msg.MessageID, err)
-		} else if dup {
-			return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy match: same bank/type/amount/merchant within 30min)")
-		}
-	}
-
 	tx, err := s.buildTransaction(ctx, msg, result.Data)
 	if err != nil {
 		return s.markFailed(ctx, msg.ID, err.Error())
@@ -251,18 +231,19 @@ func (s *EmailImportService) buildTransaction(
 		description = msg.Subject
 	}
 
-	// Build idempotency key: userID + bank + type + amountCents + txDate + normalizedMerchant.
-	// Merchant is included so that two different payees for the same amount on the same day
-	// are kept as separate transactions. Whichever email arrives first wins; duplicates are
-	// blocked by the unique constraint on idempotency_key.
-	txDateDay := msg.ReceivedAt.Format("2006-01-02")
+	// Build idempotency key: userID + bank + amountCents + txDatetime + normalizedMerchant.
+	// Uses transaction datetime (HH:MM precision) so that two purchases at the same merchant
+	// for the same amount on the same day but at different times are treated as separate
+	// transactions. BRI duplicate emails for the same tx always share the same body timestamp,
+	// so the key collision correctly blocks the second email.
+	txDatetime := msg.ReceivedAt.Format("2006-01-02T15:04")
 	if parsed.Date != nil {
-		txDateDay = parsed.Date.Format("2006-01-02")
+		txDatetime = parsed.Date.Format("2006-01-02T15:04")
 	}
 	amountCents := int64(parsed.Amount * 100)
 	merchantNorm := strings.ToLower(strings.TrimSpace(parsed.Merchant))
-	idempKey := fmt.Sprintf("txn:%s:%s:%s:%d:%s:%s",
-		msg.UserID.String(), parsed.Bank, parsed.Type, amountCents, txDateDay, merchantNorm)
+	idempKey := fmt.Sprintf("txn:%s:%s:%d:%s:%s",
+		msg.UserID.String(), parsed.Bank, amountCents, txDatetime, merchantNorm)
 
 	// Serialise raw fields for audit.
 	var rawData datatypes.JSON
@@ -633,23 +614,6 @@ func (s *EmailImportService) tryAIFull(ctx context.Context, msg *entity.EmailMes
 	}
 	if aiResult.Category != "" {
 		parsed.RawFields["ai_category"] = aiResult.Category
-	}
-
-	// Fuzzy dedup — same logic as the normal flow; dedup is not skipped for AI results.
-	if parsed.Merchant != "" {
-		after := msg.ReceivedAt.Add(-2 * time.Hour)
-		dup, err := s.txRepo.ExistsByAmountMerchantWindow(
-			ctx, msg.UserID,
-			parsed.Bank, parsed.Type,
-			int64(amount*100),
-			strings.ToLower(strings.TrimSpace(parsed.Merchant)),
-			after,
-		)
-		if err != nil {
-			logger.Worker.Printf("[AI-Full] dedup check error for msg %s: %v", msg.MessageID, err)
-		} else if dup {
-			return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy match: same bank/type/amount/merchant within 2h)")
-		}
 	}
 
 	tx, err := s.buildTransaction(ctx, msg, parsed)
