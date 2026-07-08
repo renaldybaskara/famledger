@@ -231,19 +231,17 @@ func (s *EmailImportService) buildTransaction(
 		description = msg.Subject
 	}
 
-	// Build idempotency key: userID + bank + amountCents + txDatetime + normalizedMerchant.
-	// Uses transaction datetime (HH:MM precision) so that two purchases at the same merchant
-	// for the same amount on the same day but at different times are treated as separate
-	// transactions. BRI duplicate emails for the same tx always share the same body timestamp,
-	// so the key collision correctly blocks the second email.
+	// Build idempotency key: userID + bank + amountCents + txDatetime.
+	// Uses transaction datetime (HH:MM precision) so that two purchases for the same amount
+	// at different times are treated as separate transactions. Same bank + same amount + same
+	// minute = same transaction (BRI sends multiple emails for one tx with different formats).
 	txDatetime := msg.ReceivedAt.Format("2006-01-02T15:04")
 	if parsed.Date != nil {
 		txDatetime = parsed.Date.Format("2006-01-02T15:04")
 	}
 	amountCents := int64(parsed.Amount * 100)
-	merchantNorm := strings.ToLower(strings.TrimSpace(parsed.Merchant))
-	idempKey := fmt.Sprintf("txn:%s:%s:%d:%s:%s",
-		msg.UserID.String(), parsed.Bank, amountCents, txDatetime, merchantNorm)
+	idempKey := fmt.Sprintf("txn:%s:%s:%d:%s",
+		msg.UserID.String(), parsed.Bank, amountCents, txDatetime)
 
 	// Serialise raw fields for audit.
 	var rawData datatypes.JSON
