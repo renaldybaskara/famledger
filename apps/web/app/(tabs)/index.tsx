@@ -170,10 +170,10 @@ function QuickInsightPill({ totalIncome, totalExpense }: { totalIncome: number; 
   const isWarning  = ratio >= 80 && ratio < 100
   const isDanger   = ratio >= 100
   // Paper: normal = #F0FAF4 bg, warning = #FDF5E4, danger = #FEF0F0
-  const bgColor    = isDanger ? '#FEF0F0' : isWarning ? '#FDF5E4' : '#F0FAF4'
-  const barTrack   = isDanger ? '#F8DADA' : isWarning ? '#FBEFD2' : '#D4EAD8'
+  const bgColor    = isDanger ? (C.isDark ? '#2E1818' : '#FEF0F0') : isWarning ? (C.isDark ? '#2E2410' : '#FDF5E4') : (C.isDark ? '#1A2E1A' : '#F0FAF4')
+  const barTrack   = isDanger ? (C.isDark ? '#3A2020' : '#F8DADA') : isWarning ? (C.isDark ? '#3A2E18' : '#FBEFD2') : (C.isDark ? '#1A3A20' : '#D4EAD8')
   const barColor   = isDanger ? '#C66B6B' : isWarning ? C.mustard : C.primaryDeep
-  const badgeBg    = isDanger ? '#FEF0F0' : isWarning ? '#FDF5E4' : C.primaryDeep
+  const badgeBg    = isDanger ? (C.isDark ? '#3A2020' : '#FEF0F0') : isWarning ? (C.isDark ? '#3A2E18' : '#FDF5E4') : C.primaryDeep
   const badgeText  = isDanger ? '#C66B6B' : isWarning ? C.mustard : '#FFFFFF'
   const labelColor = isDanger ? '#C66B6B' : isWarning ? C.mustard : C.primaryDeep
   const badgeLabel = isDanger ? '⚠️ Melebihi' : isWarning ? '⚡ Hati-hati' : '🟢 Aman'
@@ -918,12 +918,12 @@ export default function DashboardScreen() {
         {/* ── Income / Expense cards (Paper: paddingTop:20, paddingInline:20, gap:12) ── */}
         <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 20 }}>
           {/* Income card */}
-          <View style={{ flex: 1, backgroundColor: '#F0FAF4', borderRadius: 20, padding: 16, gap: 8 }}>
+          <View style={{ flex: 1, backgroundColor: C.isDark ? '#1A2E1A' : '#F0FAF4', borderRadius: 20, padding: 16, gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.primaryDeep, alignItems: 'center', justifyContent: 'center' }}>
                 {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
               </View>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#5A7066', fontFamily: 'Nunito_700Bold' }}>PEMASUKAN</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.isDark ? '#8ABAAA' : '#5A7066', fontFamily: 'Nunito_700Bold' }}>PEMASUKAN</Text>
             </View>
             <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
               {summaryLoading ? '—' : formatCurrencyCompact(totalIn)}
@@ -936,12 +936,12 @@ export default function DashboardScreen() {
           </View>
 
           {/* Expense card */}
-          <View style={{ flex: 1, backgroundColor: '#FDF2EE', borderRadius: 20, padding: 16, gap: 8 }}>
+          <View style={{ flex: 1, backgroundColor: C.isDark ? '#2E1B18' : '#FDF2EE', borderRadius: 20, padding: 16, gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.expenseDeep, alignItems: 'center', justifyContent: 'center' }}>
                 {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
               </View>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#5A7066', fontFamily: 'Nunito_700Bold' }}>PENGELUARAN</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.isDark ? '#C0958A' : '#5A7066', fontFamily: 'Nunito_700Bold' }}>PENGELUARAN</Text>
             </View>
             <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
               {summaryLoading ? '—' : formatCurrencyCompact(totalOut)}
