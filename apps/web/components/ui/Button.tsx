@@ -5,7 +5,9 @@ import {
   ActivityIndicator,
   TouchableOpacityProps,
   View,
+  StyleSheet,
 } from 'react-native'
+import { useTheme } from '../../src/lib/theme'
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string
@@ -17,38 +19,10 @@ interface ButtonProps extends TouchableOpacityProps {
   fullWidth?: boolean
 }
 
-const variantStyles = {
-  primary: {
-    container: 'bg-primary',
-    text: 'text-white',
-    disabledContainer: 'bg-primary/60',
-  },
-  secondary: {
-    container: 'bg-primary-50',
-    text: 'text-primary',
-    disabledContainer: 'bg-primary-50/60',
-  },
-  outline: {
-    container: 'bg-transparent border border-primary',
-    text: 'text-primary',
-    disabledContainer: 'bg-transparent border border-primary/40',
-  },
-  ghost: {
-    container: 'bg-transparent',
-    text: 'text-primary',
-    disabledContainer: 'bg-transparent',
-  },
-  danger: {
-    container: 'bg-expense',
-    text: 'text-white',
-    disabledContainer: 'bg-expense/60',
-  },
-}
-
 const sizeStyles = {
-  sm: { container: 'px-3 py-2 rounded-lg', text: 'text-sm font-medium', indicator: 'small' as const },
-  md: { container: 'px-4 py-3 rounded-xl', text: 'text-base font-semibold', indicator: 'small' as const },
-  lg: { container: 'px-6 py-4 rounded-xl', text: 'text-base font-semibold', indicator: 'small' as const },
+  sm: { paddingHorizontal: 12, paddingVertical: 8,  borderRadius: 8,  fontSize: 14 },
+  md: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, fontSize: 16 },
+  lg: { paddingHorizontal: 24, paddingVertical: 16, borderRadius: 12, fontSize: 16 },
 }
 
 export function Button({
@@ -60,37 +34,55 @@ export function Button({
   iconPosition = 'left',
   fullWidth = false,
   disabled,
-  className = '',
+  style,
   ...props
 }: ButtonProps) {
-  const vs = variantStyles[variant]
+  const C = useTheme()
   const ss = sizeStyles[size]
   const isDisabled = disabled || loading
-  const containerClass = `${isDisabled ? vs.disabledContainer : vs.container} ${ss.container} ${
-    fullWidth ? 'w-full' : ''
-  } flex-row items-center justify-center ${className}`
+
+  const variantConfig = {
+    primary:   { bg: C.primary,      text: '#FFFFFF', disabledBg: C.primary + '99' },
+    secondary: { bg: C.primarySoft,  text: C.primary, disabledBg: C.primarySoft + '99' },
+    outline:   { bg: 'transparent',  text: C.primary, disabledBg: 'transparent', borderWidth: 1, borderColor: isDisabled ? C.primary + '66' : C.primary },
+    ghost:     { bg: 'transparent',  text: C.primary, disabledBg: 'transparent' },
+    danger:    { bg: C.expense,      text: '#FFFFFF', disabledBg: C.expense + '99' },
+  }
+
+  const vc = variantConfig[variant]
 
   return (
     <TouchableOpacity
-      className={containerClass}
+      style={[
+        {
+          backgroundColor: isDisabled ? vc.disabledBg : vc.bg,
+          paddingHorizontal: ss.paddingHorizontal,
+          paddingVertical: ss.paddingVertical,
+          borderRadius: ss.borderRadius,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...(fullWidth ? { width: '100%' } : {}),
+          ...('borderWidth' in vc ? { borderWidth: vc.borderWidth, borderColor: vc.borderColor } : {}),
+        },
+        style,
+      ]}
       disabled={isDisabled}
       activeOpacity={0.8}
       {...props}
     >
       {loading ? (
         <ActivityIndicator
-          size={ss.indicator}
-          color={variant === 'primary' || variant === 'danger' ? 'white' : '#2D2A26'}
+          size="small"
+          color={variant === 'primary' || variant === 'danger' ? '#FFFFFF' : C.primary}
         />
       ) : (
         <>
-          {icon && iconPosition === 'left' && (
-            <View className="mr-2">{icon}</View>
-          )}
-          <Text className={`${vs.text} ${ss.text}`}>{title}</Text>
-          {icon && iconPosition === 'right' && (
-            <View className="ml-2">{icon}</View>
-          )}
+          {icon && iconPosition === 'left' && <View style={{ marginRight: 8 }}>{icon}</View>}
+          <Text style={{ color: vc.text, fontSize: ss.fontSize, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
+            {title}
+          </Text>
+          {icon && iconPosition === 'right' && <View style={{ marginLeft: 8 }}>{icon}</View>}
         </>
       )}
     </TouchableOpacity>

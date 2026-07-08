@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { initSentry, Sentry } from '../src/lib/sentry'
+import { useThemeStore } from '../src/store/theme.store'
 import '../global.css'
 
 initSentry()
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 
 function RootLayout() {
   const [fontsLoaded, setFontsLoaded] = useState(false)
+  const isDark = useThemeStore((s) => s.isDark)
 
   useEffect(() => {
     Font.loadAsync({
@@ -40,11 +42,11 @@ function RootLayout() {
     })
   }, [])
 
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#FAF7F2' }} />
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: isDark ? '#161412' : '#FAF7F2' }} />
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" backgroundColor="#FAF7F2" />
+      <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={isDark ? '#161412' : '#FAF7F2'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="privacy" />

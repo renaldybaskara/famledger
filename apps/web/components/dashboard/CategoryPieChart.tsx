@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, Platform } from 'react-native'
 import { formatCurrencyCompact, formatPercent } from '../../src/lib/format'
+import { useTheme } from '../../src/lib/theme'
 
 interface CategoryBreakdownItem {
   categoryId: string
@@ -22,10 +23,12 @@ const FALLBACK_COLORS = [
 ]
 
 export function CategoryPieChart({ data, title = 'Pengeluaran per Kategori' }: CategoryPieChartProps) {
+  const C = useTheme()
+
   if (!data || data.length === 0) {
     return (
-      <View className="items-center justify-center py-10">
-        <Text className="text-ink-400 text-sm">Tidak ada data</Text>
+      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }}>
+        <Text style={{ color: C.fg4, fontSize: 14 }}>Tidak ada data</Text>
       </View>
     )
   }
@@ -38,6 +41,7 @@ export function CategoryPieChart({ data, title = 'Pengeluaran per Kategori' }: C
 }
 
 function WebPieChart({ data, title }: CategoryPieChartProps) {
+  const C = useTheme()
   const [RechartsComponents, setComponents] = React.useState<any>(null)
 
   React.useEffect(() => {
@@ -55,8 +59,8 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
 
   if (!RechartsComponents) {
     return (
-      <View className="items-center justify-center h-48">
-        <Text className="text-ink-400 text-sm">Memuat grafik...</Text>
+      <View style={{ alignItems: 'center', justifyContent: 'center', height: 192 }}>
+        <Text style={{ color: C.fg4, fontSize: 14 }}>Memuat grafik...</Text>
       </View>
     )
   }
@@ -76,20 +80,20 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
       return (
         <div
           style={{
-            background: 'white',
-            border: '1px solid #E0DBD2',
+            background: C.surface,
+            border: `1px solid ${C.border}`,
             borderRadius: 12,
             padding: '8px 12px',
             boxShadow: '0 4px 6px -1px rgba(45,42,38,0.08)',
           }}
         >
-          <div style={{ fontWeight: 600, color: '#2D2A26', marginBottom: 2 }}>
+          <div style={{ fontWeight: 600, color: C.fg1, marginBottom: 2 }}>
             {item.name}
           </div>
           <div style={{ color: item.payload.color, fontFamily: 'monospace', fontSize: 14 }}>
             {formatCurrencyCompact(item.value)}
           </div>
-          <div style={{ color: '#A8A39B', fontSize: 12 }}>
+          <div style={{ color: C.fg4, fontSize: 12 }}>
             {formatPercent(item.payload.percentage)}
           </div>
         </div>
@@ -134,7 +138,7 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
             label={renderCustomLabel}
           >
             {chartData.map((entry: any, index: number) => (
-              <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+              <Cell key={`cell-${index}`} fill={entry.color} stroke={C.surface} strokeWidth={2} />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
@@ -142,7 +146,7 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
             iconType="circle"
             iconSize={8}
             formatter={(value: string) => (
-              <span style={{ color: '#55504A', fontSize: 12 }}>{value}</span>
+              <span style={{ color: C.fg2, fontSize: 12 }}>{value}</span>
             )}
           />
         </PieChart>
@@ -152,17 +156,18 @@ function WebPieChart({ data, title }: CategoryPieChartProps) {
 }
 
 function NativeCategoryList({ data, title }: CategoryPieChartProps) {
+  const C = useTheme()
+
   return (
     <View>
       {data.map((item, idx) => (
-        <View key={item.categoryId} className="flex-row items-center mb-3">
+        <View key={item.categoryId} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
           <View
-            className="w-3 h-3 rounded-full mr-3"
-            style={{ backgroundColor: item.categoryColor || FALLBACK_COLORS[idx % FALLBACK_COLORS.length] }}
+            style={{ width: 12, height: 12, borderRadius: 6, marginRight: 12, backgroundColor: item.categoryColor || FALLBACK_COLORS[idx % FALLBACK_COLORS.length] }}
           />
-          <Text className="flex-1 text-ink-700 text-sm">{item.categoryName}</Text>
-          <Text className="text-ink-500 text-xs mr-2">{formatPercent(item.percentage)}</Text>
-          <Text className="text-ink-800 text-sm font-medium font-mono">
+          <Text style={{ flex: 1, color: C.fg1, fontSize: 14 }}>{item.categoryName}</Text>
+          <Text style={{ color: C.fg3, fontSize: 12, marginRight: 8 }}>{formatPercent(item.percentage)}</Text>
+          <Text style={{ color: C.fg1, fontSize: 14, fontWeight: '500' }}>
             {formatCurrencyCompact(item.total)}
           </Text>
         </View>

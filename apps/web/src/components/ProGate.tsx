@@ -1,18 +1,6 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import { useIsProActive } from '../hooks/useSubscription'
-
-const C = {
-  primary:     '#6B8E6B',
-  heroEnd:     '#41594F',
-  accent:      '#C97B5C',
-  accentSoft:  '#F4DDD0',
-  fg1:         '#2D2A26',
-  fg2:         '#55504A',
-  fg3:         '#8E887F',
-  surface:     '#FFFFFF',
-  cream:       '#FAF7F2',
-  mustardSoft: '#FBEFD2',
-}
+import { useTheme } from '../lib/theme'
 
 interface ProGateProps {
   /** Feature name shown in the overlay, e.g. "Integrasi Email" */
@@ -29,6 +17,7 @@ interface ProGateProps {
  */
 export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
   const isPro = useIsProActive()
+  const C = useTheme()
 
   if (isPro) return <>{children}</>
 
@@ -40,119 +29,74 @@ export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
       </View>
 
       {/* Overlay */}
-      <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-        <View style={styles.card}>
-          <View style={styles.lockBadge}>
+      <View style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: C.isDark ? `${C.cream}EB` : 'rgba(250,247,242,0.92)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}>
+        <View style={{
+          backgroundColor: C.surface,
+          borderRadius: 24,
+          padding: 24,
+          width: '100%',
+          maxWidth: 360,
+          alignItems: 'center',
+          shadowColor: C.fg1,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 16,
+          elevation: 8,
+          gap: 8,
+          borderWidth: C.isDark ? 1 : 0,
+          borderColor: C.isDark ? C.border : 'transparent',
+        }}>
+          <View style={{
+            width: 64, height: 64, borderRadius: 999,
+            backgroundColor: C.mustardSoft,
+            alignItems: 'center', justifyContent: 'center', marginBottom: 4,
+          }}>
             <Text style={{ fontSize: 28 }}>🔒</Text>
           </View>
 
-          <Text style={styles.title}>Fitur Pro</Text>
-          <Text style={styles.featureName}>{featureName}</Text>
-          <Text style={styles.desc}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Nunito_800ExtraBold' }}>
+            Fitur Pro
+          </Text>
+          <Text style={{ fontSize: 20, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center' }}>
+            {featureName}
+          </Text>
+          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium', marginTop: 2 }}>
             Fitur ini tersedia di paket Pro Budgetin.{'\n'}
             Mulai dengan 14 hari trial gratis — tanpa kartu kredit.
           </Text>
 
-          <View style={styles.perks}>
+          <View style={{ width: '100%', backgroundColor: C.cream, borderRadius: 14, padding: 14, gap: 8, marginTop: 4 }}>
             {['✉️  Auto-import Gmail', '👥  Workspace keluarga (5 anggota)', '🤖  AI kategorisasi merchant', '🏦  Custom bank parser'].map((perk) => (
-              <View key={perk} style={styles.perkRow}>
-                <Text style={styles.perkText}>{perk}</Text>
+              <View key={perk} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{perk}</Text>
               </View>
             ))}
           </View>
 
-          <TouchableOpacity onPress={onUpgrade} style={styles.upgradeBtn}>
-            <Text style={styles.upgradeBtnText}>Lihat Paket Pro →</Text>
+          <TouchableOpacity
+            onPress={onUpgrade}
+            style={{
+              backgroundColor: C.primary,
+              borderRadius: 14,
+              paddingVertical: 14,
+              paddingHorizontal: 32,
+              marginTop: 8,
+              width: '100%',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>
+              Lihat Paket Pro →
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    backgroundColor: 'rgba(250,247,242,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  card: {
-    backgroundColor: C.surface,
-    borderRadius: 24,
-    padding: 24,
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'center',
-    shadowColor: '#2D2A26',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-    gap: 8,
-  },
-  lockBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 999,
-    backgroundColor: C.mustardSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: C.accent,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontFamily: 'Nunito_800ExtraBold',
-  },
-  featureName: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: C.fg1,
-    fontFamily: 'Nunito_900Black',
-    textAlign: 'center',
-  },
-  desc: {
-    fontSize: 13,
-    color: C.fg3,
-    textAlign: 'center',
-    lineHeight: 20,
-    fontFamily: 'Nunito_500Medium',
-    marginTop: 2,
-  },
-  perks: {
-    width: '100%',
-    backgroundColor: C.cream,
-    borderRadius: 14,
-    padding: 14,
-    gap: 8,
-    marginTop: 4,
-  },
-  perkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  perkText: {
-    fontSize: 13,
-    color: C.fg2,
-    fontFamily: 'Nunito_600SemiBold',
-  },
-  upgradeBtn: {
-    backgroundColor: C.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    marginTop: 8,
-    width: '100%',
-    alignItems: 'center',
-  },
-  upgradeBtnText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 15,
-    fontFamily: 'Nunito_800ExtraBold',
-  },
-})

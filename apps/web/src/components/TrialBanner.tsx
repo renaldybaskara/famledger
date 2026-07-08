@@ -1,14 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useTrialDaysLeft, useSubscription } from '../hooks/useSubscription'
-
-const C = {
-  primary: '#6B8E6B',
-  accent:  '#C97B5C',
-  mustard: '#D9A441',
-  mustardSoft: '#FBEFD2',
-  fg1: '#2D2A26',
-  fg2: '#55504A',
-}
+import { useTheme } from '../lib/theme'
 
 interface TrialBannerProps {
   onUpgrade: () => void
@@ -17,14 +9,21 @@ interface TrialBannerProps {
 export function TrialBanner({ onUpgrade }: TrialBannerProps) {
   const { data: sub } = useSubscription()
   const daysLeft = useTrialDaysLeft()
+  const C = useTheme()
 
   if (!sub || sub.status !== 'trialing' || daysLeft === null) return null
 
   const urgent = daysLeft <= 3
-  const bg     = urgent ? '#FFF3E0' : C.mustardSoft
-  const border = urgent ? '#E8A44A' : '#EAD18A'
+  const bg     = urgent
+    ? (C.isDark ? '#2E1A0A' : '#FFF3E0')
+    : C.mustardSoft
+  const border = urgent
+    ? (C.isDark ? '#8A5020' : '#E8A44A')
+    : (C.isDark ? '#5A4A10' : '#EAD18A')
   const icon   = urgent ? '⚡' : '✨'
-  const color  = urgent ? '#B45309' : '#7A5C1E'
+  const color  = urgent
+    ? (C.isDark ? '#E8A060' : '#B45309')
+    : (C.isDark ? C.mustard : '#7A5C1E')
 
   return (
     <View style={{

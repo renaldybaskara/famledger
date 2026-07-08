@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, Platform } from 'react-native'
 import { formatCurrencyCompact, formatMonth } from '../../src/lib/format'
+import { useTheme } from '../../src/lib/theme'
 
 interface MonthlyData {
   month: string
@@ -13,10 +14,12 @@ interface MonthlyBarChartProps {
 }
 
 export function MonthlyBarChart({ data }: MonthlyBarChartProps) {
+  const C = useTheme()
+
   if (!data || data.length === 0) {
     return (
-      <View className="items-center justify-center py-10">
-        <Text className="text-slate-400 text-sm">Tidak ada data</Text>
+      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }}>
+        <Text style={{ color: C.fg4, fontSize: 14 }}>Tidak ada data</Text>
       </View>
     )
   }
@@ -29,6 +32,7 @@ export function MonthlyBarChart({ data }: MonthlyBarChartProps) {
 }
 
 function WebBarChart({ data }: MonthlyBarChartProps) {
+  const C = useTheme()
   const [RechartsComponents, setComponents] = React.useState<any>(null)
 
   React.useEffect(() => {
@@ -48,8 +52,8 @@ function WebBarChart({ data }: MonthlyBarChartProps) {
 
   if (!RechartsComponents) {
     return (
-      <View className="items-center justify-center h-48">
-        <Text className="text-slate-400 text-sm">Memuat grafik...</Text>
+      <View style={{ alignItems: 'center', justifyContent: 'center', height: 192 }}>
+        <Text style={{ color: C.fg4, fontSize: 14 }}>Memuat grafik...</Text>
       </View>
     )
   }
@@ -75,14 +79,14 @@ function WebBarChart({ data }: MonthlyBarChartProps) {
       return (
         <div
           style={{
-            background: 'white',
-            border: '1px solid #e2e8f0',
+            background: C.surface,
+            border: `1px solid ${C.border}`,
             borderRadius: 12,
             padding: '10px 14px',
             boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
           }}
         >
-          <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: 6 }}>{label}</div>
+          <div style={{ fontWeight: 600, color: C.fg1, marginBottom: 6 }}>{label}</div>
           {payload.map((entry: any) => (
             <div
               key={entry.name}
@@ -108,16 +112,16 @@ function WebBarChart({ data }: MonthlyBarChartProps) {
     <View style={{ width: '100%', height: 220 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="30%">
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={C.divider} vertical={false} />
           <XAxis
             dataKey="monthLabel"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: C.fg4 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             tickFormatter={formatYAxis}
-            tick={{ fontSize: 10, fill: '#94a3b8' }}
+            tick={{ fontSize: 10, fill: C.fg4 }}
             axisLine={false}
             tickLine={false}
             width={40}
@@ -127,13 +131,13 @@ function WebBarChart({ data }: MonthlyBarChartProps) {
             iconType="circle"
             iconSize={8}
             formatter={(value: string) => (
-              <span style={{ color: '#475569', fontSize: 12 }}>
+              <span style={{ color: C.fg2, fontSize: 12 }}>
                 {value === 'income' ? 'Pemasukan' : 'Pengeluaran'}
               </span>
             )}
           />
-          <Bar dataKey="income" fill="#10B981" radius={[4, 4, 0, 0]} name="income" />
-          <Bar dataKey="expense" fill="#EF4444" radius={[4, 4, 0, 0]} name="expense" />
+          <Bar dataKey="income"  fill={C.income}  radius={[4, 4, 0, 0]} name="income" />
+          <Bar dataKey="expense" fill={C.expense} radius={[4, 4, 0, 0]} name="expense" />
         </BarChart>
       </ResponsiveContainer>
     </View>
@@ -141,38 +145,37 @@ function WebBarChart({ data }: MonthlyBarChartProps) {
 }
 
 function NativeBarChart({ data }: MonthlyBarChartProps) {
+  const C = useTheme()
   const maxValue = Math.max(...data.flatMap((d) => [d.income, d.expense]), 1)
 
   return (
     <View>
       {data.map((item) => (
-        <View key={item.month} className="mb-3">
-          <Text className="text-slate-500 text-xs mb-1">{formatMonth(item.month)}</Text>
-          <View className="flex-row gap-1">
+        <View key={item.month} style={{ marginBottom: 12 }}>
+          <Text style={{ color: C.fg3, fontSize: 12, marginBottom: 4 }}>{formatMonth(item.month)}</Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
             {/* Income bar */}
-            <View className="flex-1">
-              <View className="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <View style={{ flex: 1 }}>
+              <View style={{ height: 8, borderRadius: 999, backgroundColor: C.creamSunken, overflow: 'hidden' }}>
                 <View
-                  className="h-full rounded-full bg-income"
-                  style={{ width: `${(item.income / maxValue) * 100}%` }}
+                  style={{ height: '100%', borderRadius: 999, backgroundColor: C.income, width: `${(item.income / maxValue) * 100}%` }}
                 />
               </View>
             </View>
             {/* Expense bar */}
-            <View className="flex-1">
-              <View className="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <View style={{ flex: 1 }}>
+              <View style={{ height: 8, borderRadius: 999, backgroundColor: C.creamSunken, overflow: 'hidden' }}>
                 <View
-                  className="h-full rounded-full bg-expense"
-                  style={{ width: `${(item.expense / maxValue) * 100}%` }}
+                  style={{ height: '100%', borderRadius: 999, backgroundColor: C.expense, width: `${(item.expense / maxValue) * 100}%` }}
                 />
               </View>
             </View>
           </View>
-          <View className="flex-row justify-between mt-1">
-            <Text className="text-income text-xs font-mono">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            <Text style={{ color: C.income, fontSize: 12, fontFamily: 'Nunito_500Medium' }}>
               +{formatCurrencyCompact(item.income)}
             </Text>
-            <Text className="text-expense text-xs font-mono">
+            <Text style={{ color: C.expense, fontSize: 12, fontFamily: 'Nunito_500Medium' }}>
               -{formatCurrencyCompact(item.expense)}
             </Text>
           </View>
