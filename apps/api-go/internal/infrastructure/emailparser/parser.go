@@ -429,6 +429,10 @@ var briKetKKRe = regexp.MustCompile(`(?i)^KK\s+\d+`)  // "KK 436502..." → cred
 // Groups: merchant (store name), amount, date
 var briKKInlineRe = regexp.MustCompile(`(?i)Kartu\s+Kredit\s+BRI\s+[\dXx*]+\s+di\s+(?P<merchant>[A-Za-z0-9][A-Za-z0-9 &'.,-]{1,60}?)\s+sejumlah\s+Rp\s*(?P<amount>[\d.,]+)\s+pada\s+(?P<date>\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})`)
 
+// briKKFallbackRe is a relaxed fallback for CC emails where the strict regex fails
+// (due to non-breaking spaces, weird encoding, underscores in merchant name, etc.)
+var briKKFallbackRe = regexp.MustCompile(`(?i)Kartu.{1,5}Kredit.{1,5}BRI.{1,30}di\s+(?P<merchant>[^\s][^\n]{1,60}?)\s+sejumlah.{1,10}(?P<amount>[\d.,]+).{1,10}pada\s+(?P<date>\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})`)
+
 // extractBRINotifMerchant cleans the Ket. value into a readable merchant name.
 func extractBRINotifMerchant(ket string) string {
 	if ket == "" {
@@ -665,6 +669,22 @@ func (p *briParser) parseNotification(subject, combined string) ParseResult {
 				Description: "BRI KK: " + strings.TrimSpace(kkGroups["merchant"]),
 				Date:     parseIDDate(kkGroups["date"]),
 				RawFields: map[string]string{"subject": subject, "email_type": "kk_inline"},
+			}}
+		}
+	}
+
+	// Fallback: relaxed CC regex for when strict regex fails (invisible chars, encoding issues)
+	if kkGroups := namedGroups(briKKFallbackRe, combined); kkGroups["merchant"] != "" {
+		amount, ok := parseAmount(kkGroups["amount"])
+		if ok && amount > 0 {
+			return ParseResult{Matched: true, Data: &ParsedTransaction{
+				Bank:     "BRI",
+				Type:     "expense",
+				Amount:   amount,
+				Merchant: strings.TrimSpace(kkGroups["merchant"]),
+				Description: "BRI KK: " + strings.TrimSpace(kkGroups["merchant"]),
+				Date:     parseIDDate(kkGroups["date"]),
+				RawFields: map[string]string{"subject": subject, "email_type": "kk_fallback"},
 			}}
 		}
 	}
