@@ -3,6 +3,7 @@ import { Stack } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StatusBar } from 'expo-status-bar'
 import * as Font from 'expo-font'
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter'
 import * as SplashScreen from 'expo-splash-screen'
 import { useState } from 'react'
 import { View } from 'react-native'
@@ -26,12 +27,12 @@ function RootLayout() {
 
   useEffect(() => {
     Font.loadAsync({
-      Nunito_400Regular:   require('../assets/fonts/Nunito-Regular.ttf'),
-      Nunito_500Medium:    require('../assets/fonts/Nunito-Medium.ttf'),
-      Nunito_600SemiBold:  require('../assets/fonts/Nunito-SemiBold.ttf'),
-      Nunito_700Bold:      require('../assets/fonts/Nunito-Bold.ttf'),
-      Nunito_800ExtraBold: require('../assets/fonts/Nunito-ExtraBold.ttf'),
-      Nunito_900Black:     require('../assets/fonts/Nunito-Black.ttf'),
+      Inter_400Regular:   Inter_400Regular,
+      Inter_500Medium:    Inter_500Medium,
+      Inter_600SemiBold:  Inter_600SemiBold,
+      Inter_700Bold:      Inter_700Bold,
+      Inter_800ExtraBold: Inter_800ExtraBold,
+      Inter_900Black:     Inter_900Black,
     }).then(() => {
       setFontsLoaded(true)
       SplashScreen.hideAsync()

@@ -149,7 +149,7 @@ func (s *smtpService) SendVerificationEmail(to, name, token string) error {
 		<p>Halo <strong>%s</strong>,</p>
 		<p>Terima kasih sudah mendaftar di Budgetin! Klik tombol di bawah untuk memverifikasi email kamu.</p>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Verifikasi Email</a>
+			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Inter,system-ui,sans-serif;">Verifikasi Email</a>
 		</p>
 		<p>Link berlaku selama <strong>24 jam</strong>. Jika kamu tidak mendaftar, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
@@ -163,7 +163,7 @@ func (s *smtpService) SendPasswordResetEmail(to, name, token string) error {
 		<p>Halo <strong>%s</strong>,</p>
 		<p>Kami menerima permintaan reset password untuk akun Budgetin kamu.</p>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#C66B6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Reset Password</a>
+			<a href="%s" style="background:#C66B6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Inter,system-ui,sans-serif;">Reset Password</a>
 		</p>
 		<p>Link berlaku selama <strong>1 jam</strong>. Jika kamu tidak meminta reset password, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
@@ -183,7 +183,7 @@ func (s *smtpService) SendWelcomeEmail(to, name string) error {
 			<li>📉 Buat budget dan pantau progress</li>
 		</ul>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Buka Budgetin</a>
+			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Inter,system-ui,sans-serif;">Buka Budgetin</a>
 		</p>
 	`, name, s.appURL))
 	return s.send(to, "Selamat Datang di Budgetin! 🌿", body)
@@ -195,7 +195,7 @@ func (s *smtpService) SendWorkspaceInviteEmail(to, inviterName, workspaceName, t
 		<p>Halo,</p>
 		<p><strong>%s</strong> mengundang kamu untuk bergabung ke workspace <strong>%s</strong> di Budgetin.</p>
 		<p style="text-align:center; margin: 32px 0;">
-			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Nunito,system-ui,sans-serif;">Terima Undangan</a>
+			<a href="%s" style="background:#6B8E6B;color:#fff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-family:Inter,system-ui,sans-serif;">Terima Undangan</a>
 		</p>
 		<p>Link berlaku selama <strong>7 hari</strong>. Jika kamu tidak mengenal pengirim, abaikan email ini.</p>
 		<p style="font-size:12px;color:#888;">Atau salin link berikut: <br><a href="%s">%s</a></p>
@@ -208,7 +208,7 @@ func emailTemplate(appURL, title, content string) string {
 	return strings.TrimSpace(fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family:'Nunito','Segoe UI',system-ui,sans-serif;background:#FAF7F2;margin:0;padding:20px;">
+<body style="font-family:'Inter','Segoe UI',system-ui,sans-serif;background:#FAF7F2;margin:0;padding:20px;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(45,42,38,0.08);">
     <!-- Header sage gradient -->
     <div style="background:linear-gradient(160deg,#6B8E6B 0%%,#41594F 100%%);padding:28px 32px;position:relative;overflow:hidden;">

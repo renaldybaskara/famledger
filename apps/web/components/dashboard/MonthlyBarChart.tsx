@@ -172,10 +172,10 @@ function NativeBarChart({ data }: MonthlyBarChartProps) {
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-            <Text style={{ color: C.income, fontSize: 12, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ color: C.income, fontSize: 12, fontFamily: 'Inter_500Medium' }}>
               +{formatCurrencyCompact(item.income)}
             </Text>
-            <Text style={{ color: C.expense, fontSize: 12, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ color: C.expense, fontSize: 12, fontFamily: 'Inter_500Medium' }}>
               -{formatCurrencyCompact(item.expense)}
             </Text>
           </View>

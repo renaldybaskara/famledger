@@ -111,7 +111,7 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontFamily: 'Nunito_700Bold',
+          fontFamily: 'Inter_700Bold',
           fontWeight: '700',
           marginTop: 2,
         },

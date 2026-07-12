@@ -72,7 +72,7 @@ function CategoryFormModal({
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={{ padding: 24 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1 }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'Inter_700Bold', color: C.fg1 }}>
                   {isEdit ? 'Edit Kategori' : 'Tambah Kategori'}
                 </Text>
                 <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -93,13 +93,13 @@ function CategoryFormModal({
                 >
                   <Text style={{ fontSize: 28 }}>{resolveIcon(icon)}</Text>
                 </View>
-                <Text style={{ fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2 }}>{name || 'Nama Kategori'}</Text>
+                <Text style={{ fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2 }}>{name || 'Nama Kategori'}</Text>
               </View>
 
               {/* Type (only for new category) */}
               {!isEdit && (
                 <>
-                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Jenis Transaksi</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>Jenis Transaksi</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                     {TX_TYPES.map((t) => (
                       <TouchableOpacity
@@ -111,7 +111,7 @@ function CategoryFormModal({
                           borderColor: type === t.value ? C.primary : C.border,
                         }}
                       >
-                        <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: type === t.value ? '#fff' : C.fg3 }}>{t.label}</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: type === t.value ? '#fff' : C.fg3 }}>{t.label}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -119,7 +119,7 @@ function CategoryFormModal({
               )}
 
               {/* Name */}
-              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Nama Kategori</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>Nama Kategori</Text>
               <TextInput
                 style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16 }}
                 placeholder="Contoh: Makan & Minum"
@@ -129,7 +129,7 @@ function CategoryFormModal({
               />
 
               {/* Icon picker */}
-              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Ikon</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>Ikon</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {CATEGORY_ICONS.map((ic) => (
                   <TouchableOpacity
@@ -148,7 +148,7 @@ function CategoryFormModal({
               </View>
 
               {/* Color picker */}
-              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Warna</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>Warna</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
                 {COLORS.map((c) => (
                   <TouchableOpacity
@@ -175,7 +175,7 @@ function CategoryFormModal({
               >
                 {isPending
                   ? <ActivityIndicator color="white" />
-                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Inter_700Bold', fontSize: 15 }}>
                       {isEdit ? 'Simpan Perubahan' : 'Tambah Kategori'}
                     </Text>}
               </TouchableOpacity>
@@ -218,16 +218,16 @@ export default function CategoriesScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ fontSize: 22, color: C.primary, lineHeight: 26 }}>‹</Text>
-            <Text style={{ color: C.primary, fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', marginLeft: 2 }}>Kembali</Text>
+            <Text style={{ color: C.primary, fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', marginLeft: 2 }}>Kembali</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <Text style={{ fontSize: 24, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1 }}>Kategori</Text>
+            <Text style={{ fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold', color: C.fg1 }}>Kategori</Text>
             <TouchableOpacity
               onPress={() => setShowForm(true)}
               style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 }}
             >
               <Text style={{ fontSize: 16, color: '#fff', lineHeight: 20, marginRight: 4 }}>+</Text>
-              <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontSize: 13 }}>Tambah</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Inter_600SemiBold', fontSize: 13 }}>Tambah</Text>
             </TouchableOpacity>
           </View>
 
@@ -245,7 +245,7 @@ export default function CategoriesScreen() {
                   },
                 ]}
               >
-                <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: filter === f ? C.primary : C.fg4 }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: filter === f ? C.primary : C.fg4 }}>
                   {f === 'all' ? 'Semua' : f === 'expense' ? 'Keluar' : f === 'income' ? 'Masuk' : 'Transfer'}
                 </Text>
               </TouchableOpacity>
@@ -264,7 +264,7 @@ export default function CategoriesScreen() {
                 const labels = { expense: 'Pengeluaran', income: 'Pemasukan', transfer: 'Transfer' }
                 return (
                   <View key={type} style={{ marginBottom: 20 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg4, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginLeft: 4 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg4, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginLeft: 4 }}>
                       {labels[type]}
                     </Text>
                     <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 }}>
@@ -277,7 +277,7 @@ export default function CategoriesScreen() {
                               <Text style={{ fontSize: 20 }}>{resolveIcon(cat.icon)}</Text>
                             </View>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ color: C.fg1, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>{cat.name}</Text>
+                              <Text style={{ color: C.fg1, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>{cat.name}</Text>
                             </View>
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                               <TouchableOpacity
@@ -325,9 +325,9 @@ export default function CategoriesScreen() {
       <Modal visible={!!confirmDelete} transparent animationType="fade" onRequestClose={() => setConfirmDelete(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
           <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 24, width: '100%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1, marginBottom: 8 }}>Hapus Kategori?</Text>
+            <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: 'Inter_700Bold', color: C.fg1, marginBottom: 8 }}>Hapus Kategori?</Text>
             <Text style={{ color: C.fg3, fontSize: 13, marginBottom: 24 }}>
-              Kategori <Text style={{ fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>{confirmDelete?.name}</Text> akan dihapus.
+              Kategori <Text style={{ fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>{confirmDelete?.name}</Text> akan dihapus.
               Transaksi yang terkait tidak ikut terhapus.
             </Text>
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -335,7 +335,7 @@ export default function CategoriesScreen() {
                 onPress={() => setConfirmDelete(null)}
                 style={{ flex: 1, paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: C.border, alignItems: 'center' }}
               >
-                <Text style={{ color: C.fg2, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Batal</Text>
+                <Text style={{ color: C.fg2, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={async () => {
@@ -349,7 +349,7 @@ export default function CategoriesScreen() {
               >
                 {deleteMutation.isPending
                   ? <ActivityIndicator color="white" size="small" />
-                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Hapus</Text>}
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Inter_700Bold' }}>Hapus</Text>}
               </TouchableOpacity>
             </View>
           </View>

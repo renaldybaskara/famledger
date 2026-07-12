@@ -19,11 +19,11 @@ export function EmptyState({ title, description, icon, action }: EmptyStateProps
           {icon}
         </View>
       )}
-      <Text style={{ fontSize: 18, fontWeight: '800', color: C.fg2, textAlign: 'center', marginBottom: 6, fontFamily: 'Nunito_800ExtraBold' }}>
+      <Text style={{ fontSize: 18, fontWeight: '800', color: C.fg2, textAlign: 'center', marginBottom: 6, fontFamily: 'Inter_800ExtraBold' }}>
         {title}
       </Text>
       {description && (
-        <Text style={{ fontSize: 14, color: C.fg3, textAlign: 'center', marginBottom: 24, lineHeight: 20, fontFamily: 'Nunito_500Medium' }}>
+        <Text style={{ fontSize: 14, color: C.fg3, textAlign: 'center', marginBottom: 24, lineHeight: 20, fontFamily: 'Inter_500Medium' }}>
           {description}
         </Text>
       )}

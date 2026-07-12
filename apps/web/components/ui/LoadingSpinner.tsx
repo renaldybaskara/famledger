@@ -14,7 +14,7 @@ export function LoadingSpinner({ message, fullScreen = false }: LoadingSpinnerPr
     <View style={{ alignItems: 'center', justifyContent: 'center', flex: fullScreen ? 1 : undefined, paddingVertical: fullScreen ? 0 : 32, backgroundColor: fullScreen ? C.cream : undefined }}>
       <ActivityIndicator size="large" color={C.primary} />
       {message && (
-        <Text style={{ color: C.fg3, fontSize: 13, marginTop: 12, fontFamily: 'Nunito_500Medium' }}>
+        <Text style={{ color: C.fg3, fontSize: 13, marginTop: 12, fontFamily: 'Inter_500Medium' }}>
           {message}
         </Text>
       )}

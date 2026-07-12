@@ -41,10 +41,10 @@ export function TrialBanner({ onUpgrade }: TrialBannerProps) {
     }}>
       <Text style={{ fontSize: 18 }}>{icon}</Text>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 13, fontWeight: '800', color, fontFamily: 'Nunito_800ExtraBold' }}>
+        <Text style={{ fontSize: 13, fontWeight: '800', color, fontFamily: 'Inter_800ExtraBold' }}>
           {daysLeft === 0 ? 'Trial berakhir hari ini!' : `${daysLeft} hari tersisa di trial Pro`}
         </Text>
-        <Text style={{ fontSize: 11, color, fontFamily: 'Nunito_500Medium', marginTop: 1, opacity: 0.8 }}>
+        <Text style={{ fontSize: 11, color, fontFamily: 'Inter_500Medium', marginTop: 1, opacity: 0.8 }}>
           Upgrade sekarang agar auto-import email tidak terhenti
         </Text>
       </View>
@@ -57,7 +57,7 @@ export function TrialBanner({ onUpgrade }: TrialBannerProps) {
           paddingVertical: 7,
         }}
       >
-        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: 'Nunito_800ExtraBold' }}>
+        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', fontFamily: 'Inter_800ExtraBold' }}>
           Upgrade
         </Text>
       </TouchableOpacity>

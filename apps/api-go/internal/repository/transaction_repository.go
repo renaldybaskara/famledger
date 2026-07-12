@@ -185,12 +185,18 @@ func (r *transactionRepository) GetMonthlyTrend(ctx context.Context, userID uuid
 func (r *transactionRepository) ExistsByAmountMerchantWindow(ctx context.Context, userID uuid.UUID, bank, txType string, amountCents int64, merchantNorm string, after time.Time) (bool, error) {
 	amount := float64(amountCents) / 100
 	var count int64
-	err := r.db.WithContext(ctx).Model(&entity.Transaction{}).
-		Where(`user_id = ? AND deleted_at IS NULL AND type = ? AND amount = ? AND date >= ?
-			AND LOWER(COALESCE(merchant, '')) = ?
-			AND raw_data::text ILIKE ?`,
-			userID, txType, amount, after, merchantNorm, "%"+bank+"%").
-		Count(&count).Error
+	db := r.db.WithContext(ctx).Model(&entity.Transaction{}).
+		Where(`user_id = ? AND deleted_at IS NULL AND type = ? AND amount = ? AND date >= ?`,
+			userID, txType, amount, after)
+
+	// When merchantNorm is empty, skip the merchant filter (match any merchant).
+	if merchantNorm != "" {
+		db = db.Where(`LOWER(COALESCE(merchant, '')) = ?`, merchantNorm)
+	}
+
+	db = db.Where(`raw_data::text ILIKE ?`, "%"+bank+"%")
+
+	err := db.Count(&count).Error
 	return count > 0, err
 }
 

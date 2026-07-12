@@ -60,13 +60,13 @@ export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
             <Text style={{ fontSize: 28 }}>🔒</Text>
           </View>
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Nunito_800ExtraBold' }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Inter_800ExtraBold' }}>
             Fitur Pro
           </Text>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center' }}>
+          <Text style={{ fontSize: 20, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', textAlign: 'center' }}>
             {featureName}
           </Text>
-          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium', marginTop: 2 }}>
+          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Inter_500Medium', marginTop: 2 }}>
             Fitur ini tersedia di paket Pro Budgetin.{'\n'}
             Mulai dengan 14 hari trial gratis — tanpa kartu kredit.
           </Text>
@@ -74,7 +74,7 @@ export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
           <View style={{ width: '100%', backgroundColor: C.cream, borderRadius: 14, padding: 14, gap: 8, marginTop: 4 }}>
             {['✉️  Auto-import Gmail', '👥  Workspace keluarga (5 anggota)', '🤖  AI kategorisasi merchant', '🏦  Custom bank parser'].map((perk) => (
               <View key={perk} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{perk}</Text>
+                <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Inter_600SemiBold' }}>{perk}</Text>
               </View>
             ))}
           </View>
@@ -91,7 +91,7 @@ export function ProGate({ featureName, onUpgrade, children }: ProGateProps) {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>
               Lihat Paket Pro →
             </Text>
           </TouchableOpacity>

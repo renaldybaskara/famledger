@@ -5,7 +5,7 @@
 Aplikasi manajemen keuangan keluarga yang **otomatis mencatat transaksi** dari email notifikasi bank & e-wallet, dengan dukungan **workspace bersama** untuk hingga 5 anggota keluarga.
 
 - **Backend**: Go + Gin + GORM (Clean Architecture)
-- **Frontend**: Expo (React Native Web) + Nunito font → nginx static
+- **Frontend**: Expo (React Native Web) + Inter font → nginx static
 - **Database**: PostgreSQL 16 + pgvector
 - **Proxy**: Caddy (auto-HTTPS di production)
 - **Monitoring**: Grafana, Prometheus, Loki, Uptime Kuma

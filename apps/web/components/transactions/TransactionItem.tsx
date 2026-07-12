@@ -48,31 +48,31 @@ export function TransactionItem({ transaction, onPress, onLongPress, showDate = 
       />
 
       <View style={{ flex: 1, marginLeft: 12, minWidth: 0 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }} numberOfLines={1}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }} numberOfLines={1}>
           {transaction.merchant || transaction.category?.name || TYPE_LABELS[transaction.type]}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 4 }}>
-          <Text style={{ fontSize: 12, fontWeight: '500', color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+          <Text style={{ fontSize: 12, fontWeight: '500', color: C.fg3, fontFamily: 'Inter_500Medium' }}>
             {transaction.category?.name ?? TYPE_LABELS[transaction.type]}
           </Text>
           {showDate && transaction.date && (
             <>
               <Text style={{ fontSize: 12, color: C.fg4 }}>·</Text>
-              <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+              <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Inter_500Medium' }}>
                 {formatDateShort(transaction.date)}
               </Text>
             </>
           )}
         </View>
         {(transaction as any).note ? (
-          <Text style={{ fontSize: 12, color: C.fg4, marginTop: 1, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>
+          <Text style={{ fontSize: 12, color: C.fg4, marginTop: 1, fontFamily: 'Inter_500Medium' }} numberOfLines={1}>
             {(transaction as any).note}
           </Text>
         ) : null}
         {memberName ? (
           <View style={{ flexDirection: 'row', marginTop: 3 }}>
             <View style={{ backgroundColor: '#DEE8D7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-              <Text style={{ fontSize: 11, color: '#41594F', fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+              <Text style={{ fontSize: 11, color: '#41594F', fontWeight: '700', fontFamily: 'Inter_700Bold' }}>
                 {memberName}
               </Text>
             </View>
@@ -81,11 +81,11 @@ export function TransactionItem({ transaction, onPress, onLongPress, showDate = 
       </View>
 
       <View style={{ marginLeft: 12, alignItems: 'flex-end' }}>
-        <Text style={{ fontSize: 14, fontWeight: '800', color: amountColor, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: amountColor, fontFamily: 'Inter_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
           {amountPrefix}{formatCurrency(transaction.amount)}
         </Text>
         {transaction.account && (
-          <Text style={{ fontSize: 11, color: C.fg4, marginTop: 2, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>
+          <Text style={{ fontSize: 11, color: C.fg4, marginTop: 2, fontFamily: 'Inter_500Medium' }} numberOfLines={1}>
             {transaction.account.name}
           </Text>
         )}
@@ -106,12 +106,12 @@ export function TransactionGroup({ date, transactions, onPressItem }: {
   return (
     <View style={{ marginBottom: 4 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 20, paddingVertical: 8 }}>
-        <Text style={{ fontSize: 12, fontWeight: '800', color: C.fg3, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_800ExtraBold' }}>
+        <Text style={{ fontSize: 12, fontWeight: '800', color: C.fg3, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Inter_800ExtraBold' }}>
           {formatDateShort(date)}
         </Text>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          {totalIn  > 0 && <Text style={{ fontSize: 12, fontWeight: '800', color: C.income,  fontFamily: 'Nunito_800ExtraBold' }}>+{fmt(totalIn)}</Text>}
-          {totalOut > 0 && <Text style={{ fontSize: 12, fontWeight: '800', color: C.expense, fontFamily: 'Nunito_800ExtraBold' }}>−{fmt(totalOut)}</Text>}
+          {totalIn  > 0 && <Text style={{ fontSize: 12, fontWeight: '800', color: C.income,  fontFamily: 'Inter_800ExtraBold' }}>+{fmt(totalIn)}</Text>}
+          {totalOut > 0 && <Text style={{ fontSize: 12, fontWeight: '800', color: C.expense, fontFamily: 'Inter_800ExtraBold' }}>−{fmt(totalOut)}</Text>}
         </View>
       </View>
       <View style={{ marginHorizontal: 16, backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden' }}>

@@ -41,7 +41,7 @@ export function BudgetinWordmark({ height = 48 }: { height?: number }) {
       <BudgetinMark size={iconSize} />
       <Text
         style={{
-          fontFamily: 'Nunito_900Black',
+          fontFamily: 'Inter_900Black',
           fontSize: Math.round(height * 0.52),
           color: '#FFFFFF',
           letterSpacing: -1,

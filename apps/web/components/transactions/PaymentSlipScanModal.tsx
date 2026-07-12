@@ -197,13 +197,13 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
   // ── Step 1: image picker ─────────────────────────────────────
   const pickContent = (
     <View style={{ padding: 24, gap: 16, alignItems: 'center' }}>
-      <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', fontFamily: 'Nunito_500Medium', lineHeight: 20 }}>
+      <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', fontFamily: 'Inter_500Medium', lineHeight: 20 }}>
         Upload foto struk atau bukti transfer untuk mengisi transaksi otomatis
       </Text>
 
       {scanError ? (
         <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12, width: '100%' }}>
-          <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>
+          <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Inter_600SemiBold' }}>
             {scanError}
           </Text>
         </View>
@@ -221,7 +221,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             }}
           >
             <Text style={{ fontSize: 36 }}>📷</Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
               Ambil Foto (Kamera)
             </Text>
           </TouchableOpacity>
@@ -236,12 +236,12 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             }}
           >
             <Text style={{ fontSize: 36 }}>🖼️</Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
               Upload dari Galeri / File
             </Text>
           </TouchableOpacity>
 
-          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium', textAlign: 'center' }}>
+          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Inter_500Medium', textAlign: 'center' }}>
             JPEG, PNG, WebP, atau HEIC (iOS) — maks 10 MB
           </Text>
 
@@ -274,7 +274,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             }}
           >
             <Text style={{ fontSize: 36 }}>📷</Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
               Ambil Foto
             </Text>
           </TouchableOpacity>
@@ -288,12 +288,12 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             }}
           >
             <Text style={{ fontSize: 36 }}>🖼️</Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
               Pilih dari Galeri
             </Text>
           </TouchableOpacity>
 
-          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium', textAlign: 'center' }}>
+          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Inter_500Medium', textAlign: 'center' }}>
             JPEG, PNG, atau WebP — maks 10 MB
           </Text>
         </View>
@@ -312,10 +312,10 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
         />
       )}
       <ActivityIndicator size="large" color={C.primary} />
-      <Text style={{ fontSize: 16, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>
+      <Text style={{ fontSize: 16, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>
         Memproses slip...
       </Text>
-      <Text style={{ fontSize: 12, color: C.fg4, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
+      <Text style={{ fontSize: 12, color: C.fg4, textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
         Mungkin butuh hingga 30 detik
       </Text>
     </View>
@@ -342,7 +342,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
                     onPress={() => onChange(opt.value)}
                     style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center', borderRadius: 11, backgroundColor: active ? opt.color : 'transparent' }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Nunito_800ExtraBold' }} numberOfLines={1}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: active ? '#fff' : C.fg3, fontFamily: 'Inter_800ExtraBold' }} numberOfLines={1}>
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -359,9 +359,9 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             control={control} name="amount"
             render={({ field: { value, onChange } }) => (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                <Text style={{ fontSize: 20, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black' }}>Rp</Text>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: typeOpt.color, fontFamily: 'Inter_900Black' }}>Rp</Text>
                 <TextInput
-                  style={{ fontSize: 36, fontWeight: '900', color: typeOpt.color, fontFamily: 'Nunito_900Black', minWidth: 80, maxWidth: 220, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
+                  style={{ fontSize: 36, fontWeight: '900', color: typeOpt.color, fontFamily: 'Inter_900Black', minWidth: 80, maxWidth: 220, textAlign: 'center', fontVariant: ['tabular-nums'] as any, borderBottomWidth: 2, borderColor: errors.amount ? C.danger : typeOpt.color, paddingBottom: 4 }}
                   placeholder="0"
                   placeholderTextColor={typeOpt.color + '55'}
                   keyboardType="numeric"
@@ -371,7 +371,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
               </View>
             )}
           />
-          {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_600SemiBold' }}>{errors.amount.message}</Text>}
+          {errors.amount && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Inter_600SemiBold' }}>{errors.amount.message}</Text>}
         </View>
 
         <View style={{ height: 1, backgroundColor: C.divider }} />
@@ -389,14 +389,14 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             <View style={{ flex: 1, flexDirection: 'row', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
               {parsed?.bank ? (
                 <View style={{ backgroundColor: C.primarySoft, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.heroEnd, fontFamily: 'Nunito_700Bold' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.heroEnd, fontFamily: 'Inter_700Bold' }}>
                     🏦 {parsed.bank}
                   </Text>
                 </View>
               ) : null}
               {parsed && parsed.confidence < 0.7 ? (
                 <View style={{ backgroundColor: C.warningSoft, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.warning, fontFamily: 'Nunito_700Bold' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.warning, fontFamily: 'Inter_700Bold' }}>
                     ⚠ Akurasi rendah — periksa kembali
                   </Text>
                 </View>
@@ -417,7 +417,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
                     onPress={() => onChange('')}
                     style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 2, backgroundColor: !value ? C.primary : C.creamSunken, borderColor: !value ? C.primary : C.border }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Tanpa Kategori</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>Tanpa Kategori</Text>
                   </TouchableOpacity>
                   {filteredCats.map((cat: Category) => {
                     const active = value === cat.id
@@ -428,7 +428,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
                         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border, gap: 6 }}
                       >
                         <Text style={{ fontSize: 16 }}>{resolveIcon(cat.icon)}</Text>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>{cat.name}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -446,7 +446,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             render={({ field: { value, onChange } }) => (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {(accounts as Account[]).length === 0 ? (
-                  <Text style={{ fontSize: 13, color: C.fg4, fontFamily: 'Nunito_500Medium', paddingVertical: 8 }}>Buat rekening dulu di Settings</Text>
+                  <Text style={{ fontSize: 13, color: C.fg4, fontFamily: 'Inter_500Medium', paddingVertical: 8 }}>Buat rekening dulu di Settings</Text>
                 ) : (accounts as Account[]).map((acc: Account) => {
                   const active = value === acc.id
                   return (
@@ -456,14 +456,14 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
                       style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border, gap: 6 }}
                     >
                       <Text style={{ fontSize: 16 }}>{(acc as any).icon || '💳'}</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{acc.name}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>{acc.name}</Text>
                     </TouchableOpacity>
                   )
                 })}
               </View>
             )}
           />
-          {errors.accountId && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_600SemiBold' }}>{errors.accountId.message}</Text>}
+          {errors.accountId && <Text style={{ color: C.danger, fontSize: 12, marginTop: 4, fontFamily: 'Inter_600SemiBold' }}>{errors.accountId.message}</Text>}
         </View>
 
         {/* Merchant */}
@@ -489,7 +489,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
                   value={value}
                   max={format(new Date(), 'yyyy-MM-dd')}
                   onChange={(e) => onChange(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${errors.date ? C.danger : C.border}`, borderRadius: 12, fontSize: 15, color: C.fg1, backgroundColor: C.creamSunken, fontFamily: 'Nunito, system-ui', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${errors.date ? C.danger : C.border}`, borderRadius: 12, fontSize: 15, color: C.fg1, backgroundColor: C.creamSunken, fontFamily: 'Inter, system-ui', outline: 'none' }}
                 />
               ) : (
                 <TextInput style={{ ...inputStyle, borderColor: errors.date ? C.danger : C.border }} placeholder="YYYY-MM-DD" placeholderTextColor={C.fg4} value={value} onChangeText={onChange} />
@@ -511,7 +511,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
 
         {serverError ? (
           <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
-            <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>{serverError}</Text>
+            <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Inter_600SemiBold' }}>{serverError}</Text>
           </View>
         ) : null}
 
@@ -521,7 +521,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
             onPress={() => { setStep('pick'); setScanError('') }}
             style={{ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: C.border }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>📷 Scan Ulang</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg2, fontFamily: 'Inter_700Bold' }}>📷 Scan Ulang</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -531,7 +531,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
           >
             {createMutation.isPending
               ? <ActivityIndicator color="white" size="small" />
-              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Nunito_900Black' }}>Simpan Transaksi</Text>}
+              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Inter_900Black' }}>Simpan Transaksi</Text>}
           </TouchableOpacity>
         </View>
 
@@ -562,7 +562,7 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
         flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4,
       }}>
-        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
+        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>
           {modalTitles[step]}
         </Text>
         <TouchableOpacity
@@ -623,5 +623,5 @@ export function PaymentSlipScanModal({ visible, onClose }: Props) {
   )
 }
 
-const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: '#8E887F', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 8, fontFamily: 'Nunito_700Bold' }
-const inputStyle = { backgroundColor: '#F4EEE3', borderWidth: 1.5, borderColor: '#E0DBD2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#2D2A26', fontFamily: 'Nunito_600SemiBold' }
+const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: '#8E887F', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 8, fontFamily: 'Inter_700Bold' }
+const inputStyle = { backgroundColor: '#F4EEE3', borderWidth: 1.5, borderColor: '#E0DBD2', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#2D2A26', fontFamily: 'Inter_600SemiBold' }

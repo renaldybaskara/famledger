@@ -160,7 +160,7 @@ export default function LoginScreen() {
       <View style={{ flex: 1, backgroundColor: '#41594F', alignItems: 'center', justifyContent: 'center' }}>
         <BudgetinIcon size={64} rounded />
         <ActivityIndicator size="large" color="rgba(255,255,255,0.9)" style={{ marginTop: 24 }} />
-        <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 14, fontSize: 14, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
+        <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 14, fontSize: 14, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>
           Sedang masuk…
         </Text>
       </View>
@@ -220,7 +220,7 @@ export default function LoginScreen() {
 
           <Text style={{
             color: '#FFFFFF',
-            fontFamily: 'Nunito_900Black',
+            fontFamily: 'Inter_900Black',
             fontSize: 32,
             fontWeight: '900',
             letterSpacing: -0.5,
@@ -233,7 +233,7 @@ export default function LoginScreen() {
             color: 'rgba(255,255,255,0.8)',
             fontSize: 15,
             fontWeight: '500',
-            fontFamily: 'Nunito_500Medium',
+            fontFamily: 'Inter_500Medium',
             textAlign: 'center',
             lineHeight: 22,
             marginTop: 10,
@@ -260,7 +260,7 @@ export default function LoginScreen() {
             fontSize: 20,
             fontWeight: '900',
             color: C.fg1,
-            fontFamily: 'Nunito_900Black',
+            fontFamily: 'Inter_900Black',
             marginBottom: 6,
           }}>
             Kenapa Budgetin?
@@ -268,7 +268,7 @@ export default function LoginScreen() {
           <Text style={{
             fontSize: 13,
             color: C.fg3,
-            fontFamily: 'Nunito_500Medium',
+            fontFamily: 'Inter_500Medium',
             marginBottom: 24,
           }}>
             Semua yang kamu butuhkan untuk kontrol keuangan keluarga.
@@ -298,7 +298,7 @@ export default function LoginScreen() {
                   fontSize: 14,
                   fontWeight: '700',
                   color: C.fg1,
-                  fontFamily: 'Nunito_700Bold',
+                  fontFamily: 'Inter_700Bold',
                   lineHeight: 20,
                 }}>
                   {title}
@@ -306,7 +306,7 @@ export default function LoginScreen() {
                 <Text style={{
                   fontSize: 12,
                   color: C.fg2,
-                  fontFamily: 'Nunito_500Medium',
+                  fontFamily: 'Inter_500Medium',
                   lineHeight: 18,
                   marginTop: 1,
                 }}>
@@ -334,7 +334,7 @@ export default function LoginScreen() {
                 fontSize: 13,
                 textAlign: 'center',
                 fontWeight: '600',
-                fontFamily: 'Nunito_600SemiBold',
+                fontFamily: 'Inter_600SemiBold',
               }}>
                 {error}
               </Text>
@@ -372,7 +372,7 @@ export default function LoginScreen() {
               fontSize: 16,
               fontWeight: '800',
               color: C.fg1,
-              fontFamily: 'Nunito_800ExtraBold',
+              fontFamily: 'Inter_800ExtraBold',
               letterSpacing: -0.2,
             }}>
               Masuk dengan Google
@@ -388,7 +388,7 @@ export default function LoginScreen() {
               textAlign: 'center',
               marginTop: 20,
               lineHeight: '18px',
-              fontFamily: 'Nunito_500Medium, sans-serif',
+              fontFamily: 'Inter_500Medium, sans-serif',
               margin: '20px 0 0 0',
               padding: 0,
             } as any}>
@@ -396,14 +396,14 @@ export default function LoginScreen() {
               Dengan masuk, kamu menyetujui{' '}
               <a
                 href="/terms"
-                style={{ color: C.primary, textDecoration: 'underline', fontFamily: 'Nunito_600SemiBold, sans-serif' } as any}
+                style={{ color: C.primary, textDecoration: 'underline', fontFamily: 'Inter_600SemiBold, sans-serif' } as any}
               >
                 Syarat Penggunaan
               </a>
               {' '}dan{' '}
               <a
                 href="/privacy"
-                style={{ color: C.primary, textDecoration: 'underline', fontFamily: 'Nunito_600SemiBold, sans-serif' } as any}
+                style={{ color: C.primary, textDecoration: 'underline', fontFamily: 'Inter_600SemiBold, sans-serif' } as any}
               >
                 Kebijakan Privasi
               </a>
@@ -416,20 +416,20 @@ export default function LoginScreen() {
               textAlign: 'center',
               marginTop: 20,
               lineHeight: 18,
-              fontFamily: 'Nunito_500Medium',
+              fontFamily: 'Inter_500Medium',
             }}>
               Data tersimpan di servermu sendiri, bukan di cloud kami.{'\n'}
               Dengan masuk, kamu menyetujui{' '}
               <Text
                 onPress={() => router.push('/terms' as any)}
-                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Inter_600SemiBold' }}
               >
                 Syarat Penggunaan
               </Text>
               {' '}dan{' '}
               <Text
                 onPress={() => router.push('/privacy' as any)}
-                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Inter_600SemiBold' }}
               >
                 Kebijakan Privasi
               </Text>

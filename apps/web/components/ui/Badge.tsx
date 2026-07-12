@@ -26,7 +26,7 @@ export function Badge({ label, variant = 'neutral' }: BadgeProps) {
 
   return (
     <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: bgMap[variant] }}>
-      <Text style={{ fontSize: 12, fontWeight: '500', color: textColorMap[variant], fontFamily: 'Nunito_600SemiBold' }}>
+      <Text style={{ fontSize: 12, fontWeight: '500', color: textColorMap[variant], fontFamily: 'Inter_600SemiBold' }}>
         {label}
       </Text>
     </View>

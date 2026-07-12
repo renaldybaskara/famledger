@@ -69,12 +69,12 @@ function BudgetCard({ budget, onDelete, onEdit }: { budget: Budget; onDelete: ()
 
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>{budget.name}</Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: status.color, fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>{budget.name}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: status.color, fontFamily: 'Inter_700Bold', fontVariant: ['tabular-nums'] as any }}>
               {Math.round(rawPct)}%
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium', fontVariant: ['tabular-nums'] as any }}>
+          <Text style={{ fontSize: 12, color: C.fg3, marginTop: 2, fontFamily: 'Inter_500Medium', fontVariant: ['tabular-nums'] as any }}>
             {formatCurrencyCompact(spent)} dari {formatCurrencyCompact(total)}
           </Text>
         </View>
@@ -102,19 +102,19 @@ function BudgetCard({ budget, onDelete, onEdit }: { budget: Budget; onDelete: ()
       {/* Status footer */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         {rawPct > 100 ? (
-          <Text style={{ fontSize: 12, color: C.danger, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+          <Text style={{ fontSize: 12, color: C.danger, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>
             ● Over budget {formatCurrencyCompact(spent - total)}
           </Text>
         ) : rawPct >= 80 ? (
-          <Text style={{ fontSize: 12, color: C.mustard, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+          <Text style={{ fontSize: 12, color: C.mustard, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>
             ⚠ Hampir habis
           </Text>
         ) : (
-          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+          <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Inter_500Medium' }}>
             {PERIOD_OPTIONS.find((p) => p.value === budget.period)?.label ?? 'Bulanan'}
           </Text>
         )}
-        <Text style={{ fontSize: 12, color: remaining >= 0 ? C.fg2 : C.danger, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontVariant: ['tabular-nums'] as any }}>
+        <Text style={{ fontSize: 12, color: remaining >= 0 ? C.fg2 : C.danger, fontWeight: '600', fontFamily: 'Inter_600SemiBold', fontVariant: ['tabular-nums'] as any }}>
           {remaining >= 0 ? `Sisa ${formatCurrencyCompact(remaining)}` : `Lebih ${formatCurrencyCompact(-remaining)}`}
         </Text>
       </View>
@@ -155,7 +155,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderColor: C.divider }}>
-        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Tambah Anggaran</Text>
+        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>Tambah Anggaran</Text>
         <TouchableOpacity onPress={handleClose} style={{ width: 32, height: 32, backgroundColor: C.creamSunken, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 18, color: C.fg2 }}>✕</Text>
         </TouchableOpacity>
@@ -165,18 +165,18 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
         <View style={{ padding: 20, gap: 16 }}>
           {serverError ? (
             <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>{serverError}</Text>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Inter_600SemiBold' }}>{serverError}</Text>
             </View>
           ) : null}
 
           {/* Name */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Nama Anggaran</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Nama Anggaran</Text>
             <Controller
               control={control} name="name"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.name ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.name ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Inter_600SemiBold' }}
                   placeholder="Contoh: Makan & Minum"
                   placeholderTextColor={C.fg4}
                   value={value} onChangeText={onChange}
@@ -188,12 +188,12 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
 
           {/* Amount */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Batas Anggaran (Rp)</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Batas Anggaran (Rp)</Text>
             <Controller
               control={control} name="amount"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.amount ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.amount ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any }}
                   placeholder="0"
                   placeholderTextColor={C.fg4}
                   keyboardType="numeric"
@@ -206,7 +206,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
 
           {/* Period */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Periode</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Periode</Text>
             <Controller
               control={control} name="period"
               render={({ field: { value, onChange } }) => (
@@ -218,7 +218,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
                         key={opt.value} onPress={() => onChange(opt.value)}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{opt.label}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>{opt.label}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -229,7 +229,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
 
           {/* Category */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>
               Kategori <Text style={{ fontWeight: '500', color: C.fg3 }}>(opsional)</Text>
             </Text>
             <Controller
@@ -241,7 +241,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
                       onPress={() => onChange('')}
                       style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: !value ? C.primary : C.creamSunken, borderColor: !value ? C.primary : C.border }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Semua</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>Semua</Text>
                     </TouchableOpacity>
                     {expenseCats.map((cat) => {
                       const active = value === cat.id
@@ -251,7 +251,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
                           style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
                         >
                           <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
-                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Inter_700Bold' }}>{cat.name}</Text>
                         </TouchableOpacity>
                       )
                     })}
@@ -269,7 +269,7 @@ function AddBudgetModal({ visible, onClose }: { visible: boolean; onClose: () =>
           >
             {createMutation.isPending
               ? <ActivityIndicator color="white" size="small" />
-              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>Simpan Anggaran</Text>}
+              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Inter_900Black' }}>Simpan Anggaran</Text>}
           </TouchableOpacity>
           <View style={{ height: 16 }} />
         </View>
@@ -341,7 +341,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderColor: C.divider }}>
-        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Edit Anggaran</Text>
+        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>Edit Anggaran</Text>
         <TouchableOpacity onPress={handleClose} style={{ width: 32, height: 32, backgroundColor: C.creamSunken, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 18, color: C.fg2 }}>✕</Text>
         </TouchableOpacity>
@@ -351,18 +351,18 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
         <View style={{ padding: 20, gap: 16 }}>
           {serverError ? (
             <View style={{ backgroundColor: C.dangerSoft, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>{serverError}</Text>
+              <Text style={{ color: C.danger, fontSize: 13, textAlign: 'center', fontFamily: 'Inter_600SemiBold' }}>{serverError}</Text>
             </View>
           ) : null}
 
           {/* Name */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Nama Anggaran</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Nama Anggaran</Text>
             <Controller
               control={control} name="name"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.name ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.name ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Inter_600SemiBold' }}
                   placeholder="Contoh: Makan & Minum"
                   placeholderTextColor={C.fg4}
                   value={value} onChangeText={onChange}
@@ -374,12 +374,12 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
 
           {/* Amount */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Batas Anggaran (Rp)</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Batas Anggaran (Rp)</Text>
             <Controller
               control={control} name="amount"
               render={({ field: { value, onChange } }) => (
                 <TextInput
-                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.amount ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}
+                  style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: errors.amount ? C.danger : C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any }}
                   placeholder="0"
                   placeholderTextColor={C.fg4}
                   keyboardType="numeric"
@@ -392,7 +392,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
 
           {/* Period */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Periode</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Periode</Text>
             <Controller
               control={control} name="period"
               render={({ field: { value, onChange } }) => (
@@ -404,7 +404,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
                         key={opt.value} onPress={() => onChange(opt.value)}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{opt.label}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>{opt.label}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -415,7 +415,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
 
           {/* Category */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>
               Kategori <Text style={{ fontWeight: '500', color: C.fg3 }}>(opsional)</Text>
             </Text>
             <Controller
@@ -427,7 +427,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
                       onPress={() => onChange('')}
                       style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: !value ? C.primary : C.creamSunken, borderColor: !value ? C.primary : C.border }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Semua</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: !value ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>Semua</Text>
                     </TouchableOpacity>
                     {expenseCats.map((cat) => {
                       const active = value === cat.id
@@ -437,7 +437,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
                           style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
                         >
                           <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
-                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Inter_700Bold' }}>{cat.name}</Text>
                         </TouchableOpacity>
                       )
                     })}
@@ -455,7 +455,7 @@ function EditBudgetModal({ visible, budget, onClose }: { visible: boolean; budge
           >
             {updateMutation.isPending
               ? <ActivityIndicator color="white" size="small" />
-              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>Simpan Perubahan</Text>}
+              : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Inter_900Black' }}>Simpan Perubahan</Text>}
           </TouchableOpacity>
           <View style={{ height: 16 }} />
         </View>
@@ -499,11 +499,11 @@ function DonutSVG({ pct }: { pct: number }) {
         strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       <text x={size / 2} y={size / 2 - 5} textAnchor="middle" dominantBaseline="middle"
-        fill="white" fontSize={16} fontWeight="900" fontFamily="Nunito, sans-serif">
+        fill="white" fontSize={16} fontWeight="900" fontFamily="Inter, sans-serif">
         {Math.round(pct)}%
       </text>
       <text x={size / 2} y={size / 2 + 12} textAnchor="middle" dominantBaseline="middle"
-        fill="rgba(255,255,255,0.6)" fontSize={9} fontFamily="Nunito, sans-serif">
+        fill="rgba(255,255,255,0.6)" fontSize={9} fontFamily="Inter, sans-serif">
         terpakai
       </text>
     </svg>
@@ -554,13 +554,13 @@ export default function BudgetScreen() {
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>Budget</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Inter_900Black' }}>Budget</Text>
           <TouchableOpacity
             onPress={() => setAddModalVisible(true)}
             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, gap: 4 }}
           >
             <Text style={{ color: '#fff', fontSize: 16, lineHeight: 18 }}>+</Text>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>Buat Budget</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Inter_800ExtraBold' }}>Buat Budget</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -578,7 +578,7 @@ export default function BudgetScreen() {
               <View style={{ position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)' }} />
               <View style={{ position: 'absolute', bottom: -20, left: -30, width: 100, height: 100, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' }} />
 
-              <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, fontFamily: 'Nunito_800ExtraBold' }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, fontFamily: 'Inter_800ExtraBold' }}>
                 TOTAL BUDGET {currentMonth.toUpperCase()}
               </Text>
 
@@ -589,27 +589,27 @@ export default function BudgetScreen() {
                     <DonutSVG pct={overallPct} />
                   ) : (
                     <View style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 10, borderColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black' }}>{Math.round(overallPct)}%</Text>
+                      <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', fontFamily: 'Inter_900Black' }}>{Math.round(overallPct)}%</Text>
                     </View>
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: -0.5, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+                  <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: -0.5, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any }}>
                     {formatCurrencyCompact(totalBudget)}
                   </Text>
                   {overCount > 0 && (
-                    <Text style={{ fontSize: 11, color: '#FFD4D4', fontWeight: '700', fontFamily: 'Nunito_700Bold', marginTop: 2 }}>{overCount} kategori over budget</Text>
+                    <Text style={{ fontSize: 11, color: '#FFD4D4', fontWeight: '700', fontFamily: 'Inter_700Bold', marginTop: 2 }}>{overCount} kategori over budget</Text>
                   )}
                   <View style={{ gap: 4, marginTop: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.85)' }} />
-                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_500Medium' }}>
                         Sisa {formatCurrencyCompact(Math.max(remaining, 0))}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.4)' }} />
-                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_500Medium' }}>
                         Terpakai {formatCurrencyCompact(totalSpent)}
                       </Text>
                     </View>
@@ -618,8 +618,8 @@ export default function BudgetScreen() {
               </View>
 
               <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 12 }} />
-              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Nunito_500Medium' }}>
-                Sisa bulan ini: <Text style={{ fontWeight: '700', color: '#fff', fontFamily: 'Nunito_700Bold' }}>{daysLeft} hari lagi</Text>
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter_500Medium' }}>
+                Sisa bulan ini: <Text style={{ fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' }}>{daysLeft} hari lagi</Text>
                 {dailyRate > 0 ? ` · ${formatCurrencyCompact(dailyRate)}/hari` : ''}
               </Text>
             </View>
@@ -632,8 +632,8 @@ export default function BudgetScreen() {
           ) : (budgets as Budget[]).length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
               <Text style={{ fontSize: 52, marginBottom: 16 }}>🎯</Text>
-              <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg2, fontFamily: 'Nunito_900Black' }}>Belum ada anggaran</Text>
-              <Text style={{ fontSize: 14, color: C.fg3, marginTop: 6, textAlign: 'center', fontFamily: 'Nunito_500Medium', lineHeight: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg2, fontFamily: 'Inter_900Black' }}>Belum ada anggaran</Text>
+              <Text style={{ fontSize: 14, color: C.fg3, marginTop: 6, textAlign: 'center', fontFamily: 'Inter_500Medium', lineHeight: 20 }}>
                 Buat anggaran untuk kontrol{'\n'}pengeluaran bulan ini.
               </Text>
               <TouchableOpacity
@@ -641,7 +641,7 @@ export default function BudgetScreen() {
                 style={{ marginTop: 20, backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
               >
                 <Text style={{ color: '#fff', fontSize: 18 }}>+</Text>
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Tambah Anggaran</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Tambah Anggaran</Text>
               </TouchableOpacity>
             </View>
           ) : (

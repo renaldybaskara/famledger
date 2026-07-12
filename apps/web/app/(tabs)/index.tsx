@@ -32,8 +32,8 @@ function CategoryRow({ name, amount, color, pct }: { name: string; amount: numbe
   return (
     <View style={{ flexDirection: 'column', gap: 4, marginBottom: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>{name}</Text>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: C.expenseDeep, fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1d, fontFamily: 'Inter_700Bold' }}>{name}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: C.expenseDeep, fontFamily: 'Inter_700Bold', fontVariant: ['tabular-nums'] as any }}>
           {formatCurrencyCompact(amount)}
         </Text>
       </View>
@@ -63,21 +63,21 @@ function TrendBarChart({ data }: { data: { label: string; income: number; expens
           backgroundColor: C.fg1d, borderRadius: 12, padding: 12, marginBottom: 14,
           flexDirection: 'row', alignItems: 'center', gap: 8,
         }}>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold', marginRight: 4 }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: 'Inter_800ExtraBold', marginRight: 4 }}>
             {activeItem.label}
           </Text>
           <View style={{ width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.2)' }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
             <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold' }}>Masuk</Text>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter_600SemiBold' }}>Masuk</Text>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff', fontFamily: 'Inter_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
               {formatCurrencyCompact(activeItem.income)}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
             <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.expenseDeep }} />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold' }}>Keluar</Text>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter_600SemiBold' }}>Keluar</Text>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff', fontFamily: 'Inter_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
               {formatCurrencyCompact(activeItem.expense)}
             </Text>
           </View>
@@ -150,7 +150,7 @@ function TrendBarChart({ data }: { data: { label: string; income: number; expens
                   fontSize: 11,
                   fontWeight: (isCurrent || isHovered) ? '800' : '600',
                   color: isHovered ? C.fg1d : isCurrent ? C.fg1d : C.fg4,
-                  fontFamily: (isCurrent || isHovered) ? 'Nunito_800ExtraBold' : 'Nunito_600SemiBold',
+                  fontFamily: (isCurrent || isHovered) ? 'Inter_800ExtraBold' : 'Inter_600SemiBold',
                 }
               ]}
             >
@@ -191,12 +191,12 @@ function QuickInsightPill({ totalIncome, totalExpense }: { totalIncome: number; 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={{
               fontSize: 12, fontWeight: '700', color: labelColor,
-              fontFamily: 'Nunito_700Bold', letterSpacing: 0.5,
+              fontFamily: 'Inter_700Bold', letterSpacing: 0.5,
               textTransform: 'uppercase',
             }}>
               Rasio Pengeluaran
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }}>
               {ratio}%
             </Text>
           </View>
@@ -209,7 +209,7 @@ function QuickInsightPill({ totalIncome, totalExpense }: { totalIncome: number; 
           backgroundColor: badgeBg, borderRadius: 20,
           paddingHorizontal: 10, paddingVertical: 4, flexShrink: 0,
         }}>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: badgeText, fontFamily: 'Nunito_800ExtraBold', letterSpacing: 0.3 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: badgeText, fontFamily: 'Inter_800ExtraBold', letterSpacing: 0.3 }}>
             {badgeLabel}
           </Text>
         </View>
@@ -253,9 +253,9 @@ function CategoryBreakdownSection({
     <View style={{ backgroundColor: C.surface, borderRadius: 18, padding: 16, shadowColor: '#1A2820', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Pengeluaran per Kategori</Text>
+        <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }}>Pengeluaran per Kategori</Text>
         <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Lihat Semua</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Inter_700Bold' }}>Lihat Semua</Text>
         </TouchableOpacity>
       </View>
 
@@ -292,8 +292,8 @@ function CategoryBreakdownSection({
           )}
           {/* Center label */}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold' }}>Total</Text>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any, textAlign: 'center' }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7C74', fontFamily: 'Inter_600SemiBold' }}>Total</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold', fontVariant: ['tabular-nums'] as any, textAlign: 'center' }}>
               {formatCurrencyCompact(grandTotal)}
             </Text>
           </View>
@@ -304,10 +304,10 @@ function CategoryBreakdownSection({
           {normalized.map((cat) => (
             <View key={cat.categoryName} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: cat.resolvedColor, flexShrink: 0 }} />
-              <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#3D4A43', fontFamily: 'Nunito_600SemiBold' }} numberOfLines={1}>
+              <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#3D4A43', fontFamily: 'Inter_600SemiBold' }} numberOfLines={1}>
                 {cat.categoryName}
               </Text>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg1d, fontFamily: 'Inter_700Bold' }}>
                 {cat.pct}%
               </Text>
             </View>
@@ -335,7 +335,7 @@ function CategoryBreakdownSection({
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF9EE', borderRadius: 10, padding: 10, marginTop: 8 }}
         >
           <Text style={{ fontSize: 13 }}>💡</Text>
-          <Text style={{ flex: 1, fontSize: 12, color: '#8E6A1A', fontFamily: 'Nunito_600SemiBold' }}>
+          <Text style={{ flex: 1, fontSize: 12, color: '#8E6A1A', fontFamily: 'Inter_600SemiBold' }}>
             Ada transaksi belum dikategorikan. Tap untuk edit kategorinya.
           </Text>
         </TouchableOpacity>
@@ -379,9 +379,9 @@ function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name:
   return (
     <View style={{ backgroundColor: C.surface, borderRadius: 18, padding: 16, shadowColor: '#1A2820', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Anggaran Bulan Ini</Text>
+        <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }}>Anggaran Bulan Ini</Text>
         <TouchableOpacity onPress={() => router.push('/(tabs)/budget')}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Kelola</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Inter_700Bold' }}>Kelola</Text>
         </TouchableOpacity>
       </View>
 
@@ -401,16 +401,16 @@ function BudgetSnapshotSection({ budgets }: { budgets: Array<{ id: string; name:
                 <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: catColor + '22', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: catColor }} />
                 </View>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }} numberOfLines={1}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1d, fontFamily: 'Inter_700Bold' }} numberOfLines={1}>
                   {catName}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7C74', fontFamily: 'Nunito_600SemiBold', fontVariant: ['tabular-nums'] as any }} numberOfLines={1}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7C74', fontFamily: 'Inter_600SemiBold', fontVariant: ['tabular-nums'] as any }} numberOfLines={1}>
                   {formatCurrencyCompact(budget.spent)} / {formatCurrencyCompact(budget.amount)}
                 </Text>
                 <View style={{ backgroundColor: cfg.badgeBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: cfg.badgeColor, fontFamily: 'Nunito_800ExtraBold', letterSpacing: 0.3 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: cfg.badgeColor, fontFamily: 'Inter_800ExtraBold', letterSpacing: 0.3 }}>
                     {cfg.label}
                   </Text>
                 </View>
@@ -473,8 +473,8 @@ function LainnyaSheet({ visible, onClose, onAdd, onScan }: {
                 <Text style={{ fontSize: 22 }}>⭐</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold' }}>Paket & Pembayaran</Text>
-                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Upgrade untuk fitur premium</Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff', fontFamily: 'Inter_800ExtraBold' }}>Paket & Pembayaran</Text>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: 'Inter_500Medium' }}>Upgrade untuk fitur premium</Text>
               </View>
               <ChevronRight size={18} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
@@ -484,7 +484,7 @@ function LainnyaSheet({ visible, onClose, onAdd, onScan }: {
                   <View style={{ width: 52, height: 52, borderRadius: 999, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
                     {Platform.OS === 'web' ? item.icon : null}
                   </View>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg1d, textAlign: 'center', fontFamily: 'Nunito_700Bold', lineHeight: 15 }}>{item.label}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg1d, textAlign: 'center', fontFamily: 'Inter_700Bold', lineHeight: 15 }}>{item.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -735,7 +735,7 @@ export default function DashboardScreen() {
             style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: selectedWsIds.length === 0 ? '#F0FAF4' : 'transparent' }}
           >
             {selectedWsIds.length === 0 && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.primaryDeep }} />}
-            <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>Pribadi</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1d, fontFamily: 'Inter_700Bold' }}>Pribadi</Text>
           </TouchableOpacity>
           {workspaces.map((ws: any) => {
             const active = selectedWsIds.includes(ws.id)
@@ -746,7 +746,7 @@ export default function DashboardScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: active ? '#F0FAF4' : 'transparent' }}
               >
                 {active && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.primaryDeep }} />}
-                <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1d, fontFamily: 'Inter_700Bold' }}>{ws.name}</Text>
               </TouchableOpacity>
             )
           })}
@@ -764,13 +764,13 @@ export default function DashboardScreen() {
           <View style={{ padding: 14, backgroundColor: '#F7FAFA', borderBottomWidth: 1, borderBottomColor: C.divider }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0A830', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Nunito_900Black' }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Inter_900Black' }}>
                   {(user?.name ?? 'K').charAt(0).toUpperCase()}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }} numberOfLines={1}>{user?.name ?? ''}</Text>
-                <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>{user?.email ?? ''}</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }} numberOfLines={1}>{user?.name ?? ''}</Text>
+                <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium' }} numberOfLines={1}>{user?.email ?? ''}</Text>
               </View>
             </View>
           </View>
@@ -779,21 +779,21 @@ export default function DashboardScreen() {
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.divider }}
           >
             {Platform.OS === 'web' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke={C.fg2} strokeWidth="2" strokeLinecap="round" /><circle cx="12" cy="7" r="4" stroke={C.fg2} strokeWidth="2" /></svg>}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}>Profil Saya</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: C.fg1, fontFamily: 'Inter_600SemiBold' }}>Profil Saya</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowProfilePopup(false); router.push('/(tabs)/settings?section=billing' as any) }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.divider }}
           >
             {Platform.OS === 'web' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke={C.mustard} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}>Paket & Pembayaran</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: C.fg1, fontFamily: 'Inter_600SemiBold' }}>Paket & Pembayaran</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowProfilePopup(false); logout(); router.replace('/(auth)/login') }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 }}
           >
             {Platform.OS === 'web' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="#C97B5C" strokeWidth="2" strokeLinecap="round" /><polyline points="16 17 21 12 16 7" stroke="#C97B5C" strokeWidth="2" strokeLinecap="round" /><line x1="21" y1="12" x2="9" y2="12" stroke="#C97B5C" strokeWidth="2" strokeLinecap="round" /></svg>}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#C97B5C', fontFamily: 'Nunito_600SemiBold' }}>Keluar</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#C97B5C', fontFamily: 'Inter_600SemiBold' }}>Keluar</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -814,7 +814,7 @@ export default function DashboardScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20 }}>
             {/* Greeting + workspace name */}
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase' }}>
                 {greeting}
               </Text>
               <TouchableOpacity
@@ -831,7 +831,7 @@ export default function DashboardScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}
                 activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold' }}>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', fontFamily: 'Inter_800ExtraBold' }}>
                   {displayName} 👋
                 </Text>
                 {Platform.OS === 'web' && (
@@ -843,7 +843,7 @@ export default function DashboardScreen() {
               {/* Mode indicator dot + label */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activeWsName ? '#6BAE80' : 'rgba(255,255,255,0.4)' }} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: activeWsName ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)', fontFamily: 'Nunito_700Bold', letterSpacing: 0.3 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: activeWsName ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter_700Bold', letterSpacing: 0.3 }}>
                   {activeWsName
                     ? `Mode Keluarga${activeMemberCount > 0 ? ` · ${activeMemberCount} anggota` : ''}`
                     : 'Keuangan Pribadi'}
@@ -882,7 +882,7 @@ export default function DashboardScreen() {
                     ? { background: 'linear-gradient(135deg, #F0A830 0%, #E8802A 100%)' } as any
                     : { backgroundColor: '#F0A830' }),
                 }}>
-                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Nunito_900Black' }}>
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, fontFamily: 'Inter_900Black' }}>
                     {(user?.name ?? 'B').charAt(0).toUpperCase()}
                   </Text>
                 </View>
@@ -892,10 +892,10 @@ export default function DashboardScreen() {
 
           {/* Balance — centered (Paper design) */}
           <View style={{ alignItems: 'center', paddingBottom: 8 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Nunito_600SemiBold' }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter_600SemiBold' }}>
               {activeWsName ? 'Total Saldo Keluarga' : 'Saldo Bulan Ini'}
             </Text>
-            <Text style={{ fontSize: 40, fontWeight: '900', color: '#fff', marginTop: 4, letterSpacing: -1.2, lineHeight: 48, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+            <Text style={{ fontSize: 40, fontWeight: '900', color: '#fff', marginTop: 4, letterSpacing: -1.2, lineHeight: 48, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any }}>
               {summaryLoading ? '—' : formatCurrency(balance)}
             </Text>
             {growthBadge && !summaryLoading && (
@@ -905,7 +905,7 @@ export default function DashboardScreen() {
                     <polyline points={growthBadge.positive ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} stroke="#5DCEA0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ) : null}
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>
                   {growthBadge.positive ? '+' : '-'}{growthBadge.pct}% dari bulan lalu
                 </Text>
               </View>
@@ -921,13 +921,13 @@ export default function DashboardScreen() {
               <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.primaryDeep, alignItems: 'center', justifyContent: 'center' }}>
                 {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
               </View>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.isDark ? '#8ABAAA' : '#5A7066', fontFamily: 'Nunito_700Bold' }}>PEMASUKAN</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.isDark ? '#8ABAAA' : '#5A7066', fontFamily: 'Inter_700Bold' }}>PEMASUKAN</Text>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
               {summaryLoading ? '—' : formatCurrencyCompact(totalIn)}
             </Text>
             {momComparison.incomePct !== null && (
-              <Text style={{ fontSize: 11, fontWeight: '600', color: C.primaryDeep, fontFamily: 'Nunito_600SemiBold' }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: C.primaryDeep, fontFamily: 'Inter_600SemiBold' }}>
                 {momComparison.incomePct >= 0 ? '↑' : '↓'} {Math.abs(momComparison.incomePct)}% vs bln lalu
               </Text>
             )}
@@ -939,13 +939,13 @@ export default function DashboardScreen() {
               <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: C.expenseDeep, alignItems: 'center', justifyContent: 'center' }}>
                 {Platform.OS === 'web' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
               </View>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.isDark ? '#C0958A' : '#5A7066', fontFamily: 'Nunito_700Bold' }}>PENGELUARAN</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.isDark ? '#C0958A' : '#5A7066', fontFamily: 'Inter_700Bold' }}>PENGELUARAN</Text>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1d, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any, letterSpacing: -0.36 }}>
               {summaryLoading ? '—' : formatCurrencyCompact(totalOut)}
             </Text>
             {momComparison.expensePct !== null && (
-              <Text style={{ fontSize: 11, fontWeight: '600', color: C.expenseDeep, fontFamily: 'Nunito_600SemiBold' }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: C.expenseDeep, fontFamily: 'Inter_600SemiBold' }}>
                 {momComparison.expensePct >= 0 ? '↑' : '↓'} {Math.abs(momComparison.expensePct)}% vs bln lalu
               </Text>
             )}
@@ -979,7 +979,7 @@ export default function DashboardScreen() {
                   <line x1="16" y1="2" x2="16" y2="6" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" strokeLinecap="round" />
                 </svg>
               )}
-              <Text style={{ fontSize: 13, fontWeight: preset === key ? '700' : '600', fontFamily: preset === key ? 'Nunito_700Bold' : 'Nunito_600SemiBold', color: preset === key ? '#fff' : C.fg2 }}>
+              <Text style={{ fontSize: 13, fontWeight: preset === key ? '700' : '600', fontFamily: preset === key ? 'Inter_700Bold' : 'Inter_600SemiBold', color: preset === key ? '#fff' : C.fg2 }}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -1006,7 +1006,7 @@ export default function DashboardScreen() {
               }}>
                 {Platform.OS === 'web' ? icon : null}
               </View>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg1d, fontFamily: 'Nunito_700Bold' }}>{label}</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg1d, fontFamily: 'Inter_700Bold' }}>{label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -1019,8 +1019,8 @@ export default function DashboardScreen() {
                 <Zap size={22} color={C.mustard} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>Auto-Import Transaksi</Text>
-                <Text style={{ fontSize: 12, color: C.fg2, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Hubungkan Gmail untuk import otomatis</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>Auto-Import Transaksi</Text>
+                <Text style={{ fontSize: 12, color: C.fg2, marginTop: 2, fontFamily: 'Inter_500Medium' }}>Hubungkan Gmail untuk import otomatis</Text>
               </View>
               <ChevronRight size={16} color={C.fg3} strokeWidth={2} />
               <TouchableOpacity onPress={() => setBannerDismissed(true)} style={{ position: 'absolute', top: 8, right: 8 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -1038,16 +1038,16 @@ export default function DashboardScreen() {
                 <Mail size={20} color={C.mustard} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>Undangan Workspace</Text>
-                <Text style={{ fontSize: 12, color: C.fg2, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Kamu diundang sebagai {inv.role}</Text>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>Undangan Workspace</Text>
+                <Text style={{ fontSize: 12, color: C.fg2, marginTop: 2, fontFamily: 'Inter_500Medium' }}>Kamu diundang sebagai {inv.role}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity onPress={() => inv.token && acceptInviteMut.mutate(inv.token)} disabled={acceptInviteMut.isPending || !inv.token} style={{ flex: 1, backgroundColor: C.primaryDeep, borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>Terima</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Inter_800ExtraBold' }}>Terima</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => inv.token && declineInviteMut.mutate(inv.token)} disabled={declineInviteMut.isPending || !inv.token} style={{ flex: 1, backgroundColor: '#F4EEE3', borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}>
-                <Text style={{ color: C.fg2, fontWeight: '700', fontSize: 13, fontFamily: 'Nunito_700Bold' }}>Tolak</Text>
+                <Text style={{ color: C.fg2, fontWeight: '700', fontSize: 13, fontFamily: 'Inter_700Bold' }}>Tolak</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1059,11 +1059,11 @@ export default function DashboardScreen() {
           {chartData.length > 0 && (
             <View style={{ backgroundColor: C.chartBg, borderRadius: 20, paddingHorizontal: 12, paddingTop: 16, paddingBottom: 10 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>
+                <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }}>
                   {preset === 'payday' ? 'Tren Gajian' : 'Tren 6 Bulan'}
                 </Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Lihat Semua</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Inter_700Bold' }}>Lihat Semua</Text>
                 </TouchableOpacity>
               </View>
               <TrendBarChart data={chartData} />
@@ -1071,11 +1071,11 @@ export default function DashboardScreen() {
               <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Nunito_600SemiBold' }}>Pemasukan</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Inter_600SemiBold' }}>Pemasukan</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.expenseDeep }} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Nunito_600SemiBold' }}>Pengeluaran</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Inter_600SemiBold' }}>Pengeluaran</Text>
                 </View>
               </View>
             </View>
@@ -1090,9 +1090,9 @@ export default function DashboardScreen() {
           {/* ── Transaksi Terbaru (Paper: white card, divider #F0F4F2) ── */}
           <View style={{ backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 }}>
-              <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Nunito_800ExtraBold' }}>Transaksi Terbaru</Text>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }}>Transaksi Terbaru</Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Nunito_700Bold' }}>Semua</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Inter_700Bold' }}>Semua</Text>
               </TouchableOpacity>
             </View>
             {activeRecentLoading ? (
@@ -1111,8 +1111,8 @@ export default function DashboardScreen() {
               </View>
             ) : (
               <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>Belum ada transaksi</Text>
-                <Text style={{ fontSize: 13, color: C.fg3, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>Tambahkan transaksi pertamamu</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg2, fontFamily: 'Inter_700Bold' }}>Belum ada transaksi</Text>
+                <Text style={{ fontSize: 13, color: C.fg3, marginTop: 4, fontFamily: 'Inter_500Medium' }}>Tambahkan transaksi pertamamu</Text>
               </View>
             )}
           </View>
@@ -1123,11 +1123,11 @@ export default function DashboardScreen() {
                 <Text style={{ fontSize: 18 }}>💡</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: C.heroEnd, fontFamily: 'Nunito_800ExtraBold' }}>Insight Periode Ini</Text>
-                <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg2, marginTop: 4, lineHeight: 20, fontFamily: 'Nunito_500Medium' }}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: C.heroEnd, fontFamily: 'Inter_800ExtraBold' }}>Insight Periode Ini</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg2, marginTop: 4, lineHeight: 20, fontFamily: 'Inter_500Medium' }}>
                   {balance >= 0 ? `Kamu menabung ${formatCurrencyCompact(balance)}. ` : `Pengeluaran melebihi pemasukan ${formatCurrencyCompact(Math.abs(balance))}. `}
                   Rasio pengeluaran:{' '}
-                  <Text style={{ fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>{Math.round((summary.totalExpense / summary.totalIncome) * 100)}%</Text>
+                  <Text style={{ fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>{Math.round((summary.totalExpense / summary.totalIncome) * 100)}%</Text>
                   {' '}dari pemasukan.
                 </Text>
               </View>
@@ -1153,8 +1153,8 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 16 }}>💬</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Ada saran atau kendala?</Text>
-              <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginTop: 1 }}>Kirim feedback ke kami</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Ada saran atau kendala?</Text>
+              <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium', marginTop: 1 }}>Kirim feedback ke kami</Text>
             </View>
             {Platform.OS === 'web' && (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">

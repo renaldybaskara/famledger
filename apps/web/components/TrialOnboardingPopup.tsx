@@ -56,11 +56,11 @@ export function TrialOnboardingPopup({ visible, onDismiss }: Props) {
           {/* Header */}
           <View style={{ alignItems: 'center', gap: 6 }}>
             <Text style={{ fontSize: 36 }}>✨</Text>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center' }}>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', textAlign: 'center' }}>
               Coba Budgetin Pro Gratis
             </Text>
             <View style={{ backgroundColor: C.mustardSoft, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 5 }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#7A5C1E', fontFamily: 'Nunito_800ExtraBold' }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#7A5C1E', fontFamily: 'Inter_800ExtraBold' }}>
                 14 hari · tanpa kartu kredit
               </Text>
             </View>
@@ -71,7 +71,7 @@ export function TrialOnboardingPopup({ visible, onDismiss }: Props) {
             {BENEFITS.map(([icon, label]) => (
               <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Text style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{icon}</Text>
-                <Text style={{ fontSize: 13, color: C.fg2, flex: 1, fontFamily: 'Nunito_600SemiBold' }}>{label}</Text>
+                <Text style={{ fontSize: 13, color: C.fg2, flex: 1, fontFamily: 'Inter_600SemiBold' }}>{label}</Text>
               </View>
             ))}
           </View>
@@ -88,7 +88,7 @@ export function TrialOnboardingPopup({ visible, onDismiss }: Props) {
           >
             {loading
               ? <ActivityIndicator color="#fff" />
-              : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900', fontFamily: 'Nunito_900Black' }}>
+              : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900', fontFamily: 'Inter_900Black' }}>
                   Mulai Trial Gratis →
                 </Text>
             }
@@ -96,7 +96,7 @@ export function TrialOnboardingPopup({ visible, onDismiss }: Props) {
 
           {/* Dismiss */}
           <TouchableOpacity onPress={onDismiss} style={{ alignItems: 'center', paddingVertical: 4 }}>
-            <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Inter_500Medium' }}>
               Lanjutkan dengan paket gratis
             </Text>
           </TouchableOpacity>

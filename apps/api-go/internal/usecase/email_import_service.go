@@ -26,6 +26,7 @@ type EmailImportService struct {
 	accountRepo  domainrepo.AccountRepository
 	categoryRepo domainrepo.CategoryRepository
 	ruleRepo     domainrepo.BankParserRuleRepository // may be nil (rules disabled)
+	userRepo     domainrepo.UserRepository           // for self-transfer detection
 	aiSvc        *aisvc.OpenRouterService             // may be nil (AI disabled)
 
 	// parser rules cache — avoids a DB query on every email processed
@@ -43,6 +44,7 @@ func NewEmailImportService(
 	accountRepo domainrepo.AccountRepository,
 	categoryRepo domainrepo.CategoryRepository,
 	ruleRepo domainrepo.BankParserRuleRepository,
+	userRepo domainrepo.UserRepository,
 	aiSvc *aisvc.OpenRouterService,
 ) *EmailImportService {
 	return &EmailImportService{
@@ -51,6 +53,7 @@ func NewEmailImportService(
 		accountRepo:  accountRepo,
 		categoryRepo: categoryRepo,
 		ruleRepo:     ruleRepo,
+		userRepo:     userRepo,
 		aiSvc:        aiSvc,
 	}
 }
@@ -169,6 +172,11 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 		return s.markFailed(ctx, msg.ID, err.Error())
 	}
 
+	// Fuzzy dedup: check if a similar transaction exists within 5 minutes of the tx date.
+	if exists, _ := s.fuzzyDedupCheck(ctx, msg.UserID, result.Data.Bank, tx.Type, tx.Amount, tx.Date); exists {
+		return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy: same bank/type/amount within 5min window)")
+	}
+
 	if err := s.txRepo.Create(ctx, tx); err != nil {
 		// Idempotency-key conflict means we already imported this — skip gracefully.
 		if strings.Contains(err.Error(), "idempotency_key") ||
@@ -213,6 +221,25 @@ func (s *EmailImportService) buildTransaction(
 	accountID, err := s.matchAccount(ctx, msg.UserID, parsed)
 	if err != nil {
 		return nil, fmt.Errorf("account match: %w", err)
+	}
+
+	// Self-transfer detection: reclassify expense→transfer when transferring to own account.
+	if parsed.Type == "expense" && s.userRepo != nil {
+		isTransferEmail := false
+		if et, ok := parsed.RawFields["email_type"]; ok && et == "transfer" {
+			isTransferEmail = true
+		}
+		if !isTransferEmail && parsed.RawFields != nil {
+			if ket, ok := parsed.RawFields["ket"]; ok && strings.Contains(strings.ToUpper(ket), "NBMB") {
+				isTransferEmail = true
+			}
+		}
+		if isTransferEmail && parsed.Merchant != "" {
+			accounts, _ := s.accountRepo.FindAllByUserID(ctx, msg.UserID)
+			if s.isSelfTransfer(ctx, msg.UserID, parsed.Merchant, accounts) {
+				parsed.Type = "transfer"
+			}
+		}
 	}
 
 	// Determine the best category for this transaction.
@@ -619,6 +646,11 @@ func (s *EmailImportService) tryAIFull(ctx context.Context, msg *entity.EmailMes
 		return s.markFailed(ctx, msg.ID, err.Error())
 	}
 
+	// Fuzzy dedup: check if a similar transaction exists within 5 minutes of the tx date.
+	if exists, _ := s.fuzzyDedupCheck(ctx, msg.UserID, parsed.Bank, tx.Type, tx.Amount, tx.Date); exists {
+		return s.markSkipped(ctx, msg.ID, "duplicate (fuzzy: same bank/type/amount within 5min window)")
+	}
+
 	if err := s.txRepo.Create(ctx, tx); err != nil {
 		if strings.Contains(err.Error(), "idempotency_key") ||
 			strings.Contains(err.Error(), "unique constraint") {
@@ -660,6 +692,68 @@ func (s *EmailImportService) markFailed(ctx context.Context, id uuid.UUID, errMs
 		"parse_status": "failed",
 		"parse_error":  truncate(errMsg, 500),
 	})
+}
+
+// fuzzyDedupCheck checks if a similar transaction already exists within a 5-minute
+// window before the transaction date (same user, bank, type, amount — any merchant).
+func (s *EmailImportService) fuzzyDedupCheck(ctx context.Context, userID uuid.UUID, bank, txType string, amount float64, txDate time.Time) (bool, error) {
+	amountCents := int64(amount * 100)
+	after := txDate.Add(-5 * time.Minute)
+	// Pass empty merchant to match ANY merchant within the window.
+	return s.txRepo.ExistsByAmountMerchantWindow(ctx, userID, bank, txType, amountCents, "", after)
+}
+
+// isSelfTransfer checks if the merchant (recipient name) matches the user's own name
+// or one of their account names — indicating a self-transfer rather than an expense.
+func (s *EmailImportService) isSelfTransfer(ctx context.Context, userID uuid.UUID, merchant string, accounts []entity.Account) bool {
+	if merchant == "" {
+		return false
+	}
+
+	merchantNorm := strings.ToLower(strings.TrimSpace(merchant))
+
+	// Check against user's name.
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil || user == nil {
+		return false
+	}
+
+	if fuzzyNameMatch(merchantNorm, strings.ToLower(strings.TrimSpace(user.Name))) {
+		return true
+	}
+
+	// Check against all user's account names.
+	for _, acc := range accounts {
+		accName := strings.ToLower(strings.TrimSpace(acc.Name))
+		if accName != "" && fuzzyNameMatch(merchantNorm, accName) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// fuzzyNameMatch checks if one string fully contains the other AND the shorter
+// string has at least 2 words. This prevents "AHMAD" matching unrelated people.
+func fuzzyNameMatch(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+
+	// Determine shorter and longer strings.
+	shorter, longer := a, b
+	if len(a) > len(b) {
+		shorter, longer = b, a
+	}
+
+	// The shorter string must have at least 2 words.
+	words := strings.Fields(shorter)
+	if len(words) < 2 {
+		return false
+	}
+
+	// Check if the longer string contains the shorter one.
+	return strings.Contains(longer, shorter)
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────

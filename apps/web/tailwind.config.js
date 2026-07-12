@@ -79,11 +79,11 @@ module.exports = {
         divider:  '#ECE4D3',
       },
       fontFamily: {
-        sans:    ['Nunito_500Medium', 'System'],
-        medium:  ['Nunito_600SemiBold', 'System'],
-        semibold:['Nunito_700Bold', 'System'],
-        bold:    ['Nunito_800ExtraBold', 'System'],
-        black:   ['Nunito_900Black', 'System'],
+        sans:    ['Inter_500Medium', 'System'],
+        medium:  ['Inter_600SemiBold', 'System'],
+        semibold:['Inter_700Bold', 'System'],
+        bold:    ['Inter_800ExtraBold', 'System'],
+        black:   ['Inter_900Black', 'System'],
         mono:    ['JetBrainsMono', 'Menlo', 'monospace'],
       },
       borderRadius: {

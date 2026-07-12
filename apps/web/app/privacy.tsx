@@ -21,10 +21,10 @@ export default function PrivacyPolicyPage() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)', lineHeight: 26 }}>‹</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginLeft: 2 }}>Kembali</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Inter_600SemiBold', marginLeft: 2 }}>Kembali</Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black' }}>Kebijakan Privasi</Text>
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4, fontFamily: 'Nunito_500Medium' }}>
+          <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff', fontFamily: 'Inter_900Black' }}>Kebijakan Privasi</Text>
+          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4, fontFamily: 'Inter_500Medium' }}>
             Terakhir diperbarui: 1 Juli 2026
           </Text>
         </View>
@@ -76,10 +76,10 @@ export default function PrivacyPolicyPage() {
 function Section({ title, children }: { title: string; children: string | React.ReactNode }) {
   return (
     <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border }}>
-      <Text style={{ fontSize: 15, fontWeight: '800', color: C.heroEnd, fontFamily: 'Nunito_800ExtraBold', marginBottom: 8 }}>
+      <Text style={{ fontSize: 15, fontWeight: '800', color: C.heroEnd, fontFamily: 'Inter_800ExtraBold', marginBottom: 8 }}>
         {title}
       </Text>
-      <Text style={{ fontSize: 13, color: C.fg2, lineHeight: 20, fontFamily: 'Nunito_500Medium' }}>
+      <Text style={{ fontSize: 13, color: C.fg2, lineHeight: 20, fontFamily: 'Inter_500Medium' }}>
         {children}
       </Text>
     </View>

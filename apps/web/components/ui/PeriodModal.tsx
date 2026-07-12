@@ -114,7 +114,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
       </View>
 
       <View style={{ paddingHorizontal: 20, paddingBottom: 4 }}>
-        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', letterSpacing: -0.3, paddingTop: 8 }}>
+        <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', letterSpacing: -0.3, paddingTop: 8 }}>
           Pilih Periode
         </Text>
       </View>
@@ -143,7 +143,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
                 }}
               >
                 <Text style={{
-                  fontSize: 15, fontWeight: '700', fontFamily: 'Nunito_700Bold',
+                  fontSize: 15, fontWeight: '700', fontFamily: 'Inter_700Bold',
                   color: active ? C.heroEnd : C.fg1,
                 }}>
                   {p.label}
@@ -161,7 +161,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
               padding: 16, marginTop: 4, marginBottom: 8,
               borderWidth: 1, borderColor: '#E3B25A',
             }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#8C6B1F', marginBottom: 8, fontFamily: 'Nunito_800ExtraBold' }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#8C6B1F', marginBottom: 8, fontFamily: 'Inter_800ExtraBold' }}>
                 💰 Tanggal Gajian
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
@@ -174,7 +174,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
                     style={{
                       flex: 1, padding: '8px 12px', border: '1px solid #E3B25A',
                       borderRadius: 10, fontSize: 14, color: C.fg1, backgroundColor: '#fff',
-                      fontFamily: 'Nunito, system-ui',
+                      fontFamily: 'Inter, system-ui',
                     }}
                   />
                 ) : null}
@@ -187,7 +187,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
                 }}
                 style={{ backgroundColor: C.mustard, borderRadius: 12, padding: 12, alignItems: 'center' }}
               >
-                <Text style={{ color: '#fff', fontWeight: '800', fontFamily: 'Nunito_800ExtraBold' }}>Terapkan</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontFamily: 'Inter_800ExtraBold' }}>Terapkan</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -198,7 +198,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
               padding: 16, marginTop: 4, marginBottom: 8,
               borderWidth: 1, borderColor: C.border,
             }}>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg2, marginBottom: 12, fontFamily: 'Nunito_800ExtraBold', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: C.fg2, marginBottom: 12, fontFamily: 'Inter_800ExtraBold', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Rentang Tanggal
               </Text>
               <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
@@ -216,7 +216,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
                           width: '100%', padding: '8px 10px',
                           border: `1px solid ${C.border}`, borderRadius: 10,
                           fontSize: 13, color: C.fg1, backgroundColor: '#fff',
-                          fontFamily: 'Nunito, system-ui',
+                          fontFamily: 'Inter, system-ui',
                         }}
                       />
                     ) : null}
@@ -229,7 +229,7 @@ export function PeriodModal({ visible, current, paydayDate, onSelect, onClose }:
                 }}
                 style={{ backgroundColor: C.primary, borderRadius: 12, padding: 12, alignItems: 'center' }}
               >
-                <Text style={{ color: '#fff', fontWeight: '800', fontFamily: 'Nunito_800ExtraBold' }}>Terapkan</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontFamily: 'Inter_800ExtraBold' }}>Terapkan</Text>
               </TouchableOpacity>
             </View>
           )}

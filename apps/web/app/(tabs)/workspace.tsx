@@ -121,7 +121,7 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Buat Workspace Baru</Text>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Buat Workspace Baru</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Text style={{ fontSize: 20, color: C.fg4, lineHeight: 24 }}>✕</Text>
             </TouchableOpacity>
@@ -133,7 +133,7 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
             </View>
           ) : null}
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Jenis Workspace</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Inter_600SemiBold', marginBottom: 8 }}>Jenis Workspace</Text>
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
             {[
               { v: 'family',   label: 'Keluarga', icon: '👨‍👩‍👧' },
@@ -145,14 +145,14 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
                 style={{ flex: 1, padding: 14, borderRadius: 14, alignItems: 'center', borderWidth: 1, backgroundColor: tier === t.v ? C.primarySoft : C.creamSunken, borderColor: tier === t.v ? C.primary : C.border }}
               >
                 <Text style={{ fontSize: 24 }}>{t.icon}</Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', marginTop: 6, color: tier === t.v ? C.primary : C.fg2 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', marginTop: 6, color: tier === t.v ? C.primary : C.fg2 }}>
                   {t.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Nama Workspace</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Inter_600SemiBold', marginBottom: 8 }}>Nama Workspace</Text>
           <TextInput
             style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 12 }}
             placeholder="Contoh: Keuangan Keluarga"
@@ -161,7 +161,7 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
             onChangeText={setName}
           />
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Deskripsi (opsional)</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Inter_600SemiBold', marginBottom: 8 }}>Deskripsi (opsional)</Text>
           <TextInput
             style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: C.fg1, marginBottom: 20 }}
             placeholder="Untuk apa workspace ini..."
@@ -179,7 +179,7 @@ function CreateWorkspaceModal({ visible, onClose }: { visible: boolean; onClose:
           >
             {mutation.isPending
               ? <ActivityIndicator color="white" />
-              : <Text style={{ color: C.surface, fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>Buat Workspace</Text>}
+              : <Text style={{ color: C.surface, fontWeight: '700', fontSize: 16, fontFamily: 'Inter_700Bold' }}>Buat Workspace</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -212,7 +212,7 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Undang Anggota</Text>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Undang Anggota</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Text style={{ fontSize: 20, color: C.fg4, lineHeight: 24 }}>✕</Text>
             </TouchableOpacity>
@@ -230,7 +230,7 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
             </View>
           ) : null}
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Email</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Inter_600SemiBold', marginBottom: 8 }}>Email</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, marginBottom: 16 }}>
             <Text style={{ fontSize: 16, color: C.fg4 }}>✉️</Text>
             <TextInput
@@ -244,7 +244,7 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
             />
           </View>
 
-          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 }}>Role</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Inter_600SemiBold', marginBottom: 8 }}>Role</Text>
           <View style={{ gap: 8, marginBottom: 20 }}>
             {ROLES.map((r) => (
               <TouchableOpacity
@@ -254,10 +254,10 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
               >
                 <Text style={{ fontSize: 16 }}>{r.icon}</Text>
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold', color: role === r.value ? C.primary : C.fg2 }}>
+                  <Text style={{ fontWeight: '600', fontSize: 13, fontFamily: 'Inter_600SemiBold', color: role === r.value ? C.primary : C.fg2 }}>
                     {r.label}
                   </Text>
-                  <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>{r.desc}</Text>
+                  <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Inter_500Medium' }}>{r.desc}</Text>
                 </View>
                 {role === r.value && <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: C.primary }} />}
               </TouchableOpacity>
@@ -271,7 +271,7 @@ function InviteModal({ visible, wsId, onClose }: { visible: boolean; wsId: strin
           >
             {mutation.isPending
               ? <ActivityIndicator color="white" />
-              : <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Kirim Undangan</Text>}
+              : <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>Kirim Undangan</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -349,24 +349,24 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
       <View style={{ backgroundColor: C.primary, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}>
         <TouchableOpacity onPress={onBack} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)', lineHeight: 24 }}>‹</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginLeft: 4, fontFamily: 'Nunito_500Medium' }}>Workspace</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginLeft: 4, fontFamily: 'Inter_500Medium' }}>Workspace</Text>
         </TouchableOpacity>
-        <Text style={{ color: C.surface, fontSize: 24, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
+        <Text style={{ color: C.surface, fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>{ws.name}</Text>
         {ws.description ? (
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 4 }}>{ws.description}</Text>
         ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
           <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ fontSize: 12 }}>👥</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginLeft: 6, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginLeft: 6, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>
               {members?.length ?? 0} anggota
             </Text>
           </View>
           <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginLeft: 8 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>{ws.tier}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>{ws.tier}</Text>
           </View>
           <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginLeft: 8 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>{myRole === 'owner' ? '👑 Owner' : roleLabel(myRole)}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>{myRole === 'owner' ? '👑 Owner' : roleLabel(myRole)}</Text>
           </View>
         </View>
       </View>
@@ -379,7 +379,7 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
             onPress={() => setTab(t.key)}
             style={{ paddingVertical: 14, marginRight: 24, borderBottomWidth: 2, borderBottomColor: tab === t.key ? C.primary : 'transparent' }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: tab === t.key ? C.primary : C.fg4 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: tab === t.key ? C.primary : C.fg4 }}>
               {t.label}
             </Text>
           </TouchableOpacity>
@@ -399,8 +399,8 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                   <Text style={{ fontSize: 20 }}>👤</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.primary, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>Undang Anggota Baru</Text>
-                  <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Kirim undangan via email</Text>
+                  <Text style={{ color: C.primary, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>Undang Anggota Baru</Text>
+                  <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Inter_500Medium' }}>Kirim undangan via email</Text>
                 </View>
                 <Text style={{ fontSize: 18, color: C.primary }}>›</Text>
               </TouchableOpacity>
@@ -414,22 +414,22 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                   <View key={m.userId}>
                     <View style={{ paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center' }}>
                       <View style={{ width: 40, height: 40, backgroundColor: 'rgba(107,142,107,0.1)', borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                        <Text style={{ color: C.primary, fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>
+                        <Text style={{ color: C.primary, fontWeight: '700', fontSize: 16, fontFamily: 'Inter_700Bold' }}>
                           {m.name?.charAt(0)?.toUpperCase() ?? '?'}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>{m.name}</Text>
+                          <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Inter_600SemiBold' }}>{m.name}</Text>
                           {m.userId === currentUser?.id && (
-                            <Text style={{ color: C.fg4, fontSize: 11, marginLeft: 6, fontFamily: 'Nunito_500Medium' }}>(kamu)</Text>
+                            <Text style={{ color: C.fg4, fontSize: 11, marginLeft: 6, fontFamily: 'Inter_500Medium' }}>(kamu)</Text>
                           )}
                         </View>
-                        <Text style={{ color: C.fg4, fontSize: 11, fontFamily: 'Nunito_500Medium' }}>{m.email}</Text>
+                        <Text style={{ color: C.fg4, fontSize: 11, fontFamily: 'Inter_500Medium' }}>{m.email}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <RoleIcon role={m.role} />
-                        <Text style={{ color: C.fg3, fontSize: 11, marginLeft: 4, marginRight: 8, fontFamily: 'Nunito_500Medium' }}>{roleLabel(m.role)}</Text>
+                        <Text style={{ color: C.fg3, fontSize: 11, marginLeft: 4, marginRight: 8, fontFamily: 'Inter_500Medium' }}>{roleLabel(m.role)}</Text>
                         {canManage && m.role !== 'owner' && m.userId !== currentUser?.id && (
                           <TouchableOpacity
                             onPress={() => {
@@ -469,7 +469,7 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                 style={{ marginTop: 16, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24, backgroundColor: 'rgba(198,107,107,0.08)', borderWidth: 1, borderColor: 'rgba(198,107,107,0.2)' }}
               >
                 <Text style={{ fontSize: 16, marginRight: 8 }}>↗</Text>
-                <Text style={{ color: C.danger, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>Keluar dari Workspace</Text>
+                <Text style={{ color: C.danger, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>Keluar dari Workspace</Text>
               </TouchableOpacity>
             )}
           </>
@@ -484,7 +484,7 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
             ) : (invites ?? []).length === 0 ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
                 <Text style={{ fontSize: 36 }}>✉️</Text>
-                <Text style={{ color: C.fg4, marginTop: 12, fontFamily: 'Nunito_500Medium' }}>Tidak ada undangan aktif</Text>
+                <Text style={{ color: C.fg4, marginTop: 12, fontFamily: 'Inter_500Medium' }}>Tidak ada undangan aktif</Text>
               </View>
             ) : (
               <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden' }}>
@@ -495,8 +495,8 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
                         <Text style={{ fontSize: 16 }}>✉️</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>{inv.email}</Text>
-                        <Text style={{ color: C.fg4, fontSize: 11, fontFamily: 'Nunito_500Medium' }}>
+                        <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Inter_600SemiBold' }}>{inv.email}</Text>
+                        <Text style={{ color: C.fg4, fontSize: 11, fontFamily: 'Inter_500Medium' }}>
                           Role: {roleLabel(inv.role)} · Exp: {format(new Date(inv.expiresAt), 'd MMM', { locale: id })}
                         </Text>
                       </View>
@@ -526,32 +526,32 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
               <>
                 <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
                   <View style={{ flex: 1, backgroundColor: C.surface, borderRadius: 20, padding: 16 }}>
-                    <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Pemasukan</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.primary, marginTop: 4, fontFamily: 'Nunito_700Bold' }}>{formatCurrency(summary?.totalIncome ?? 0)}</Text>
+                    <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>Pemasukan</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.primary, marginTop: 4, fontFamily: 'Inter_700Bold' }}>{formatCurrency(summary?.totalIncome ?? 0)}</Text>
                   </View>
                   <View style={{ flex: 1, backgroundColor: C.surface, borderRadius: 20, padding: 16 }}>
-                    <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Pengeluaran</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.accent, marginTop: 4, fontFamily: 'Nunito_700Bold' }}>{formatCurrency(summary?.totalExpense ?? 0)}</Text>
+                    <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>Pengeluaran</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.accent, marginTop: 4, fontFamily: 'Inter_700Bold' }}>{formatCurrency(summary?.totalExpense ?? 0)}</Text>
                   </View>
                 </View>
                 <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 16, marginBottom: 16 }}>
-                  <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Net Balance</Text>
-                  <Text style={{ fontSize: 20, fontWeight: '700', marginTop: 4, fontFamily: 'Nunito_700Bold', color: (summary?.netBalance ?? 0) >= 0 ? C.primary : C.danger }}>
+                  <Text style={{ fontSize: 11, color: C.fg4, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>Net Balance</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '700', marginTop: 4, fontFamily: 'Inter_700Bold', color: (summary?.netBalance ?? 0) >= 0 ? C.primary : C.danger }}>
                     {formatCurrency(summary?.netBalance ?? 0)}
                   </Text>
-                  <Text style={{ fontSize: 11, color: C.fg4, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>{summary?.transactionCount ?? 0} transaksi</Text>
+                  <Text style={{ fontSize: 11, color: C.fg4, marginTop: 4, fontFamily: 'Inter_500Medium' }}>{summary?.transactionCount ?? 0} transaksi</Text>
                 </View>
                 {(categoryBreakdown ?? []).length > 0 && (
                   <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 16, marginBottom: 16 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 12, fontFamily: 'Nunito_700Bold' }}>Top Kategori</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 12, fontFamily: 'Inter_700Bold' }}>Top Kategori</Text>
                     {(categoryBreakdown ?? []).slice(0, 5).map((row: any) => {
                       const maxTotal = (categoryBreakdown ?? [])[0]?.total ?? 1
                       const pct = Math.round((row.total / maxTotal) * 100)
                       return (
                         <View key={row.categoryId ?? 'uncategorized'} style={{ marginBottom: 12 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_500Medium' }}>{row.categoryIcon ?? '📦'} {row.categoryName ?? 'Lainnya'}</Text>
-                            <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{formatCurrency(row.total)}</Text>
+                            <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Inter_500Medium' }}>{row.categoryIcon ?? '📦'} {row.categoryName ?? 'Lainnya'}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg2, fontFamily: 'Inter_600SemiBold' }}>{formatCurrency(row.total)}</Text>
                           </View>
                           <View style={{ height: 8, backgroundColor: C.creamSunken, borderRadius: 999, overflow: 'hidden' }}>
                             <View style={{ height: '100%', backgroundColor: C.primary, borderRadius: 999, width: `${pct}%` }} />
@@ -573,7 +573,7 @@ function WorkspaceDetail({ ws, onBack }: { ws: Workspace; onBack: () => void }) 
               <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
             ) : (wsTxData?.data ?? []).length === 0 ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                <Text style={{ color: C.fg4, marginTop: 12, fontFamily: 'Nunito_500Medium' }}>Belum ada transaksi</Text>
+                <Text style={{ color: C.fg4, marginTop: 12, fontFamily: 'Inter_500Medium' }}>Belum ada transaksi</Text>
               </View>
             ) : (
               <View style={{ backgroundColor: C.surface, borderRadius: 20, overflow: 'hidden' }}>
@@ -631,7 +631,7 @@ function PendingInviteBanner() {
 
   return (
     <View style={{ marginBottom: 20 }}>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Nunito_700Bold' }}>Undangan Masuk</Text>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg2, marginBottom: 8, fontFamily: 'Inter_700Bold' }}>Undangan Masuk</Text>
       {pending.map((inv) => (
         <View key={inv.id} style={{ borderRadius: 20, padding: 16, marginBottom: 8, backgroundColor: C.mustardSoft, borderWidth: 1, borderColor: C.mustard }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
@@ -639,10 +639,10 @@ function PendingInviteBanner() {
               <Text style={{ fontSize: 18 }}>✉️</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>
+              <Text style={{ color: C.fg1, fontWeight: '600', fontSize: 13, fontFamily: 'Inter_600SemiBold' }}>
                 Undangan ke workspace
               </Text>
-              <Text style={{ color: C.fg3, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+              <Text style={{ color: C.fg3, fontSize: 11, marginTop: 2, fontFamily: 'Inter_500Medium' }}>
                 Role: {roleLabel(inv.role)} · Exp: {format(new Date(inv.expiresAt), 'd MMM', { locale: id })}
               </Text>
             </View>
@@ -655,14 +655,14 @@ function PendingInviteBanner() {
             >
               {acceptMut.isPending
                 ? <ActivityIndicator size="small" color="white" />
-                : <Text style={{ color: C.surface, fontWeight: '700', fontSize: 13, fontFamily: 'Nunito_700Bold' }}>Terima</Text>}
+                : <Text style={{ color: C.surface, fontWeight: '700', fontSize: 13, fontFamily: 'Inter_700Bold' }}>Terima</Text>}
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => inv.token && declineMut.mutate(inv.token)}
               disabled={declineMut.isPending || !inv.token}
               style={{ flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center', backgroundColor: C.creamSunken }}
             >
-              <Text style={{ color: C.fg2, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>Tolak</Text>
+              <Text style={{ color: C.fg2, fontWeight: '600', fontSize: 13, fontFamily: 'Inter_600SemiBold' }}>Tolak</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -709,9 +709,9 @@ export default function WorkspaceScreen() {
           <View style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: C.mustardSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
             <Text style={{ fontSize: 32 }}>🔒</Text>
           </View>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 6 }}>Fitur Pro</Text>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center', marginBottom: 8 }}>Workspace Bersama</Text>
-          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium', marginBottom: 24 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Inter_800ExtraBold', marginBottom: 6 }}>Fitur Pro</Text>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', textAlign: 'center', marginBottom: 8 }}>Workspace Bersama</Text>
+          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Inter_500Medium', marginBottom: 24 }}>
             {'Kelola keuangan bersama keluarga atau tim.\nFitur ini tersedia di paket Pro.'}
           </Text>
           <View style={{ backgroundColor: C.surface, borderRadius: 16, padding: 16, width: '100%', marginBottom: 24, gap: 10 }}>
@@ -723,7 +723,7 @@ export default function WorkspaceScreen() {
             ].map(([icon, label]) => (
               <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Text style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{icon}</Text>
-                <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{label}</Text>
+                <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Inter_600SemiBold' }}>{label}</Text>
               </View>
             ))}
           </View>
@@ -731,7 +731,7 @@ export default function WorkspaceScreen() {
             onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
             style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 36, width: '100%', alignItems: 'center' }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Lihat Paket Pro →</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Lihat Paket Pro →</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -749,13 +749,13 @@ export default function WorkspaceScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ fontSize: 22, color: C.primary, lineHeight: 26 }}>‹</Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', marginLeft: 2, color: C.primary, fontFamily: 'Nunito_600SemiBold' }}>Kembali</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', marginLeft: 2, color: C.primary, fontFamily: 'Inter_600SemiBold' }}>Kembali</Text>
           </TouchableOpacity>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <View>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Workspace</Text>
-              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Kelola keuangan bersama</Text>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Workspace</Text>
+              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 2, fontFamily: 'Inter_500Medium' }}>Kelola keuangan bersama</Text>
             </View>
             {isPro && (
               <TouchableOpacity
@@ -763,7 +763,7 @@ export default function WorkspaceScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 }}
               >
                 <Text style={{ fontSize: 16, color: C.surface, lineHeight: 20, marginRight: 4 }}>+</Text>
-                <Text style={{ color: C.surface, fontWeight: '600', fontSize: 13, fontFamily: 'Nunito_600SemiBold' }}>Buat</Text>
+                <Text style={{ color: C.surface, fontWeight: '600', fontSize: 13, fontFamily: 'Inter_600SemiBold' }}>Buat</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -773,8 +773,8 @@ export default function WorkspaceScreen() {
 
           {/* Info card */}
           <View style={{ backgroundColor: C.primarySoft, borderWidth: 1, borderColor: '#C2D4B9', borderRadius: 16, padding: 16, marginBottom: 20 }}>
-            <Text style={{ color: '#2F4338', fontSize: 13, fontWeight: '700', marginBottom: 4, fontFamily: 'Nunito_700Bold' }}>Apa itu Workspace?</Text>
-            <Text style={{ color: C.heroEnd, fontSize: 12, lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ color: '#2F4338', fontSize: 13, fontWeight: '700', marginBottom: 4, fontFamily: 'Inter_700Bold' }}>Apa itu Workspace?</Text>
+            <Text style={{ color: C.heroEnd, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_500Medium' }}>
               Workspace memungkinkan kamu berbagi data keuangan dengan keluarga atau tim bisnis.
               Setiap anggota punya role berbeda — owner, admin, kontributor, atau viewer.
             </Text>
@@ -787,8 +787,8 @@ export default function WorkspaceScreen() {
           ) : (workspaces ?? []).length === 0 ? (
             <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 32, alignItems: 'center' }}>
               <Text style={{ fontSize: 40 }}>👥</Text>
-              <Text style={{ color: C.fg3, fontWeight: '600', marginTop: 12, fontFamily: 'Nunito_600SemiBold' }}>Belum ada workspace</Text>
-              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
+              <Text style={{ color: C.fg3, fontWeight: '600', marginTop: 12, fontFamily: 'Inter_600SemiBold' }}>Belum ada workspace</Text>
+              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
                 Buat workspace untuk berbagi keuangan dengan keluarga atau bisnis
               </Text>
               {isPro ? (
@@ -796,14 +796,14 @@ export default function WorkspaceScreen() {
                   onPress={() => setShowCreate(true)}
                   style={{ marginTop: 16, backgroundColor: C.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12 }}
                 >
-                  <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Buat Workspace Pertama</Text>
+                  <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>Buat Workspace Pertama</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
                   style={{ marginTop: 16, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: C.mustard }}
                 >
-                  <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Upgrade Pro untuk Membuat →</Text>
+                  <Text style={{ color: C.surface, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>Upgrade Pro untuk Membuat →</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -819,13 +819,13 @@ export default function WorkspaceScreen() {
                     <Text style={{ fontSize: 22 }}>{ws.tier === 'family' ? '👨‍👩‍👧' : '💼'}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: C.fg1, fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
+                    <Text style={{ color: C.fg1, fontWeight: '700', fontSize: 16, fontFamily: 'Inter_700Bold' }}>{ws.name}</Text>
                     {ws.description ? (
-                      <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }} numberOfLines={1}>{ws.description}</Text>
+                      <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Inter_500Medium' }} numberOfLines={1}>{ws.description}</Text>
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                       <View style={{ backgroundColor: C.creamSunken, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 }}>
-                        <Text style={{ color: C.fg3, fontSize: 11, fontFamily: 'Nunito_500Medium' }}>{ws.tier}</Text>
+                        <Text style={{ color: C.fg3, fontSize: 11, fontFamily: 'Inter_500Medium' }}>{ws.tier}</Text>
                       </View>
                     </View>
                   </View>

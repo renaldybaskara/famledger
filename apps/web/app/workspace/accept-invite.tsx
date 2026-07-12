@@ -115,10 +115,10 @@ export default function AcceptInviteScreen() {
             <View style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
               <ActivityIndicator size="large" color={C.primary} />
             </View>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: C.fg1, textAlign: 'center', fontFamily: 'Nunito_800ExtraBold' }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: C.fg1, textAlign: 'center', fontFamily: 'Inter_800ExtraBold' }}>
               Memproses undangan...
             </Text>
-            <Text style={{ fontSize: 14, color: C.fg3, marginTop: 8, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 14, color: C.fg3, marginTop: 8, textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
               Sedang bergabung ke workspace
             </Text>
           </>
@@ -129,10 +129,10 @@ export default function AcceptInviteScreen() {
             <View style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
               <Text style={{ fontSize: 36 }}>🌿</Text>
             </View>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, textAlign: 'center', fontFamily: 'Nunito_900Black', letterSpacing: -0.5 }}>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, textAlign: 'center', fontFamily: 'Inter_900Black', letterSpacing: -0.5 }}>
               Login dulu yuk!
             </Text>
-            <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Inter_500Medium' }}>
               Kamu diundang untuk bergabung ke workspace Budgetin.{'\n'}
               Login dengan Google untuk menerima undangan.
             </Text>
@@ -147,7 +147,7 @@ export default function AcceptInviteScreen() {
               }}
             >
               <Text style={{ fontSize: 16 }}>G</Text>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>
                 Masuk dengan Google
               </Text>
             </TouchableOpacity>
@@ -159,10 +159,10 @@ export default function AcceptInviteScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 999, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
               <Text style={{ fontSize: 40 }}>🎉</Text>
             </View>
-            <Text style={{ fontSize: 24, fontWeight: '900', color: C.fg1, textAlign: 'center', fontFamily: 'Nunito_900Black', letterSpacing: -0.5 }}>
+            <Text style={{ fontSize: 24, fontWeight: '900', color: C.fg1, textAlign: 'center', fontFamily: 'Inter_900Black', letterSpacing: -0.5 }}>
               Berhasil bergabung!
             </Text>
-            <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Inter_500Medium' }}>
               {message || `Kamu sekarang anggota workspace ${workspaceName ? `"${workspaceName}"` : ''}.`}
             </Text>
 
@@ -175,13 +175,13 @@ export default function AcceptInviteScreen() {
                 shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>
                 Lihat Workspace
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleGoHome} style={{ marginTop: 12 }}>
-              <Text style={{ color: C.fg3, fontSize: 14, fontFamily: 'Nunito_600SemiBold' }}>Ke Beranda</Text>
+              <Text style={{ color: C.fg3, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>Ke Beranda</Text>
             </TouchableOpacity>
           </>
         )}
@@ -191,10 +191,10 @@ export default function AcceptInviteScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 999, backgroundColor: C.dangerSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
               <Text style={{ fontSize: 40 }}>😕</Text>
             </View>
-            <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, textAlign: 'center', fontFamily: 'Nunito_900Black' }}>
+            <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, textAlign: 'center', fontFamily: 'Inter_900Black' }}>
               Undangan tidak valid
             </Text>
-            <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 14, color: C.fg2, marginTop: 10, textAlign: 'center', lineHeight: 22, fontFamily: 'Inter_500Medium' }}>
               {message}
             </Text>
 
@@ -205,7 +205,7 @@ export default function AcceptInviteScreen() {
                 paddingVertical: 14, paddingHorizontal: 32,
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>
                 Ke Beranda
               </Text>
             </TouchableOpacity>

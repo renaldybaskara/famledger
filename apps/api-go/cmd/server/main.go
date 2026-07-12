@@ -161,6 +161,7 @@ func main() {
 		accountRepo,
 		categoryRepo,
 		parserRuleRepo,
+		userRepo,
 		aiService,
 	)
 

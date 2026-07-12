@@ -79,7 +79,7 @@ export function Button({
       ) : (
         <>
           {icon && iconPosition === 'left' && <View style={{ marginRight: 8 }}>{icon}</View>}
-          <Text style={{ color: vc.text, fontSize: ss.fontSize, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
+          <Text style={{ color: vc.text, fontSize: ss.fontSize, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>
             {title}
           </Text>
           {icon && iconPosition === 'right' && <View style={{ marginLeft: 8 }}>{icon}</View>}

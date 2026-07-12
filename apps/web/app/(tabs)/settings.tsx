@@ -97,15 +97,15 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
           style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}
         >
           <View style={{ width: 58, height: 58, borderRadius: 18, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 22, fontFamily: 'Nunito_900Black' }}>{initial}</Text>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 22, fontFamily: 'Inter_900Black' }}>{initial}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 19, fontWeight: '900', color: '#fff', letterSpacing: -0.3, fontFamily: 'Nunito_900Black' }}>{user?.name ?? 'User'}</Text>
-            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>{user?.email ?? ''}</Text>
+            <Text style={{ fontSize: 19, fontWeight: '900', color: '#fff', letterSpacing: -0.3, fontFamily: 'Inter_900Black' }}>{user?.name ?? 'User'}</Text>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontFamily: 'Inter_500Medium' }}>{user?.email ?? ''}</Text>
           </View>
           {isPro && (
             <View style={{ backgroundColor: C.mustard, borderRadius: 9, paddingHorizontal: 9, paddingVertical: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black' }}>PRO</Text>
+              <Text style={{ fontSize: 12, fontWeight: '900', color: '#fff', fontFamily: 'Inter_900Black' }}>PRO</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -127,8 +127,8 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
             <Text style={{ fontSize: 22 }}>{sub?.status === 'trialing' ? '✨' : sub?.status === 'active' ? '⭐' : '⭐'}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black' }}>Paket & Pembayaran</Text>
-            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', fontFamily: 'Inter_900Black' }}>Paket & Pembayaran</Text>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
               {sub?.status === 'trialing'
                 ? `✨ Trial Pro aktif · ${daysLeft ?? 0} hari tersisa`
                 : sub?.status === 'active'
@@ -259,8 +259,8 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
               ) : <Text style={{ fontSize: 14 }}>🌙</Text>}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Mode Gelap</Text>
-              <Text style={{ fontSize: 12, color: C.fg3, marginTop: 1, fontFamily: 'Nunito_500Medium' }}>Ikuti tema sistem</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Mode Gelap</Text>
+              <Text style={{ fontSize: 12, color: C.fg3, marginTop: 1, fontFamily: 'Inter_500Medium' }}>Ikuti tema sistem</Text>
             </View>
             <Switch value={isDark} onValueChange={toggleDark} trackColor={{ false: C.border, true: C.primary }} thumbColor="#fff" />
           </View>
@@ -275,11 +275,11 @@ function MainSettings({ user, onLogout, onNavigate }: { user: any; onLogout: () 
                 </svg>
               ) : <Text style={{ fontSize: 14 }}>🚪</Text>}
             </View>
-            <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: '#C97B5C', fontFamily: 'Nunito_700Bold' }}>Keluar</Text>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: '#C97B5C', fontFamily: 'Inter_700Bold' }}>Keluar</Text>
           </TouchableOpacity>
         </SectionCard>
 
-        <Text style={{ textAlign: 'center', fontSize: 12, color: '#C8D8D2', fontFamily: 'Nunito_500Medium' }}>
+        <Text style={{ textAlign: 'center', fontSize: 12, color: '#C8D8D2', fontFamily: 'Inter_500Medium' }}>
           Budgetin v1.0.0 · Self-hosted
         </Text>
       </View>
@@ -302,17 +302,17 @@ function AccountSection({ user, onBack }: { user: any; onBack: () => void }) {
           shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
         }}>
           <View style={{ width: 80, height: 80, borderRadius: 999, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 32, fontFamily: 'Nunito_900Black' }}>{initial}</Text>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 32, fontFamily: 'Inter_900Black' }}>{initial}</Text>
           </View>
-          <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>{user?.name}</Text>
-          <Text style={{ fontSize: 14, color: C.fg3, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>{user?.email}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>{user?.name}</Text>
+          <Text style={{ fontSize: 14, color: C.fg3, marginTop: 4, fontFamily: 'Inter_500Medium' }}>{user?.email}</Text>
           <View style={{
             flexDirection: 'row', alignItems: 'center', gap: 6,
             marginTop: 10, backgroundColor: C.primarySoft, borderRadius: 999,
             paddingHorizontal: 12, paddingVertical: 5,
           }}>
             <Text style={{ fontSize: 12 }}>✅</Text>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: C.heroEnd, fontFamily: 'Nunito_700Bold' }}>Masuk via Google</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: C.heroEnd, fontFamily: 'Inter_700Bold' }}>Masuk via Google</Text>
           </View>
         </View>
       </View>
@@ -394,7 +394,7 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
           borderRadius: 12, padding: 12, marginBottom: 20,
         }}>
           <Text style={{ fontSize: 16 }}>{isConfigured ? '✅' : '⚠️'}</Text>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: C.fg1, fontFamily: 'Inter_600SemiBold' }}>
             {isConfigured ? 'SMTP terkonfigurasi' : 'SMTP belum dikonfigurasi — email undangan tidak akan terkirim'}
           </Text>
         </View>
@@ -410,8 +410,8 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
               shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
             }}>
               <View>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Aktifkan SMTP</Text>
-                <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>Kirim email undangan & notifikasi</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Aktifkan SMTP</Text>
+                <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium' }}>Kirim email undangan & notifikasi</Text>
               </View>
               <Switch
                 value={enabled}
@@ -441,7 +441,7 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
               }}
             >
               {updateSmtp.isPending && <ActivityIndicator size="small" color="#fff" />}
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Simpan Pengaturan</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Simpan Pengaturan</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -454,7 +454,7 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
               }}
             >
               {testSmtp.isPending && <ActivityIndicator size="small" color={C.primary} />}
-              <Text style={{ color: C.primary, fontWeight: '700', fontSize: 15, fontFamily: 'Nunito_700Bold' }}>Kirim Email Test</Text>
+              <Text style={{ color: C.primary, fontWeight: '700', fontSize: 15, fontFamily: 'Inter_700Bold' }}>Kirim Email Test</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -466,7 +466,7 @@ function SmtpSection({ onBack }: { onBack: () => void }) {
             backgroundColor: C.fg1, borderRadius: 12, padding: 14,
             alignItems: 'center',
           }}>
-            <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>{toast}</Text>
+            <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>{toast}</Text>
           </View>
         )}
       </View>
@@ -551,7 +551,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
             flexDirection: 'row', gap: 8, marginBottom: 20,
           }}>
             <Text style={{ fontSize: 14 }}>ℹ️</Text>
-            <Text style={{ flex: 1, fontSize: 12, color: C.heroEnd, fontFamily: 'Nunito_500Medium', lineHeight: 18 }}>
+            <Text style={{ flex: 1, fontSize: 12, color: C.heroEnd, fontFamily: 'Inter_500Medium', lineHeight: 18 }}>
               Bank yang ditambahkan akan diproses AI saat pertama kali. Email berikutnya langsung otomatis tanpa AI.{'\n'}
               Aktifkan <Text style={{ fontWeight: '700' }}>OPENROUTER_API_KEY</Text> di .env agar fitur ini berjalan.
             </Text>
@@ -562,7 +562,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
           ) : rules.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
               <Text style={{ fontSize: 32 }}>🏦</Text>
-              <Text style={{ fontSize: 14, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>Belum ada bank yang ditambahkan</Text>
+              <Text style={{ fontSize: 14, color: C.fg3, fontFamily: 'Inter_500Medium' }}>Belum ada bank yang ditambahkan</Text>
             </View>
           ) : (
             <View style={{ gap: 8, marginBottom: 16 }}>
@@ -574,17 +574,17 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                 }}>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>{rule.name}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>{rule.name}</Text>
                       <View style={{
                         backgroundColor: isAIOnly(rule) ? '#EDE9FE' : C.primarySoft,
                         borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
                       }}>
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: isAIOnly(rule) ? '#6D28D9' : C.heroEnd, fontFamily: 'Nunito_700Bold' }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: isAIOnly(rule) ? '#6D28D9' : C.heroEnd, fontFamily: 'Inter_700Bold' }}>
                           {isAIOnly(rule) ? '🤖 AI Mode' : '✅ Terpelajari'}
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ fontSize: 12, color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                    <Text style={{ fontSize: 12, color: C.fg3, marginTop: 2, fontFamily: 'Inter_500Medium' }}>
                       {rule.fromPatterns}
                     </Text>
                   </View>
@@ -620,7 +620,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>+ Tambah Bank / E-Wallet</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>+ Tambah Bank / E-Wallet</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -631,7 +631,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
           position: 'absolute', bottom: 20, left: 20, right: 20,
           backgroundColor: C.fg1, borderRadius: 12, padding: 14, alignItems: 'center',
         }}>
-          <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>{toast}</Text>
+          <Text style={{ color: '#fff', fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>{toast}</Text>
         </View>
       )}
 
@@ -640,7 +640,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Tambah Bank / E-Wallet</Text>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>Tambah Bank / E-Wallet</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Text style={{ fontSize: 22, color: C.fg3 }}>✕</Text>
               </TouchableOpacity>
@@ -648,7 +648,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
 
             <View style={{ gap: 12 }}>
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg2, marginBottom: 6, fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg2, marginBottom: 6, fontFamily: 'Inter_700Bold' }}>
                   Nama Bank / E-Wallet <Text style={{ color: C.danger }}>*</Text>
                 </Text>
                 <TextInput
@@ -658,13 +658,13 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                   placeholderTextColor={C.fg4}
                   style={{
                     backgroundColor: C.creamSunken, borderRadius: 12, padding: 14,
-                    fontSize: 14, color: C.fg1, fontFamily: 'Nunito_500Medium',
+                    fontSize: 14, color: C.fg1, fontFamily: 'Inter_500Medium',
                   }}
                 />
               </View>
 
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg2, marginBottom: 6, fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg2, marginBottom: 6, fontFamily: 'Inter_700Bold' }}>
                   Domain Email Pengirim <Text style={{ color: C.danger }}>*</Text>
                 </Text>
                 <TextInput
@@ -676,11 +676,11 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                   keyboardType="email-address"
                   style={{
                     backgroundColor: C.creamSunken, borderRadius: 12, padding: 14,
-                    fontSize: 14, color: C.fg1, fontFamily: 'Nunito_500Medium',
+                    fontSize: 14, color: C.fg1, fontFamily: 'Inter_500Medium',
                   }}
                 />
-                <Text style={{ fontSize: 11, color: C.fg3, marginTop: 4, fontFamily: 'Nunito_500Medium', lineHeight: 16 }}>
-                  Contoh: <Text style={{ fontFamily: 'Nunito_700Bold' }}>klikbca.com</Text> (BCA) · <Text style={{ fontFamily: 'Nunito_700Bold' }}>gopay.co.id</Text> (GoPay) · <Text style={{ fontFamily: 'Nunito_700Bold' }}>dana.id</Text> (DANA)
+                <Text style={{ fontSize: 11, color: C.fg3, marginTop: 4, fontFamily: 'Inter_500Medium', lineHeight: 16 }}>
+                  Contoh: <Text style={{ fontFamily: 'Inter_700Bold' }}>klikbca.com</Text> (BCA) · <Text style={{ fontFamily: 'Inter_700Bold' }}>gopay.co.id</Text> (GoPay) · <Text style={{ fontFamily: 'Inter_700Bold' }}>dana.id</Text> (DANA)
                 </Text>
 
                 {/* How-to tip */}
@@ -690,21 +690,21 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                 }}>
                   <Text style={{ fontSize: 13 }}>💡</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#7A5C1E', fontFamily: 'Nunito_700Bold', marginBottom: 2 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#7A5C1E', fontFamily: 'Inter_700Bold', marginBottom: 2 }}>
                       Cara cek domain yang benar
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#7A5C1E', fontFamily: 'Nunito_500Medium', lineHeight: 16 }}>
+                    <Text style={{ fontSize: 11, color: '#7A5C1E', fontFamily: 'Inter_500Medium', lineHeight: 16 }}>
                       1. Buka email notifikasi dari bank di Gmail{'\n'}
                       2. Klik nama pengirim → lihat alamat email penuh{'\n'}
-                      3. Salin bagian setelah tanda <Text style={{ fontFamily: 'Nunito_700Bold' }}>@</Text>{'\n'}
-                      {'   '}mis. <Text style={{ fontFamily: 'Nunito_700Bold' }}>no-reply@klikbca.com</Text> → isi <Text style={{ fontFamily: 'Nunito_700Bold' }}>klikbca.com</Text>
+                      3. Salin bagian setelah tanda <Text style={{ fontFamily: 'Inter_700Bold' }}>@</Text>{'\n'}
+                      {'   '}mis. <Text style={{ fontFamily: 'Inter_700Bold' }}>no-reply@klikbca.com</Text> → isi <Text style={{ fontFamily: 'Inter_700Bold' }}>klikbca.com</Text>
                     </Text>
                   </View>
                 </View>
               </View>
 
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg2, marginBottom: 6, fontFamily: 'Nunito_700Bold' }}>Catatan (opsional)</Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.fg2, marginBottom: 6, fontFamily: 'Inter_700Bold' }}>Catatan (opsional)</Text>
                 <TextInput
                   value={note}
                   onChangeText={setNote}
@@ -712,7 +712,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                   placeholderTextColor={C.fg4}
                   style={{
                     backgroundColor: C.creamSunken, borderRadius: 12, padding: 14,
-                    fontSize: 14, color: C.fg1, fontFamily: 'Nunito_500Medium',
+                    fontSize: 14, color: C.fg1, fontFamily: 'Inter_500Medium',
                   }}
                 />
               </View>
@@ -723,7 +723,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                 onPress={() => setShowModal(false)}
                 style={{ flex: 1, backgroundColor: C.creamSunken, borderRadius: 12, padding: 14, alignItems: 'center' }}
               >
-                <Text style={{ fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>Batal</Text>
+                <Text style={{ fontWeight: '700', color: C.fg2, fontFamily: 'Inter_700Bold' }}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleAdd}
@@ -735,7 +735,7 @@ function BankRulesSection({ onBack }: { onBack: () => void }) {
                 }}
               >
                 {createRule.isPending && <ActivityIndicator size="small" color="#fff" />}
-                <Text style={{ fontWeight: '800', color: '#fff', fontFamily: 'Nunito_800ExtraBold' }}>Tambah</Text>
+                <Text style={{ fontWeight: '800', color: '#fff', fontFamily: 'Inter_800ExtraBold' }}>Tambah</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -769,14 +769,14 @@ function BillingRow({ onNavigate }: { onNavigate: (s: Section) => void }) {
           <Text style={{ fontSize: 18 }}>{badge.icon}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>Paket & Pembayaran</Text>
-          <Text style={{ fontSize: 12, marginTop: 1, fontFamily: 'Nunito_600SemiBold', color: badge.color }}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>Paket & Pembayaran</Text>
+          <Text style={{ fontSize: 12, marginTop: 1, fontFamily: 'Inter_600SemiBold', color: badge.color }}>
             {badge.label}
           </Text>
         </View>
         {isFree && (
           <View style={{ backgroundColor: C.accentSoft, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, fontFamily: 'Nunito_800ExtraBold' }}>UPGRADE</Text>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: C.accent, fontFamily: 'Inter_800ExtraBold' }}>UPGRADE</Text>
           </View>
         )}
         {Platform.OS === 'web' ? (
@@ -846,9 +846,9 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                   <>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <Text style={{ fontSize: 20 }}>✨</Text>
-                      <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Trial Pro Aktif</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>Trial Pro Aktif</Text>
                     </View>
-                    <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+                    <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Inter_500Medium' }}>
                       {daysLeft === 0
                         ? 'Trial berakhir hari ini — upgrade sekarang!'
                         : `${daysLeft} hari tersisa dari 14 hari trial gratis`}
@@ -866,9 +866,9 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Text style={{ fontSize: 28 }}>⭐</Text>
                     <View>
-                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#5B21B6', fontFamily: 'Nunito_900Black' }}>Pro Aktif</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#5B21B6', fontFamily: 'Inter_900Black' }}>Pro Aktif</Text>
                       {sub.currentPeriodEnd && (
-                        <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+                        <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium' }}>
                           Perpanjang: {new Date(sub.currentPeriodEnd).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </Text>
                       )}
@@ -879,8 +879,8 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Text style={{ fontSize: 28 }}>🌿</Text>
                     <View>
-                      <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>Paket Gratis</Text>
-                      <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>Upgrade untuk fitur lengkap</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>Paket Gratis</Text>
+                      <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium' }}>Upgrade untuk fitur lengkap</Text>
                     </View>
                   </View>
                 )}
@@ -892,7 +892,7 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                   backgroundColor: C.surface, borderRadius: 20, padding: 20, gap: 16,
                   shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3,
                 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>
                     {sub?.status === 'trialing' ? 'Pilih Paket Pro' : 'Upgrade ke Pro'}
                   </Text>
 
@@ -907,7 +907,7 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                     ].map(([icon, label]) => (
                       <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <Text style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{icon}</Text>
-                        <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Nunito_600SemiBold' }}>{label}</Text>
+                        <Text style={{ fontSize: 13, color: C.fg2, fontFamily: 'Inter_600SemiBold' }}>{label}</Text>
                       </View>
                     ))}
                   </View>
@@ -927,14 +927,14 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                             backgroundColor: selectedPeriod === opt.value ? (opt.value === 'lifetime' ? C.mustardSoft : C.primarySoft) : C.surface,
                           }}
                         >
-                          <Text style={{ fontSize: 14, fontFamily: 'Nunito_700Bold', color: C.fg1 }}>{opt.label}</Text>
+                          <Text style={{ fontSize: 14, fontFamily: 'Inter_700Bold', color: C.fg1 }}>{opt.label}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {opt.note && (
                               <View style={{ backgroundColor: C.mustard, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                                <Text style={{ fontSize: 10, fontFamily: 'Nunito_700Bold', color: '#fff' }}>{opt.note}</Text>
+                                <Text style={{ fontSize: 10, fontFamily: 'Inter_700Bold', color: '#fff' }}>{opt.note}</Text>
                               </View>
                             )}
-                            <Text style={{ fontSize: 13, fontFamily: 'Nunito_600SemiBold', color: C.fg2 }}>{opt.price}</Text>
+                            <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: C.fg2 }}>{opt.price}</Text>
                           </View>
                         </TouchableOpacity>
                       ))}
@@ -950,12 +950,12 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                       opacity: midtransPay.isPending ? 0.7 : 1,
                     }}
                   >
-                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>
                       {midtransPay.isPending ? 'Memproses...' : (sub?.status === 'trialing' ? 'Upgrade Sekarang' : 'Bayar Sekarang')}
                     </Text>
                   </TouchableOpacity>
 
-                  <Text style={{ textAlign: 'center', fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+                  <Text style={{ textAlign: 'center', fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium' }}>
                     Tersedia di iOS & Android · Batalkan kapan saja
                   </Text>
                 </View>
@@ -970,7 +970,7 @@ function BillingSection({ onBack }: { onBack: () => void }) {
                     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
-                  <Text style={{ color: C.fg2, fontWeight: '600', fontSize: 14, fontFamily: 'Nunito_600SemiBold' }}>
+                  <Text style={{ color: C.fg2, fontWeight: '600', fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>
                     Kelola Langganan
                   </Text>
                 </TouchableOpacity>
@@ -984,7 +984,7 @@ function BillingSection({ onBack }: { onBack: () => void }) {
               >
                 {restore.isPending
                   ? <ActivityIndicator size="small" color={C.fg4} />
-                  : <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Nunito_600SemiBold' }}>Pulihkan Pembelian</Text>
+                  : <Text style={{ fontSize: 12, color: C.fg4, fontFamily: 'Inter_600SemiBold' }}>Pulihkan Pembelian</Text>
                 }
               </TouchableOpacity>
             </>
@@ -1062,7 +1062,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
   return (
     <View style={{ backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden', shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 }}>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: C.fg4, textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: 'Nunito_800ExtraBold' }}>
+        <Text style={{ fontSize: 11, fontWeight: '800', color: C.fg4, textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: 'Inter_800ExtraBold' }}>
           {title}
         </Text>
       </View>
@@ -1087,14 +1087,14 @@ function SettingRow({ icon, iconBg, label, sub, onPress, divider = true, badge }
         </View>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }}>{label}</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }}>{label}</Text>
             {badge && (
               <View style={{ backgroundColor: C.primary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                <Text style={{ fontSize: 9, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black', letterSpacing: 0.3 }}>{badge}</Text>
+                <Text style={{ fontSize: 9, fontWeight: '900', color: '#fff', fontFamily: 'Inter_900Black', letterSpacing: 0.3 }}>{badge}</Text>
               </View>
             )}
           </View>
-          {sub && <Text style={{ fontSize: 12, color: C.fg3, marginTop: 1, fontFamily: 'Nunito_500Medium' }}>{sub}</Text>}
+          {sub && <Text style={{ fontSize: 12, color: C.fg3, marginTop: 1, fontFamily: 'Inter_500Medium' }}>{sub}</Text>}
         </View>
         {Platform.OS === 'web' ? (
           <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1121,7 +1121,7 @@ function SectionHeader({ title, onBack }: { title: string; onBack: () => void })
           </svg>
         ) : <Text style={{ color: C.fg1, fontSize: 18 }}>‹</Text>}
       </TouchableOpacity>
-      <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black' }}>{title}</Text>
+      <Text style={{ fontSize: 22, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black' }}>{title}</Text>
     </View>
   )
 }
@@ -1134,7 +1134,7 @@ function FormField({ label, value, onChange, placeholder, secureTextEntry, keybo
     <>
       {divider && <View style={{ height: 1, backgroundColor: C.divider, marginHorizontal: 16 }} />}
       <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4, fontFamily: 'Nunito_700Bold' }}>{label}</Text>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4, fontFamily: 'Inter_700Bold' }}>{label}</Text>
         <TextInput
           value={value}
           onChangeText={onChange}
@@ -1145,7 +1145,7 @@ function FormField({ label, value, onChange, placeholder, secureTextEntry, keybo
           autoCapitalize="none"
           style={{
             backgroundColor: C.creamSunken, borderRadius: 10, padding: 11,
-            fontSize: 14, color: C.fg1, fontFamily: 'Nunito_500Medium',
+            fontSize: 14, color: C.fg1, fontFamily: 'Inter_500Medium',
           }}
         />
       </View>

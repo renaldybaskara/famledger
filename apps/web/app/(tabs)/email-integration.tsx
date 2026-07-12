@@ -115,16 +115,16 @@ export default function EmailIntegrationScreen() {
           <View style={{ width: 72, height: 72, borderRadius: 999, backgroundColor: '#FBEFD2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
             <Text style={{ fontSize: 32 }}>🔒</Text>
           </View>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#C97B5C', textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 6 }}>Fitur Pro</Text>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', textAlign: 'center', marginBottom: 8 }}>Integrasi Email</Text>
-          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium', marginBottom: 24 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: '#C97B5C', textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Inter_800ExtraBold', marginBottom: 6 }}>Fitur Pro</Text>
+          <Text style={{ fontSize: 20, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', textAlign: 'center', marginBottom: 8 }}>Integrasi Email</Text>
+          <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Inter_500Medium', marginBottom: 24 }}>
             {'This Feature only for Pro Member.\nAuto-import transaksi dari Gmail.'}
           </Text>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/settings?section=billing' as any)}
             style={{ backgroundColor: C.primary, borderRadius: 14, paddingVertical: 13, paddingHorizontal: 36, width: '100%', alignItems: 'center' }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Lihat Paket Pro →</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Lihat Paket Pro →</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -137,10 +137,10 @@ export default function EmailIntegrationScreen() {
       <Modal visible={!!sincePicker} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 }}>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', marginBottom: 6 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', marginBottom: 6 }}>
               📅 Ambil email dari tanggal?
             </Text>
-            <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Nunito_500Medium', lineHeight: 18, marginBottom: 16 }}>
+            <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Inter_500Medium', lineHeight: 18, marginBottom: 16 }}>
               <Text style={{ fontWeight: '700', color: C.fg2 }}>{sincePicker?.email}</Text> berhasil terhubung!{'\n'}
               Pilih tanggal awal. Default 7 hari lalu. Bisa pilih dari tanggal 25 bulan lalu sampai hari ini.
             </Text>
@@ -177,7 +177,7 @@ export default function EmailIntegrationScreen() {
                   } as any}
                 />
                 {/* Range hint shown below the picker */}
-                <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium', marginBottom: 16 }}>
+                <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Inter_500Medium', marginBottom: 16 }}>
                   Rentang yang diizinkan: {minSinceDate} s/d {maxSinceDate}
                 </Text>
               </>
@@ -208,11 +208,11 @@ export default function EmailIntegrationScreen() {
             >
               {syncLoading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Mulai Ambil Email →</Text>
+                : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Mulai Ambil Email →</Text>
               }
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setSincePicker(null); setToast({ type: 'success', msg: `${sincePicker?.email} terhubung!` }) }}>
-              <Text style={{ textAlign: 'center', color: C.fg3, fontSize: 13, fontFamily: 'Nunito_500Medium' }}>Lewati, atur nanti</Text>
+              <Text style={{ textAlign: 'center', color: C.fg3, fontSize: 13, fontFamily: 'Inter_500Medium' }}>Lewati, atur nanti</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -230,7 +230,7 @@ export default function EmailIntegrationScreen() {
           }}
         >
           <Text style={{ fontSize: 15 }}>{toast.type === 'success' ? '✅' : '❌'}</Text>
-          <Text style={{ fontSize: 13, flex: 1, fontWeight: '600', color: toast.type === 'success' ? C.heroEnd : C.danger, fontFamily: 'Nunito_600SemiBold' }}>
+          <Text style={{ fontSize: 13, flex: 1, fontWeight: '600', color: toast.type === 'success' ? C.heroEnd : C.danger, fontFamily: 'Inter_600SemiBold' }}>
             {toast.msg}
           </Text>
         </TouchableOpacity>
@@ -369,15 +369,15 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
         <View>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, fontFamily: 'Nunito_900Black', letterSpacing: -0.5 }}>Email</Text>
-          <Text style={{ fontSize: 13, color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>Import otomatis dari bank</Text>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, fontFamily: 'Inter_900Black', letterSpacing: -0.5 }}>Email</Text>
+          <Text style={{ fontSize: 13, color: C.fg3, marginTop: 2, fontFamily: 'Inter_500Medium' }}>Import otomatis dari bank</Text>
         </View>
         <TouchableOpacity
           onPress={onAddGmail}
           style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.primary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, gap: 5, marginTop: 4 }}
         >
           <Text style={{ color: '#fff', fontSize: 16, lineHeight: 18, fontWeight: '700' }}>+</Text>
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>Hubungkan</Text>
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Inter_800ExtraBold' }}>Hubungkan</Text>
         </TouchableOpacity>
       </View>
 
@@ -390,7 +390,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
 
       {/* Akun Terhubung */}
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 12 }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold', marginBottom: 12 }}>
           Akun Terhubung
         </Text>
 
@@ -402,10 +402,10 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
             shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2,
           }}>
             <Text style={{ fontSize: 36, marginBottom: 10 }}>✉️</Text>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg2, textAlign: 'center', fontFamily: 'Nunito_700Bold' }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.fg2, textAlign: 'center', fontFamily: 'Inter_700Bold' }}>
               Belum ada email terhubung
             </Text>
-            <Text style={{ fontSize: 12, color: C.fg3, marginTop: 4, textAlign: 'center', fontFamily: 'Nunito_500Medium', lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, color: C.fg3, marginTop: 4, textAlign: 'center', fontFamily: 'Inter_500Medium', lineHeight: 18 }}>
               Hubungkan Gmail untuk import{'\n'}otomatis dari BCA, BRI, GoPay, dan lainnya
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
@@ -413,7 +413,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
                 onPress={onAddGmail}
                 style={{ backgroundColor: C.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' }}>✉️ Gmail</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13, fontFamily: 'Inter_800ExtraBold' }}>✉️ Gmail</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -434,12 +434,12 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
                     : <Monitor size={20} color={C.primary} strokeWidth={2} />}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold' }} numberOfLines={1}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold' }} numberOfLines={1}>
                     {integ.email}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: integ.isActive ? C.primary : C.fg4 }} />
-                    <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+                    <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium' }}>
                       {integ.isActive ? 'Aktif' : 'Nonaktif'} · {formatLastSync(integ.lastSyncAt)}
                     </Text>
                   </View>
@@ -472,14 +472,14 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                 {KNOWN_BANKS.slice(0, 4).map(bank => (
                   <View key={bank} style={{ backgroundColor: C.creamSunken, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>{bank}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg2, fontFamily: 'Inter_700Bold' }}>{bank}</Text>
                   </View>
                 ))}
                 <View style={{
                   backgroundColor: C.creamSunken, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
                   borderWidth: 1, borderStyle: 'dashed', borderColor: C.border,
                 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, fontFamily: 'Nunito_700Bold' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, fontFamily: 'Inter_700Bold' }}>
                     +{KNOWN_BANKS.length - 4} bank
                   </Text>
                 </View>
@@ -491,7 +491,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
 
       {/* Email Terakhir */}
       <View style={{ paddingHorizontal: 20, paddingBottom: 100 }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 12 }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold', marginBottom: 12 }}>
           Email Terakhir
         </Text>
 
@@ -510,7 +510,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
                     borderWidth: 1.5, borderColor: active ? C.primary : C.border,
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>
                     {f.label}
                   </Text>
                 </TouchableOpacity>
@@ -525,7 +525,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
         ) : messages.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
             <Text style={{ fontSize: 44, marginBottom: 10 }}>📥</Text>
-            <Text style={{ fontSize: 14, color: C.fg3, fontFamily: 'Nunito_500Medium', textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ fontSize: 14, color: C.fg3, fontFamily: 'Inter_500Medium', textAlign: 'center', lineHeight: 20 }}>
               {statusFilter
                 ? `Tidak ada email dengan status ini`
                 : 'Belum ada email yang diproses.\nTap Sync untuk scan inbox.'}
@@ -544,42 +544,42 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
                   <StatusBadge status={msg.parseStatus} />
                   {msg.aiUsed && (
                     <View style={{ backgroundColor: '#EDE9FE', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED', fontFamily: 'Nunito_700Bold' }}>🤖 AI</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED', fontFamily: 'Inter_700Bold' }}>🤖 AI</Text>
                     </View>
                   )}
                   {msg.parsedBank && (
                     <View style={{ backgroundColor: C.creamSunken, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: C.fg2, fontFamily: 'Nunito_700Bold' }}>{msg.parsedBank}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: C.fg2, fontFamily: 'Inter_700Bold' }}>{msg.parsedBank}</Text>
                     </View>
                   )}
                 </View>
-                <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Nunito_500Medium' }}>
+                <Text style={{ fontSize: 11, color: C.fg4, fontFamily: 'Inter_500Medium' }}>
                   {new Date(msg.receivedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                 </Text>
               </View>
 
               {/* AI merchant override */}
               {msg.aiUsed && msg.aiRawResult?.merchant && (
-                <Text style={{ fontSize: 11, color: '#7C3AED', fontFamily: 'Nunito_600SemiBold', marginBottom: 4 }}>
+                <Text style={{ fontSize: 11, color: '#7C3AED', fontFamily: 'Inter_600SemiBold', marginBottom: 4 }}>
                   → {msg.aiRawResult.merchant}
                 </Text>
               )}
 
               {/* Subject */}
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Nunito_700Bold', marginBottom: 3 }} numberOfLines={2}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.fg1, fontFamily: 'Inter_700Bold', marginBottom: 3 }} numberOfLines={2}>
                 {msg.subject}
               </Text>
 
               {/* Amount or skip/error reason */}
               {msg.parseStatus === 'imported' && msg.parsedAmount ? (
-                <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>
+                <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium' }}>
                   {msg.parsedMerchant ? `${msg.parsedMerchant} · ` : ''}
                   <Text style={{ fontWeight: '700', color: msg.parsedType === 'income' ? C.primary : C.accent }}>
                     {msg.parsedType === 'income' ? '+' : '-'}Rp {msg.parsedAmount.toLocaleString('id-ID')}
                   </Text>
                 </Text>
               ) : (msg.parseError || msg.skipReason) ? (
-                <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }} numberOfLines={2}>
+                <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium' }} numberOfLines={2}>
                   {msg.parseError || msg.skipReason}
                 </Text>
               ) : null}
@@ -600,7 +600,7 @@ function EmailMainView({ onAddGmail }: { onAddGmail: () => void }) {
                     ? <ActivityIndicator size={12} color={C.primary} />
                     : <Text style={{ fontSize: 12 }}>↺</Text>
                   }
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
                     {reprocessingId === msg.id ? 'Memproses...' : 'Proses ulang'}
                   </Text>
                 </TouchableOpacity>
@@ -621,10 +621,10 @@ function StatCard({ label, value, valueColor, bg }: { label: string; value: numb
       flex: 1, backgroundColor: bg ?? C.surface, borderRadius: 16, padding: 12, alignItems: 'center',
       shadowColor: '#2D2A26', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
     }}>
-      <Text style={{ fontSize: 22, fontWeight: '900', color: valueColor ?? C.fg1, fontFamily: 'Nunito_900Black' }}>
+      <Text style={{ fontSize: 22, fontWeight: '900', color: valueColor ?? C.fg1, fontFamily: 'Inter_900Black' }}>
         {value}
       </Text>
-      <Text style={{ fontSize: 10, color: C.fg3, fontFamily: 'Nunito_500Medium', textAlign: 'center', marginTop: 2, lineHeight: 14 }}>
+      <Text style={{ fontSize: 10, color: C.fg3, fontFamily: 'Inter_500Medium', textAlign: 'center', marginTop: 2, lineHeight: 14 }}>
         {label}
       </Text>
     </View>
@@ -670,16 +670,16 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
             <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
               <Text style={{ fontSize: 38 }}>✉️</Text>
             </View>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold', marginBottom: 8 }}>
               Login dengan Google
             </Text>
-            <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ fontSize: 13, color: C.fg3, textAlign: 'center', lineHeight: 20, fontFamily: 'Inter_500Medium' }}>
               Izinkan Budgetin membaca email notifikasi transaksi dari inbox Gmail kamu. Kami hanya membaca — tidak bisa kirim atau hapus.
             </Text>
           </View>
 
           <View style={{ backgroundColor: C.creamSunken, borderRadius: 14, padding: 14, marginBottom: 20 }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg2, marginBottom: 10, fontFamily: 'Nunito_700Bold' }}>Cara kerjanya:</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg2, marginBottom: 10, fontFamily: 'Inter_700Bold' }}>Cara kerjanya:</Text>
             {[
               'Tap tombol di bawah → browser terbuka',
               'Login dengan akun Google yang menerima notif bank',
@@ -691,7 +691,7 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
                 <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1 }}>
                   <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{i + 1}</Text>
                 </View>
-                <Text style={{ fontSize: 13, color: C.fg2, flex: 1, lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>{step}</Text>
+                <Text style={{ fontSize: 13, color: C.fg2, flex: 1, lineHeight: 18, fontFamily: 'Inter_500Medium' }}>{step}</Text>
               </View>
             ))}
           </View>
@@ -699,7 +699,7 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
           {error ? (
             <View style={{ backgroundColor: C.dangerSoft, borderWidth: 1, borderColor: C.danger, borderRadius: 12, padding: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start' }}>
               <Text style={{ fontSize: 15, marginRight: 8 }}>⚠️</Text>
-              <Text style={{ fontSize: 13, color: C.danger, flex: 1, fontFamily: 'Nunito_500Medium' }}>{error}</Text>
+              <Text style={{ fontSize: 13, color: C.danger, flex: 1, fontFamily: 'Inter_500Medium' }}>{error}</Text>
             </View>
           ) : null}
 
@@ -712,15 +712,15 @@ function ConnectGmailView({ onBack, onSuccess }: { onBack: () => void; onSuccess
               ? <ActivityIndicator color="white" />
               : <>
                   <Text style={{ fontSize: 17, marginRight: 8 }}>✉️</Text>
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Login dengan Google</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Login dengan Google</Text>
                 </>
             }
           </TouchableOpacity>
         </View>
 
         <View style={{ backgroundColor: C.mustardSoft, borderWidth: 1, borderColor: C.mustard, borderRadius: 16, padding: 16 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#8C6B1F', marginBottom: 4, fontFamily: 'Nunito_700Bold' }}>⚠️ Perlu Google OAuth</Text>
-          <Text style={{ fontSize: 12, color: '#8C6B1F', lineHeight: 18, fontFamily: 'Nunito_500Medium' }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#8C6B1F', marginBottom: 4, fontFamily: 'Inter_700Bold' }}>⚠️ Perlu Google OAuth</Text>
+          <Text style={{ fontSize: 12, color: '#8C6B1F', lineHeight: 18, fontFamily: 'Inter_500Medium' }}>
             Fitur ini butuh GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET di file .env. Jika belum dikonfigurasi, hubungi administrator server.
           </Text>
         </View>
@@ -740,7 +740,7 @@ function StatusBadge({ status }: { status: string }) {
   const c = config[status] ?? config.pending
   return (
     <View style={{ backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-      <Text style={{ color: c.color, fontSize: 11, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>{c.label}</Text>
+      <Text style={{ color: c.color, fontSize: 11, fontWeight: '700', fontFamily: 'Inter_700Bold' }}>{c.label}</Text>
     </View>
   )
 }
@@ -752,7 +752,7 @@ function PageHeader({ title, onBack }: { title: string; onBack: () => void }) {
       <TouchableOpacity onPress={onBack} style={{ marginRight: 10, width: 34, height: 34, borderRadius: 10, backgroundColor: C.creamSunken, alignItems: 'center', justifyContent: 'center' }}>
         <ArrowLeft size={18} color={C.fg1} strokeWidth={2} />
       </TouchableOpacity>
-      <Text style={{ fontSize: 18, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>{title}</Text>
+      <Text style={{ fontSize: 18, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>{title}</Text>
     </View>
   )
 }
@@ -761,7 +761,7 @@ function FormField({ label, ...props }: { label: string } & React.ComponentProps
   const C = useTheme()
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: 'Nunito_700Bold' }}>{label}</Text>
+      <Text style={{ fontSize: 11, fontWeight: '700', color: C.fg3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: 'Inter_700Bold' }}>{label}</Text>
       <TextInput
         style={{ borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, color: C.fg1, backgroundColor: C.creamSunken }}
         placeholderTextColor={C.fg4}

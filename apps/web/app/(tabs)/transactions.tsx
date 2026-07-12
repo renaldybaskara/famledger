@@ -177,17 +177,17 @@ export default function TransactionsScreen() {
       <View style={{ marginBottom: 4 }}>
         {/* Day header */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 20, paddingVertical: 8 }}>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: C.fg3, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_800ExtraBold' }}>
+          <Text style={{ fontSize: 12, fontWeight: '800', color: C.fg3, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Inter_800ExtraBold' }}>
             {formatDateShort(item.date)}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {incomeSum > 0 && (
-              <Text style={{ fontSize: 12, fontWeight: '800', color: C.income, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.income, fontFamily: 'Inter_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
                 +{fmtIDR(incomeSum)}
               </Text>
             )}
             {expenseSum > 0 && (
-              <Text style={{ fontSize: 12, fontWeight: '800', color: C.expense, fontFamily: 'Nunito_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: C.expense, fontFamily: 'Inter_800ExtraBold', fontVariant: ['tabular-nums'] as any }}>
                 -{fmtIDR(expenseSum)}
               </Text>
             )}
@@ -218,9 +218,9 @@ export default function TransactionsScreen() {
       <View style={{ backgroundColor: C.cream, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <View>
-            <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Nunito_900Black' }}>Transaksi</Text>
+            <Text style={{ fontSize: 26, fontWeight: '900', color: C.fg1, letterSpacing: -0.5, fontFamily: 'Inter_900Black' }}>Transaksi</Text>
             {total > 0 && (
-              <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg3, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: C.fg3, marginTop: 2, fontFamily: 'Inter_500Medium' }}>
                 {total} transaksi
               </Text>
             )}
@@ -285,7 +285,7 @@ export default function TransactionsScreen() {
                   <line x1="3" y1="10" x2="21" y2="10" stroke={preset === key ? '#fff' : C.fg2} strokeWidth="2" />
                 </svg>
               )}
-              <Text style={{ fontSize: 12, fontWeight: '600', color: preset === key ? '#fff' : C.fg2, fontFamily: 'Nunito_600SemiBold' }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: preset === key ? '#fff' : C.fg2, fontFamily: 'Inter_600SemiBold' }}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -302,7 +302,7 @@ export default function TransactionsScreen() {
         }}>
           <Search size={16} color={C.fg3} strokeWidth={2} />
           <TextInput
-            style={{ flex: 1, fontSize: 15, fontWeight: '600', color: C.fg1, fontFamily: 'Nunito_600SemiBold' }}
+            style={{ flex: 1, fontSize: 15, fontWeight: '600', color: C.fg1, fontFamily: 'Inter_600SemiBold' }}
             placeholder="Cari transaksi..."
             placeholderTextColor={C.fg4}
             value={search}
@@ -324,7 +324,7 @@ export default function TransactionsScreen() {
                 onPress={() => { setTypeFilter(''); setPage(1) }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.primary + '22' }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
                   {TYPE_FILTERS.find(f => f.value === typeFilter)?.label}
                 </Text>
                 <X size={10} color={C.primary} strokeWidth={2.5} />
@@ -335,7 +335,7 @@ export default function TransactionsScreen() {
                 onPress={() => setSelectedWsId(null)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.primary + '22' }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
                   {workspaces.find((w: any) => w.id === selectedWsId)?.name ?? 'Workspace'}
                 </Text>
                 <X size={10} color={C.primary} strokeWidth={2.5} />
@@ -351,10 +351,10 @@ export default function TransactionsScreen() {
           <Pressable onPress={e => e.stopPropagation()}>
             <View style={{ backgroundColor: '#FAF7F2', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36 }}>
               <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0DBD2', alignSelf: 'center', marginBottom: 20 }} />
-              <Text style={{ fontSize: 18, fontWeight: '900', color: '#2D2A26', fontFamily: 'Nunito_900Black', marginBottom: 20 }}>Filter Transaksi</Text>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: '#2D2A26', fontFamily: 'Inter_900Black', marginBottom: 20 }}>Filter Transaksi</Text>
 
               {/* Type filter */}
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E887F', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold', marginBottom: 10 }}>Tipe Transaksi</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E887F', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Inter_700Bold', marginBottom: 10 }}>Tipe Transaksi</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {TYPE_FILTERS.map((f) => {
                   const active = typeFilter === f.value
@@ -364,7 +364,7 @@ export default function TransactionsScreen() {
                       onPress={() => { setTypeFilter(f.value); setPage(1) }}
                       style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: active ? C.primary : C.surface, borderWidth: 1.5, borderColor: active ? C.primary : C.border }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: active ? '#fff' : C.fg2 }}>{f.label}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: 'Inter_700Bold', color: active ? '#fff' : C.fg2 }}>{f.label}</Text>
                     </TouchableOpacity>
                   )
                 })}
@@ -373,19 +373,19 @@ export default function TransactionsScreen() {
               {/* Workspace filter */}
               {workspaces.length > 0 && (
                 <>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E887F', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_700Bold', marginBottom: 10 }}>Tampilkan Dari</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E887F', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Inter_700Bold', marginBottom: 10 }}>Tampilkan Dari</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                     <TouchableOpacity
                       onPress={() => setSelectedWsId(null)}
                       style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: !selectedWsId ? C.primary : C.surface, borderWidth: 1.5, borderColor: !selectedWsId ? C.primary : C.border }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: !selectedWsId ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Pribadi</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: !selectedWsId ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>Pribadi</Text>
                     </TouchableOpacity>
                     {workspaces.map((ws: any) => {
                       const active = selectedWsId === ws.id
                       return (
                         <TouchableOpacity key={ws.id} onPress={() => setSelectedWsId(active ? null : ws.id)} style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: active ? C.primary : C.surface, borderWidth: 1.5, borderColor: active ? C.primary : C.border }}>
-                          <Text style={{ fontSize: 14, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{ws.name}</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>{ws.name}</Text>
                         </TouchableOpacity>
                       )
                     })}
@@ -397,7 +397,7 @@ export default function TransactionsScreen() {
                 onPress={() => setShowFilters(false)}
                 style={{ backgroundColor: C.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center' }}
               >
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: 'Nunito_800ExtraBold' }}>Terapkan Filter</Text>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: 'Inter_800ExtraBold' }}>Terapkan Filter</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -418,21 +418,21 @@ export default function TransactionsScreen() {
             <View style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)' }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View>
-                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any }}>
                   {net >= 0 ? '+' : '-'}{fmtIDR(Math.abs(net))}
                 </Text>
-                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
                   {range.label}
                 </Text>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {inc > 0 && (
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(180,255,180,0.9)', fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(180,255,180,0.9)', fontFamily: 'Inter_700Bold', fontVariant: ['tabular-nums'] as any }}>
                     ↑ Masuk {fmtIDR(inc)}
                   </Text>
                 )}
                 {exp > 0 && (
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,200,180,0.9)', fontFamily: 'Nunito_700Bold', fontVariant: ['tabular-nums'] as any }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,200,180,0.9)', fontFamily: 'Inter_700Bold', fontVariant: ['tabular-nums'] as any }}>
                     ↓ Keluar {fmtIDR(exp)}
                   </Text>
                 )}
@@ -450,10 +450,10 @@ export default function TransactionsScreen() {
       ) : grouped.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
           <Text style={{ fontSize: 48, marginBottom: 16 }}>🧾</Text>
-          <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg2, fontFamily: 'Nunito_800ExtraBold', textAlign: 'center' }}>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg2, fontFamily: 'Inter_800ExtraBold', textAlign: 'center' }}>
             {search ? `Tidak ditemukan "${search}"` : 'Belum ada transaksi'}
           </Text>
-          <Text style={{ fontSize: 14, color: C.fg3, marginTop: 6, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
+          <Text style={{ fontSize: 14, color: C.fg3, marginTop: 6, textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
             {search ? 'Coba kata kunci lain' : 'Tambahkan transaksi pertamamu'}
           </Text>
           {!search && (
@@ -466,7 +466,7 @@ export default function TransactionsScreen() {
               }}
             >
               <Text style={{ color: '#fff', fontSize: 18, lineHeight: 22 }}>+</Text>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Tambah Transaksi</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Tambah Transaksi</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -486,7 +486,7 @@ export default function TransactionsScreen() {
                 onPress={() => setWsPage(p => p + 1)}
                 style={{ marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 14, backgroundColor: C.primarySoft, alignItems: 'center' }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primary, fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primary, fontFamily: 'Inter_700Bold' }}>
                   Muat lebih banyak ({transactions.length} / {total})
                 </Text>
               </TouchableOpacity>

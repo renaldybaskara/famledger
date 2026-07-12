@@ -149,7 +149,7 @@ function AccountFormModal({
             <View style={{ padding: 24 }}>
               {/* Header */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1 }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', fontFamily: 'Inter_700Bold', color: C.fg1 }}>
                   {isEdit ? 'Edit Rekening' : 'Tambah Rekening'}
                 </Text>
                 <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -164,7 +164,7 @@ function AccountFormModal({
               ) : null}
 
               {/* Account type — 3 options */}
-              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 10 }}>Jenis Rekening</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 10 }}>Jenis Rekening</Text>
               <View style={{ gap: 8, marginBottom: 20 }}>
                 {ACCOUNT_TYPES.map((t) => {
                   const selected = form.type === t.value
@@ -181,10 +181,10 @@ function AccountFormModal({
                     >
                       <Text style={{ fontSize: 22, marginRight: 12 }}>{t.icon}</Text>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: selected ? C.heroEnd : C.fg1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: 'Inter_700Bold', color: selected ? C.heroEnd : C.fg1 }}>
                           {t.label}
                         </Text>
-                        <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginTop: 1 }}>{t.desc}</Text>
+                        <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium', marginTop: 1 }}>{t.desc}</Text>
                       </View>
                       <View style={{
                         width: 20, height: 20, borderRadius: 999, borderWidth: 2,
@@ -200,9 +200,9 @@ function AccountFormModal({
               </View>
 
               {/* Name */}
-              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Nama Rekening</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>Nama Rekening</Text>
               <TextInput
-                style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Inter_500Medium' }}
                 placeholder={
                   form.type === 'bank' ? 'Contoh: BCA Tahapan' :
                   form.type === 'credit' ? 'Contoh: Mandiri Visa' :
@@ -216,14 +216,14 @@ function AccountFormModal({
               {/* Investment amount only */}
               {form.type === 'investment' && (
                 <>
-                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 4 }}>
                     Nilai Investasi Saat Ini
                   </Text>
-                  <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium', marginBottom: 8 }}>
                     Nilai portofolio saat ini. Kamu akan diingatkan update setiap awal bulan.
                   </Text>
                   <TextInput
-                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Inter_500Medium' }}
                     placeholder="0"
                     placeholderTextColor={C.fg4}
                     keyboardType="numeric"
@@ -236,14 +236,14 @@ function AccountFormModal({
               {/* Credit card: card number last 4 only (for email matching) */}
               {form.type === 'credit' && (
                 <>
-                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 4 }}>
                     4 Digit Terakhir Kartu
                   </Text>
-                  <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Nunito_500Medium', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 11, color: C.fg3, fontFamily: 'Inter_500Medium', marginBottom: 8 }}>
                     Digunakan untuk mencocokkan notifikasi email kartu kredit.
                   </Text>
                   <TextInput
-                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Inter_500Medium' }}
                     placeholder="Contoh: 2609"
                     placeholderTextColor={C.fg4}
                     keyboardType="numeric"
@@ -251,11 +251,11 @@ function AccountFormModal({
                     value={form.accountNumber}
                     onChangeText={set('accountNumber')}
                   />
-                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>
                     Kode Bank
                   </Text>
                   <TextInput
-                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Nunito_500Medium' }}
+                    style={{ backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: C.fg1, marginBottom: 16, fontFamily: 'Inter_500Medium' }}
                     placeholder="Contoh: BCA, MANDIRI, BRI"
                     placeholderTextColor={C.fg4}
                     autoCapitalize="characters"
@@ -266,7 +266,7 @@ function AccountFormModal({
               )}
 
               {/* Color */}
-              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 8 }}>Warna</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 8 }}>Warna</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                 {COLORS.map((c) => (
                   <TouchableOpacity
@@ -295,7 +295,7 @@ function AccountFormModal({
                     borderWidth: 1, borderColor: form.isDefault ? C.primary : C.border,
                   }}
                 >
-                  <Text style={{ fontWeight: '500', fontFamily: 'Nunito_500Medium', color: form.isDefault ? C.primary : C.fg2 }}>
+                  <Text style={{ fontWeight: '500', fontFamily: 'Inter_500Medium', color: form.isDefault ? C.primary : C.fg2 }}>
                     Jadikan rekening utama
                   </Text>
                   <View style={{
@@ -316,7 +316,7 @@ function AccountFormModal({
               >
                 {isPending
                   ? <ActivityIndicator color="white" />
-                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Inter_700Bold', fontSize: 15 }}>
                       {isEdit ? 'Simpan Perubahan' : 'Tambah Rekening'}
                     </Text>}
               </TouchableOpacity>
@@ -381,23 +381,23 @@ function InvestmentUpdatePopup({
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <View style={{ backgroundColor: C.surface, borderRadius: 24, padding: 24, width: '100%', maxWidth: 400 }}>
           <Text style={{ fontSize: 24, textAlign: 'center', marginBottom: 8 }}>📈</Text>
-          <Text style={{ fontSize: 18, fontWeight: '900', fontFamily: 'Nunito_900Black', color: C.fg1, textAlign: 'center', marginBottom: 4 }}>
+          <Text style={{ fontSize: 18, fontWeight: '900', fontFamily: 'Inter_900Black', color: C.fg1, textAlign: 'center', marginBottom: 4 }}>
             Update Nilai Investasi
           </Text>
-          <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium', textAlign: 'center', marginBottom: 20 }}>
+          <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium', textAlign: 'center', marginBottom: 20 }}>
             Awal bulan baru — masukkan nilai portofolio terkini
           </Text>
 
           <View style={{ gap: 14, marginBottom: 20 }}>
             {investments.map((a) => (
               <View key={a.id}>
-                <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', color: C.fg2, marginBottom: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: C.fg2, marginBottom: 6 }}>
                   {a.name}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.creamSunken, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingHorizontal: 14 }}>
                   <Text style={{ color: C.fg3, fontSize: 13, marginRight: 6 }}>Rp</Text>
                   <TextInput
-                    style={{ flex: 1, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_700Bold' }}
+                    style={{ flex: 1, paddingVertical: 12, fontSize: 15, color: C.fg1, fontFamily: 'Inter_700Bold' }}
                     keyboardType="numeric"
                     value={values[a.id] ?? '0'}
                     onChangeText={(t) => setValues((v) => ({ ...v, [a.id]: formatBalanceInput(t) }))}
@@ -414,10 +414,10 @@ function InvestmentUpdatePopup({
           >
             {saving
               ? <ActivityIndicator color="#fff" />
-              : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>Simpan →</Text>}
+              : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>Simpan →</Text>}
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSkip} style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Nunito_500Medium' }}>Ingatkan bulan depan</Text>
+            <Text style={{ fontSize: 12, color: C.fg3, fontFamily: 'Inter_500Medium' }}>Ingatkan bulan depan</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -465,14 +465,14 @@ export default function AccountsScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)', lineHeight: 26 }}>‹</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginLeft: 2 }}>Kembali</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Inter_600SemiBold', marginLeft: 2 }}>Kembali</Text>
           </TouchableOpacity>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 2, fontFamily: 'Nunito_500Medium' }}>Total Tabungan</Text>
-          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', fontFamily: 'Nunito_900Black' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 2, fontFamily: 'Inter_500Medium' }}>Total Tabungan</Text>
+          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', fontFamily: 'Inter_900Black' }}>
             {formatCurrency(totalSavings)}
           </Text>
           {totalInvestment > 0 && (
-            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
               Investasi: {formatCurrency(totalInvestment)}
             </Text>
           )}
@@ -492,7 +492,7 @@ export default function AccountsScreen() {
             <View style={{ width: 40, height: 40, backgroundColor: C.primarySoft, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
               <Text style={{ fontSize: 22, color: C.primary, lineHeight: 26 }}>+</Text>
             </View>
-            <Text style={{ color: C.primary, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontSize: 15 }}>Tambah Rekening Baru</Text>
+            <Text style={{ color: C.primary, fontWeight: '600', fontFamily: 'Inter_600SemiBold', fontSize: 15 }}>Tambah Rekening Baru</Text>
           </TouchableOpacity>
 
           {isLoading ? (
@@ -500,8 +500,8 @@ export default function AccountsScreen() {
           ) : (accounts ?? []).length === 0 ? (
             <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 32, alignItems: 'center' }}>
               <Text style={{ fontSize: 40 }}>👛</Text>
-              <Text style={{ color: C.fg3, marginTop: 12, fontWeight: '500', fontFamily: 'Nunito_500Medium' }}>Belum ada rekening</Text>
-              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Nunito_500Medium' }}>
+              <Text style={{ color: C.fg3, marginTop: 12, fontWeight: '500', fontFamily: 'Inter_500Medium' }}>Belum ada rekening</Text>
+              <Text style={{ color: C.fg4, fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
                 Tambahkan tabungan, kartu kredit, atau akun investasi
               </Text>
             </View>
@@ -518,7 +518,7 @@ export default function AccountsScreen() {
                     {/* Section header */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 6 }}>
                       <Text style={{ fontSize: 16 }}>{cfg.icon}</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', fontFamily: 'Inter_700Bold', color: C.fg2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         {cfg.label}
                       </Text>
                     </View>
@@ -536,25 +536,25 @@ export default function AccountsScreen() {
                             </View>
                             <View style={{ flex: 1 }}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <Text style={{ color: C.fg1, fontWeight: '600', fontFamily: 'Nunito_600SemiBold', fontSize: 15 }}>{acc.name}</Text>
+                                <Text style={{ color: C.fg1, fontWeight: '600', fontFamily: 'Inter_600SemiBold', fontSize: 15 }}>{acc.name}</Text>
                                 {(acc as any).isDefault && (
                                   <View style={{ backgroundColor: C.primarySoft, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 }}>
-                                    <Text style={{ color: C.primary, fontSize: 10, fontFamily: 'Nunito_600SemiBold' }}>Utama</Text>
+                                    <Text style={{ color: C.primary, fontSize: 10, fontFamily: 'Inter_600SemiBold' }}>Utama</Text>
                                   </View>
                                 )}
                               </View>
                               {(acc as any).accountNumber && (
-                                <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Nunito_500Medium' }}>
+                                <Text style={{ color: C.fg4, fontSize: 11, marginTop: 2, fontFamily: 'Inter_500Medium' }}>
                                   •••• {String((acc as any).accountNumber).slice(-4)}
                                 </Text>
                               )}
-                              <Text style={{ fontSize: 11, color: C.fg3, marginTop: 1, fontFamily: 'Nunito_500Medium' }}>
+                              <Text style={{ fontSize: 11, color: C.fg3, marginTop: 1, fontFamily: 'Inter_500Medium' }}>
                                 {cfg.balanceLabel}
                               </Text>
                             </View>
                             <View style={{ alignItems: 'flex-end' }}>
                               {acc.type === 'investment' && (
-                                <Text style={{ color: C.fg1, fontWeight: '700', fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
+                                <Text style={{ color: C.fg1, fontWeight: '700', fontFamily: 'Inter_700Bold', fontSize: 15 }}>
                                   {formatCurrency(acc.balance)}
                                 </Text>
                               )}
@@ -597,9 +597,9 @@ export default function AccountsScreen() {
       <Modal visible={!!confirmDelete} transparent animationType="fade" onRequestClose={() => setConfirmDelete(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
           <View style={{ backgroundColor: C.surface, borderRadius: 20, padding: 24, width: '100%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: 'Nunito_700Bold', color: C.fg1, marginBottom: 8 }}>Hapus Rekening?</Text>
-            <Text style={{ color: C.fg3, fontSize: 13, marginBottom: 24, fontFamily: 'Nunito_500Medium' }}>
-              Rekening <Text style={{ fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>{confirmDelete?.name}</Text> akan dihapus.
+            <Text style={{ fontSize: 18, fontWeight: '700', fontFamily: 'Inter_700Bold', color: C.fg1, marginBottom: 8 }}>Hapus Rekening?</Text>
+            <Text style={{ color: C.fg3, fontSize: 13, marginBottom: 24, fontFamily: 'Inter_500Medium' }}>
+              Rekening <Text style={{ fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>{confirmDelete?.name}</Text> akan dihapus.
               Transaksi tidak ikut terhapus.
             </Text>
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -607,7 +607,7 @@ export default function AccountsScreen() {
                 onPress={() => setConfirmDelete(null)}
                 style={{ flex: 1, paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: C.border, alignItems: 'center' }}
               >
-                <Text style={{ color: C.fg2, fontFamily: 'Nunito_500Medium' }}>Batal</Text>
+                <Text style={{ color: C.fg2, fontFamily: 'Inter_500Medium' }}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => confirmDelete && handleDelete(confirmDelete)}
@@ -616,7 +616,7 @@ export default function AccountsScreen() {
               >
                 {deleteMutation.isPending
                   ? <ActivityIndicator color="white" size="small" />
-                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>Hapus</Text>}
+                  : <Text style={{ color: '#fff', fontWeight: '700', fontFamily: 'Inter_700Bold' }}>Hapus</Text>}
               </TouchableOpacity>
             </View>
           </View>

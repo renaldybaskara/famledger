@@ -177,7 +177,7 @@ export default function Index() {
         <BudgetinIcon size={64} rounded />
         <ActivityIndicator size="large" color="rgba(255,255,255,0.9)" style={{ marginTop: 24 }} />
         {loading && (
-          <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 14, fontSize: 14, fontWeight: '600', fontFamily: 'Nunito_600SemiBold' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 14, fontSize: 14, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>
             Sedang masuk…
           </Text>
         )}
@@ -220,7 +220,7 @@ export default function Index() {
 
           <Text style={{
             color: '#FFFFFF',
-            fontFamily: 'Nunito_900Black',
+            fontFamily: 'Inter_900Black',
             fontSize: 36,
             fontWeight: '900',
             letterSpacing: -0.5,
@@ -234,7 +234,7 @@ export default function Index() {
             color: 'rgba(255,255,255,0.75)',
             fontSize: 16,
             fontWeight: '500',
-            fontFamily: 'Nunito_500Medium',
+            fontFamily: 'Inter_500Medium',
             textAlign: 'center',
             lineHeight: 24,
             marginTop: 10,
@@ -278,7 +278,7 @@ export default function Index() {
               fontSize: 16,
               fontWeight: '800',
               color: C.heroEnd,
-              fontFamily: 'Nunito_800ExtraBold',
+              fontFamily: 'Inter_800ExtraBold',
               letterSpacing: -0.2,
             }}>
               Masuk dengan Google
@@ -302,7 +302,7 @@ export default function Index() {
             fontSize: 20,
             fontWeight: '900',
             color: C.fg1,
-            fontFamily: 'Nunito_900Black',
+            fontFamily: 'Inter_900Black',
             marginBottom: 6,
           }}>
             Kenapa Budgetin?
@@ -310,7 +310,7 @@ export default function Index() {
           <Text style={{
             fontSize: 13,
             color: C.fg3,
-            fontFamily: 'Nunito_500Medium',
+            fontFamily: 'Inter_500Medium',
             marginBottom: 28,
           }}>
             Semua yang kamu butuhkan untuk kontrol keuangan keluarga.
@@ -337,13 +337,13 @@ export default function Index() {
               <View style={{ flex: 1, paddingTop: 2 }}>
                 <Text style={{
                   fontSize: 14, fontWeight: '700', color: C.fg1,
-                  fontFamily: 'Nunito_700Bold', lineHeight: 20,
+                  fontFamily: 'Inter_700Bold', lineHeight: 20,
                 }}>
                   {title}
                 </Text>
                 <Text style={{
                   fontSize: 12, color: C.fg2,
-                  fontFamily: 'Nunito_500Medium', lineHeight: 18, marginTop: 2,
+                  fontFamily: 'Inter_500Medium', lineHeight: 18, marginTop: 2,
                 }}>
                   {sub}
                 </Text>
@@ -369,7 +369,7 @@ export default function Index() {
                 fontSize: 13,
                 textAlign: 'center',
                 fontWeight: '600',
-                fontFamily: 'Nunito_600SemiBold',
+                fontFamily: 'Inter_600SemiBold',
               }}>
                 {error}
               </Text>
@@ -394,7 +394,7 @@ export default function Index() {
           >
             <Text style={{
               fontSize: 16, fontWeight: '800', color: '#FFFFFF',
-              fontFamily: 'Nunito_800ExtraBold', letterSpacing: -0.2,
+              fontFamily: 'Inter_800ExtraBold', letterSpacing: -0.2,
             }}>
               Mulai Sekarang — Gratis
             </Text>
@@ -413,7 +413,7 @@ export default function Index() {
               textAlign: 'center',
               marginTop: 24,
               lineHeight: '18px',
-              fontFamily: 'Nunito_500Medium, sans-serif',
+              fontFamily: 'Inter_500Medium, sans-serif',
             } as any}>
               Self-hosted · Data di servermu sendiri.{' '}
               <a
@@ -421,7 +421,7 @@ export default function Index() {
                 style={{
                   color: C.primary,
                   textDecoration: 'underline',
-                  fontFamily: 'Nunito_600SemiBold, sans-serif',
+                  fontFamily: 'Inter_600SemiBold, sans-serif',
                 } as any}
               >
                 Kebijakan Privasi
@@ -432,7 +432,7 @@ export default function Index() {
                 style={{
                   color: C.primary,
                   textDecoration: 'underline',
-                  fontFamily: 'Nunito_600SemiBold, sans-serif',
+                  fontFamily: 'Inter_600SemiBold, sans-serif',
                 } as any}
               >
                 Syarat Penggunaan
@@ -442,19 +442,19 @@ export default function Index() {
             <Text style={{
               color: C.fg3, fontSize: 12, textAlign: 'center',
               marginTop: 24, lineHeight: 18,
-              fontFamily: 'Nunito_500Medium',
+              fontFamily: 'Inter_500Medium',
             }}>
               Self-hosted · Data di servermu sendiri.{' '}
               <Text
                 onPress={() => router.push('/privacy' as any)}
-                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Inter_600SemiBold' }}
               >
                 Kebijakan Privasi
               </Text>
               {' '}·{' '}
               <Text
                 onPress={() => router.push('/terms' as any)}
-                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Nunito_600SemiBold' }}
+                style={{ color: C.primary, textDecorationLine: 'underline', fontFamily: 'Inter_600SemiBold' }}
               >
                 Syarat Penggunaan
               </Text>
@@ -464,7 +464,7 @@ export default function Index() {
           {/* ── COPYRIGHT ────────────────────────────────────────────────── */}
           <Text style={{
             color: C.fg3, fontSize: 11, textAlign: 'center',
-            marginTop: 12, fontFamily: 'Nunito_500Medium',
+            marginTop: 12, fontFamily: 'Inter_500Medium',
           }}>
             © 2026 Budgetin · Self-Hosted Financial Tracker
           </Text>

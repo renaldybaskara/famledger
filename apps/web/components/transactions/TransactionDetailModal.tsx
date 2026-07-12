@@ -34,8 +34,8 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
 
 export function TransactionDetailModal({ transaction, visible, onClose, onDeleted }: Props) {
   const C = useTheme()
-  const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Nunito_700Bold' }
-  const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }
+  const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Inter_700Bold' }
+  const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Inter_600SemiBold' }
   const [editing, setEditing] = useState(false)
   const [form, setForm]       = useState({ merchant: '', note: '', amount: '', type: 'expense' as TransactionType, categoryId: '', accountId: '', date: '' })
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -122,7 +122,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
 
       {/* Header row with close button */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
-        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Nunito_800ExtraBold' }}>
+        <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: C.fg1, fontFamily: 'Inter_800ExtraBold' }}>
           Detail Transaksi
         </Text>
         <TouchableOpacity
@@ -147,13 +147,13 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
           <View style={{ alignItems: 'center', marginBottom: 20 }}>
             {editing ? (
               <TextInput
-                style={{ fontSize: 32, fontWeight: '900', color: typeColor, fontFamily: 'Nunito_900Black', textAlign: 'center', borderBottomWidth: 2, borderColor: typeColor, paddingVertical: 4, minWidth: 160, fontVariant: ['tabular-nums'] as any }}
+                style={{ fontSize: 32, fontWeight: '900', color: typeColor, fontFamily: 'Inter_900Black', textAlign: 'center', borderBottomWidth: 2, borderColor: typeColor, paddingVertical: 4, minWidth: 160, fontVariant: ['tabular-nums'] as any }}
                 value={form.amount}
                 onChangeText={(v) => setForm((f) => ({ ...f, amount: v }))}
                 keyboardType="numeric"
               />
             ) : (
-              <Text style={{ fontSize: 32, fontWeight: '900', color: typeColor, fontFamily: 'Nunito_900Black', fontVariant: ['tabular-nums'] as any }}>
+              <Text style={{ fontSize: 32, fontWeight: '900', color: typeColor, fontFamily: 'Inter_900Black', fontVariant: ['tabular-nums'] as any }}>
                 {form.type === 'income' ? '+' : form.type === 'expense' ? '−' : ''}{fmtIDR(transaction.amount)}
               </Text>
             )}
@@ -172,7 +172,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                     }))}
                     style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: form.type === t.value ? typeColor : C.creamSunken, borderWidth: 1.5, borderColor: form.type === t.value ? typeColor : C.border }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: form.type === t.value ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: form.type === t.value ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>
                       {t.label}
                     </Text>
                   </TouchableOpacity>
@@ -180,7 +180,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
               </View>
             ) : (
               <View style={{ marginTop: 8, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, backgroundColor: typeColor + '18' }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: typeColor, fontFamily: 'Nunito_700Bold' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: typeColor, fontFamily: 'Inter_700Bold' }}>
                   {TYPE_LABELS[form.type]}
                 </Text>
               </View>
@@ -190,7 +190,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
           {/* Source badge */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
             <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: source === 'email' ? '#DEEAF1' : C.primarySoft }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: source === 'email' ? '#4F7387' : C.heroEnd, fontFamily: 'Nunito_600SemiBold' }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: source === 'email' ? '#4F7387' : C.heroEnd, fontFamily: 'Inter_600SemiBold' }}>
                 {source === 'email' ? '📧 Dari email' : '✏️ Manual'}
               </Text>
             </View>
@@ -217,7 +217,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                  style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 15, color: C.fg1, backgroundColor: C.creamSunken, fontFamily: 'Nunito, system-ui' }}
+                  style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 15, color: C.fg1, backgroundColor: C.creamSunken, fontFamily: 'Inter, system-ui' }}
                 />
               ) : (
                 <Text style={valueStyle}>
@@ -236,7 +236,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                       onPress={() => setForm((f) => ({ ...f, categoryId: '' }))}
                       style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: !form.categoryId ? C.primary : C.creamSunken, borderColor: !form.categoryId ? C.primary : C.border }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: !form.categoryId ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>Tanpa Kategori</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: !form.categoryId ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>Tanpa Kategori</Text>
                     </TouchableOpacity>
                     {(categories as Category[])
                       // Filter categories by the currently selected transaction type.
@@ -251,7 +251,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                             style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? cat.color : C.creamSunken, borderColor: active ? cat.color : C.border }}
                           >
                             <Text style={{ fontSize: 16 }}>{resolveIcon(cat.icon)}</Text>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Nunito_700Bold' }}>{cat.name}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, marginLeft: 6, fontFamily: 'Inter_700Bold' }}>{cat.name}</Text>
                           </TouchableOpacity>
                         )
                       })
@@ -285,7 +285,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                         onPress={() => setForm((f) => ({ ...f, accountId: acc.id }))}
                         style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 2, backgroundColor: active ? C.primary : C.creamSunken, borderColor: active ? C.primary : C.border }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Nunito_700Bold' }}>{acc.name}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : C.fg2, fontFamily: 'Inter_700Bold' }}>{acc.name}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -310,7 +310,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
           {/* Feedback */}
           {feedback && (
             <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: feedback.ok ? C.primarySoft : C.dangerSoft }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: feedback.ok ? C.heroEnd : C.danger, textAlign: 'center', fontFamily: 'Nunito_600SemiBold' }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: feedback.ok ? C.heroEnd : C.danger, textAlign: 'center', fontFamily: 'Inter_600SemiBold' }}>
                 {feedback.ok ? '✓ ' : '✕ '}{feedback.msg}
               </Text>
             </View>
@@ -327,13 +327,13 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                 >
                   {updateMut.isPending
                     ? <ActivityIndicator color="#fff" size="small" />
-                    : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>Simpan Perubahan</Text>}
+                    : <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Inter_900Black' }}>Simpan Perubahan</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setEditing(false); setFeedback(null) }}
                   style={{ borderRadius: 16, paddingVertical: 12, alignItems: 'center', borderWidth: 1.5, borderColor: C.border }}
                 >
-                  <Text style={{ color: C.fg2, fontWeight: '700', fontSize: 15, fontFamily: 'Nunito_700Bold' }}>Batal</Text>
+                  <Text style={{ color: C.fg2, fontWeight: '700', fontSize: 15, fontFamily: 'Inter_700Bold' }}>Batal</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -342,7 +342,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                   onPress={() => setEditing(true)}
                   style={{ backgroundColor: C.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center' }}
                 >
-                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Nunito_900Black' }}>✏️  Edit Transaksi</Text>
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16, fontFamily: 'Inter_900Black' }}>✏️  Edit Transaksi</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleDelete}
@@ -351,7 +351,7 @@ export function TransactionDetailModal({ transaction, visible, onClose, onDelete
                 >
                   {deleteMut.isPending
                     ? <ActivityIndicator color={C.danger} size="small" />
-                    : <Text style={{ color: C.danger, fontWeight: '800', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' }}>🗑  Hapus Transaksi</Text>}
+                    : <Text style={{ color: C.danger, fontWeight: '800', fontSize: 15, fontFamily: 'Inter_800ExtraBold' }}>🗑  Hapus Transaksi</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -395,14 +395,14 @@ function DetailRow({ label, editing, value, displayValue, onChangeText, placehol
   onChangeText: (v: string) => void; placeholder: string; multiline?: boolean
 }) {
   const C = useTheme()
-  const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Nunito_700Bold' }
-  const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Nunito_600SemiBold' }
+  const labelStyle = { fontSize: 12, fontWeight: '700' as const, color: C.fg3, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6, fontFamily: 'Inter_700Bold' }
+  const valueStyle = { fontSize: 15, fontWeight: '600' as const, color: C.fg1, fontFamily: 'Inter_600SemiBold' }
   return (
     <View>
       <Text style={labelStyle}>{label}</Text>
       {editing ? (
         <TextInput
-          style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: C.fg1, fontFamily: 'Nunito_600SemiBold', minHeight: multiline ? 80 : undefined, textAlignVertical: multiline ? 'top' : undefined }}
+          style={{ backgroundColor: C.creamSunken, borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: C.fg1, fontFamily: 'Inter_600SemiBold', minHeight: multiline ? 80 : undefined, textAlignVertical: multiline ? 'top' : undefined }}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}

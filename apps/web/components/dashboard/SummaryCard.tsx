@@ -54,14 +54,14 @@ export function SummaryCard({ title, amount, variant, subtitle }: SummaryCardPro
       {/* Header row */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cfg.dotColor, marginRight: 8 }} />
-        <Text style={{ fontSize: 11, fontWeight: '500', color: cfg.titleColor, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Nunito_600SemiBold' }}>
+        <Text style={{ fontSize: 11, fontWeight: '500', color: cfg.titleColor, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Inter_600SemiBold' }}>
           {title}
         </Text>
       </View>
 
       {/* Amount */}
       <Text
-        style={{ fontSize: 18, fontWeight: '700', color: isNegative ? C.danger : cfg.amountColor, fontFamily: 'Nunito_700Bold' }}
+        style={{ fontSize: 18, fontWeight: '700', color: isNegative ? C.danger : cfg.amountColor, fontFamily: 'Inter_700Bold' }}
         numberOfLines={1}
         adjustsFontSizeToFit
       >
@@ -72,7 +72,7 @@ export function SummaryCard({ title, amount, variant, subtitle }: SummaryCardPro
 
       {/* Subtitle */}
       {subtitle && (
-        <Text style={{ color: C.fg4, fontSize: 12, marginTop: 4, fontFamily: 'Nunito_500Medium' }}>{subtitle}</Text>
+        <Text style={{ color: C.fg4, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>{subtitle}</Text>
       )}
     </View>
   )
