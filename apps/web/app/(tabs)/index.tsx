@@ -10,7 +10,7 @@ import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend, usePaydayTrend } from '../../src/hooks/useDashboard'
+import { useDashboardSummary, useCategoryBreakdown, useMonthlyTrend, usePaydayTrend, useDailyActivity } from '../../src/hooks/useDashboard'
 import { useTransactions } from '../../src/hooks/useTransactions'
 import { useBudgets } from '../../src/hooks/useBudgets'
 import { useAuthStore } from '../../src/store/auth.store'
@@ -22,6 +22,7 @@ import { TransactionDetailModal } from '../../components/transactions/Transactio
 import { AddTransactionModal } from '../../components/transactions/AddTransactionModal'
 import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipScanModal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { MonthlyCalendarHeatmap } from '../../components/dashboard/MonthlyCalendarHeatmap'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
 import { useTheme } from '../../src/lib/theme'
 import { useThemeStore } from '../../src/store/theme.store'
@@ -513,6 +514,7 @@ export default function DashboardScreen() {
   const [addModalVisible, setAddModalVisible]     = useState(false)
   const [scanModalVisible, setScanModalVisible]   = useState(false)
   const [lainnyaVisible, setLainnyaVisible]       = useState(false)
+  const [trendTab, setTrendTab]                   = useState<'trend' | 'activity'>('trend')
   const [wsInitialized, setWsInitialized]         = useState(false)
   const [showWsDropdown, setShowWsDropdown]       = useState(false)
   const [showProfilePopup, setShowProfilePopup]   = useState(false)
@@ -597,6 +599,7 @@ export default function DashboardScreen() {
       : 6
   )
   const { data: paydayTrendRaw }                      = usePaydayTrend(paydayDate, 6, scopeParams)
+  const { data: dailyActivityData }                   = useDailyActivity({ startDate: range.startDate, endDate: range.endDate, ...scopeParams })
 
   const { data: recentData, isLoading: recentLoading } = useTransactions({
     limit: 5, page: 1, startDate: range.startDate, endDate: range.endDate,
@@ -1055,31 +1058,79 @@ export default function DashboardScreen() {
 
         <View style={{ paddingHorizontal: 16, paddingTop: 20, gap: 16 }}>
 
-          {/* ── Tren 6 Bulan (Paper: bg #F7FAFA, borderRadius 20) ── */}
-          {chartData.length > 0 && (
-            <View style={{ backgroundColor: C.chartBg, borderRadius: 20, paddingHorizontal: 12, paddingTop: 16, paddingBottom: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <Text style={{ fontSize: 17, fontWeight: '800', color: C.fg1d, fontFamily: 'Inter_800ExtraBold' }}>
-                  {preset === 'payday' ? 'Tren Gajian' : 'Tren 6 Bulan'}
-                </Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Inter_700Bold' }}>Lihat Semua</Text>
+          {/* ── Tren / Aktivitas (tabbed) ── */}
+          <View style={{ backgroundColor: C.chartBg, borderRadius: 20, paddingHorizontal: 12, paddingTop: 16, paddingBottom: 10 }}>
+            {/* Tab toggle header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', backgroundColor: C.isDark ? '#1A2420' : '#EDE8DF', borderRadius: 10, padding: 3 }}>
+                <TouchableOpacity
+                  onPress={() => setTrendTab('trend')}
+                  style={{
+                    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+                    backgroundColor: trendTab === 'trend' ? C.surface : 'transparent',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12, fontWeight: trendTab === 'trend' ? '800' : '600',
+                    color: trendTab === 'trend' ? C.fg1d : C.fg3,
+                    fontFamily: trendTab === 'trend' ? 'Inter_800ExtraBold' : 'Inter_600SemiBold',
+                  }}>
+                    {preset === 'payday' ? 'Tren Gajian' : 'Tren 6 Bulan'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setTrendTab('activity')}
+                  style={{
+                    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+                    backgroundColor: trendTab === 'activity' ? C.surface : 'transparent',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12, fontWeight: trendTab === 'activity' ? '800' : '600',
+                    color: trendTab === 'activity' ? C.fg1d : C.fg3,
+                    fontFamily: trendTab === 'activity' ? 'Inter_800ExtraBold' : 'Inter_600SemiBold',
+                  }}>
+                    Aktivitas
+                  </Text>
                 </TouchableOpacity>
               </View>
-              <TrendBarChart data={chartData} />
-              {/* Legend (Paper: centered, gap:16) */}
-              <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Inter_600SemiBold' }}>Pemasukan</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.expenseDeep }} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Inter_600SemiBold' }}>Pengeluaran</Text>
-                </View>
-              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: C.primaryDeep, fontFamily: 'Inter_700Bold' }}>Lihat Semua</Text>
+              </TouchableOpacity>
             </View>
-          )}
+
+            {/* Tab content */}
+            {trendTab === 'trend' ? (
+              <>
+                {chartData.length > 0 ? (
+                  <>
+                    <TrendBarChart data={chartData} />
+                    {/* Legend */}
+                    <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.primaryDeep }} />
+                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Inter_600SemiBold' }}>Pemasukan</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: C.expenseDeep }} />
+                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#5A7066', fontFamily: 'Inter_600SemiBold' }}>Pengeluaran</Text>
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13, color: C.fg3, fontFamily: 'Inter_500Medium' }}>Belum ada data tren</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <MonthlyCalendarHeatmap
+                days={dailyActivityData?.days ?? []}
+                year={new Date(range.startDate).getFullYear()}
+                month={new Date(range.startDate).getMonth()}
+              />
+            )}
+          </View>
 
           {/* ── Pengeluaran per Kategori ── */}
           <CategoryBreakdownSection cats={topCats} colors={CAT_COLORS} />

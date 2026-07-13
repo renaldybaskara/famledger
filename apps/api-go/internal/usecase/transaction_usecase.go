@@ -162,3 +162,7 @@ func (uc *transactionUseCase) GetMonthlyTrendByUserIDs(ctx context.Context, user
 func (uc *transactionUseCase) GetTrendByDateRangeByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]domainrepo.MonthlyTrendRow, error) {
 	return uc.repo.GetTrendByDateRangeByUserIDs(ctx, userIDs, start, end)
 }
+
+func (uc *transactionUseCase) GetDailyActivityByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]domainrepo.DailyActivityRow, error) {
+	return uc.repo.GetDailyActivityByUserIDs(ctx, userIDs, start, end)
+}

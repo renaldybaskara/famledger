@@ -56,3 +56,13 @@ export function usePaydayTrend(paydayDate: number, cycles = 6, scope?: Dashboard
     staleTime: 60_000,
   })
 }
+
+export function useDailyActivity(params?: { startDate?: string; endDate?: string } & DashboardScope) {
+  const { workspaceIds, includePersonal, ...dateParams } = params ?? {}
+  const range = Object.keys(dateParams).length ? dateParams : getCurrentMonthRange()
+  return useQuery({
+    queryKey: ['dashboard', 'daily-activity', range, workspaceIds, includePersonal],
+    queryFn: () => dashboardApi.dailyActivity({ ...range, workspaceIds, includePersonal }).then((r) => r.data),
+    staleTime: 30_000,
+  })
+}

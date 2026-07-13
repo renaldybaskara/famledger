@@ -178,6 +178,15 @@ export const dashboardApi = {
         expense: number
       }>
     >('/dashboard/payday-trend', { params }),
+  dailyActivity: (params?: { startDate?: string; endDate?: string; workspaceIds?: string[]; includePersonal?: boolean }) =>
+    api.get<{
+      days: Array<{
+        date: string
+        income: number
+        expense: number
+        count: number
+      }>
+    }>('/dashboard/daily-activity', { params }),
 }
 
 export const categoriesApi = {

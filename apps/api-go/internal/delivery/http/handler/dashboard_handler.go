@@ -270,6 +270,55 @@ func (h *DashboardHandler) PaydayTrend(c *gin.Context) {
 	httputil.OK(c, results)
 }
 
+// GET /api/dashboard/daily-activity
+// Returns per-day expense/income totals for a calendar heatmap.
+// Query params: startDate, endDate, workspaceIds[], includePersonal
+func (h *DashboardHandler) DailyActivity(c *gin.Context) {
+	userID := c.MustGet("currentUserID").(uuid.UUID)
+	start, end := parseOrCurrentMonth(c.Query("startDate"), c.Query("endDate"))
+	userIDs := h.resolveUserIDs(c, userID)
+
+	rows, err := h.txUC.GetDailyActivityByUserIDs(c.Request.Context(), userIDs, start, end)
+	if err != nil {
+		httputil.InternalError(c, err)
+		return
+	}
+
+	// Pivot rows: [{day, type, total, count}] → [{date, income, expense, count}]
+	type dayResult struct {
+		Date    string  `json:"date"`
+		Income  float64 `json:"income"`
+		Expense float64 `json:"expense"`
+		Count   int64   `json:"count"`
+	}
+	pivotMap := make(map[string]*dayResult)
+	dayOrder := make([]string, 0)
+
+	for _, r := range rows {
+		if _, ok := pivotMap[r.Day]; !ok {
+			pivotMap[r.Day] = &dayResult{Date: r.Day}
+			dayOrder = append(dayOrder, r.Day)
+		}
+		switch r.Type {
+		case "income":
+			pivotMap[r.Day].Income += r.Total
+			pivotMap[r.Day].Count += r.Count
+		case "expense":
+			pivotMap[r.Day].Expense += r.Total
+			pivotMap[r.Day].Count += r.Count
+		case "transfer":
+			pivotMap[r.Day].Count += r.Count
+		}
+	}
+
+	result := make([]dayResult, 0, len(dayOrder))
+	for _, d := range dayOrder {
+		result = append(result, *pivotMap[d])
+	}
+
+	httputil.OK(c, gin.H{"days": result})
+}
+
 // wibLoc is Asia/Jakarta (UTC+7) — used for date-only string parsing so that
 // "2026-05-25" means midnight WIB, not midnight UTC.
 var wibLoc = func() *time.Location {

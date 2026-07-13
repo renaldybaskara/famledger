@@ -62,4 +62,6 @@ type TransactionUseCase interface {
 	// GetTrendByDateRangeByUserIDs returns monthly-grouped trend data within an
 	// explicit date range. Used for payday filter chart.
 	GetTrendByDateRangeByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]repository.MonthlyTrendRow, error)
+	// GetDailyActivityByUserIDs returns per-day aggregated totals for calendar heatmap.
+	GetDailyActivityByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]repository.DailyActivityRow, error)
 }

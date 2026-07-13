@@ -134,6 +134,7 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		dashboard.GET("/category-breakdown", deps.DashboardHandler.CategoryBreakdown)
 		dashboard.GET("/monthly-trend", deps.DashboardHandler.MonthlyTrend)
 		dashboard.GET("/payday-trend", deps.DashboardHandler.PaydayTrend)
+		dashboard.GET("/daily-activity", deps.DashboardHandler.DailyActivity)
 	}
 
 	// Workspaces

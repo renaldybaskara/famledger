@@ -42,6 +42,13 @@ type TransactionSummary struct {
 	Net              float64 `json:"net"`
 }
 
+type DailyActivityRow struct {
+	Day   string  `json:"date"`
+	Type  string  `json:"-"`
+	Total float64 `json:"-"`
+	Count int64   `json:"-"`
+}
+
 type TransactionRepository interface {
 	FindAll(ctx context.Context, userID uuid.UUID, q ListTransactionsQuery) ([]entity.Transaction, int64, error)
 	FindByID(ctx context.Context, userID, id uuid.UUID) (*entity.Transaction, error)
@@ -67,4 +74,7 @@ type TransactionRepository interface {
 	// explicit date range. Used by the payday filter so the chart reflects the
 	// actual payday period instead of the default last-N-months window.
 	GetTrendByDateRangeByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]MonthlyTrendRow, error)
+	// GetDailyActivityByUserIDs returns per-day aggregated totals grouped by type
+	// within a date range. Used by the calendar heatmap widget.
+	GetDailyActivityByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]DailyActivityRow, error)
 }

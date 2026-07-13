@@ -349,3 +349,25 @@ func (r *transactionRepository) GetTrendByDateRangeByUserIDs(ctx context.Context
 	`, userIDs, start, end).Scan(&rows).Error
 	return rows, err
 }
+
+
+// GetDailyActivityByUserIDs returns per-day aggregated totals grouped by type.
+// Used by the calendar heatmap widget on the dashboard.
+func (r *transactionRepository) GetDailyActivityByUserIDs(ctx context.Context, userIDs []uuid.UUID, start, end time.Time) ([]domainrepo.DailyActivityRow, error) {
+	if len(userIDs) == 0 {
+		return []domainrepo.DailyActivityRow{}, nil
+	}
+	rows := make([]domainrepo.DailyActivityRow, 0)
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT
+			TO_CHAR(date, 'YYYY-MM-DD') AS day,
+			type,
+			COALESCE(SUM(amount), 0) AS total,
+			COUNT(*) AS count
+		FROM transactions
+		WHERE user_id IN ? AND deleted_at IS NULL AND date BETWEEN ? AND ?
+		GROUP BY TO_CHAR(date, 'YYYY-MM-DD'), type
+		ORDER BY day ASC, type ASC
+	`, userIDs, start, end).Scan(&rows).Error
+	return rows, err
+}
