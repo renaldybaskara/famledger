@@ -82,6 +82,7 @@ func main() {
 	settingRepo          := repository.NewSystemSettingRepository(db)
 	emailMsgRepo         := repository.NewEmailMessageRepository(db)
 	parserRuleRepo       := repository.NewBankParserRuleRepository(db)
+	savingsGoalRepo      := repository.NewSavingsGoalRepository(db)
 
 	// ── AI Service (OpenRouter — optional, for ambiguous email parsing) ──────────
 	aiService := aisvc.New(cfg.OpenRouterAPIKey, cfg.OpenRouterModel)
@@ -165,6 +166,10 @@ func main() {
 		aiService,
 	)
 
+	// Savings Goals — with auto-tracking hooked into email import pipeline
+	savingsGoalUC := usecase.NewSavingsGoalUsecase(savingsGoalRepo)
+	emailImportSvc.SetSavingsGoalUsecase(savingsGoalUC)
+
 	// ── Token store (Redis) — secure OAuth token exchange, tokens never in URLs ──
 	var ts *tokenstore.Store
 	if cfg.RedisURL != "" {
@@ -194,6 +199,7 @@ func main() {
 	paymentSlipUC           := usecase.NewPaymentSlipUseCase(ocrClient)
 	paymentSlipHandler      := handler.NewPaymentSlipHandler(paymentSlipUC)
 	subscriptionHandler     := handler.NewSubscriptionHandler(subscriptionUC, cfg.RevenueCatWebhookSecret)
+	savingsGoalHandler      := handler.NewSavingsGoalHandler(savingsGoalUC)
 
 	// ── Gin Engine ───────────────────────────────────────────
 	r := gin.New()
@@ -210,7 +216,7 @@ func main() {
 		HealthHandler:           healthHandler,
 		AuthHandler:             authHandler,
 		UsersHandler:            usersHandler,
-		AccountsHandler:         accountsHandler,
+		AccountsHandler:        accountsHandler,
 		TransactionsHandler:     transactionsHandler,
 		CategoriesHandler:       categoriesHandler,
 		BudgetsHandler:          budgetsHandler,
@@ -222,6 +228,7 @@ func main() {
 		BankParserRuleHandler:   bankParserRuleHandler,
 		PaymentSlipHandler:      paymentSlipHandler,
 		SubscriptionHandler:     subscriptionHandler,
+		SavingsGoalHandler:      savingsGoalHandler,
 		JWTSecret:               cfg.JWTSecret,
 		AppURL:                  cfg.AppURL,
 		UserRepo:                userRepo,

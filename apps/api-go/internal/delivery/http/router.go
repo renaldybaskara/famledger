@@ -24,6 +24,7 @@ type Dependencies struct {
 	BankParserRuleHandler   *handler.BankParserRuleHandler
 	PaymentSlipHandler      *handler.PaymentSlipHandler
 	SubscriptionHandler     *handler.SubscriptionHandler
+	SavingsGoalHandler      *handler.SavingsGoalHandler
 
 	JWTSecret       string
 	AppURL          string
@@ -125,6 +126,26 @@ func RegisterRoutes(r *gin.Engine, deps *Dependencies) {
 		budgets.GET("/subscriptions", deps.BudgetsHandler.FindSubscriptions)
 		budgets.PATCH("/:id", deps.BudgetsHandler.Update)
 		budgets.DELETE("/:id", deps.BudgetsHandler.Delete)
+	}
+
+	// Savings Goals
+	savingsGoals := protected.Group("/savings-goals")
+	{
+		savingsGoals.GET("", deps.SavingsGoalHandler.ListGoals)
+		savingsGoals.POST("", deps.SavingsGoalHandler.CreateGoal)
+		savingsGoals.GET("/summary", deps.SavingsGoalHandler.GetSummary)
+		savingsGoals.GET("/allocations", deps.SavingsGoalHandler.GetAllocations)
+		savingsGoals.PUT("/allocations", deps.SavingsGoalHandler.SetAllocations)
+		savingsGoals.GET("/:id", deps.SavingsGoalHandler.GetGoal)
+		savingsGoals.PATCH("/:id", deps.SavingsGoalHandler.UpdateGoal)
+		savingsGoals.DELETE("/:id", deps.SavingsGoalHandler.DeleteGoal)
+		savingsGoals.PATCH("/:id/status", deps.SavingsGoalHandler.UpdateGoalStatus)
+		savingsGoals.GET("/:id/sources", deps.SavingsGoalHandler.ListSources)
+		savingsGoals.POST("/:id/sources", deps.SavingsGoalHandler.AddSource)
+		savingsGoals.PATCH("/:id/sources/:sid", deps.SavingsGoalHandler.UpdateSource)
+		savingsGoals.DELETE("/:id/sources/:sid", deps.SavingsGoalHandler.DeleteSource)
+		savingsGoals.GET("/:id/contributions", deps.SavingsGoalHandler.ListContributions)
+		savingsGoals.POST("/:id/contributions", deps.SavingsGoalHandler.AddContribution)
 	}
 
 	// Dashboard

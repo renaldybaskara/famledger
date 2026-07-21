@@ -28,6 +28,9 @@ type EmailImportService struct {
 	ruleRepo     domainrepo.BankParserRuleRepository // may be nil (rules disabled)
 	userRepo     domainrepo.UserRepository           // for self-transfer detection
 	aiSvc        *aisvc.OpenRouterService             // may be nil (AI disabled)
+	savingsGoalUC interface {
+		ProcessIncomingTransaction(tx entity.Transaction) error
+	} // may be nil (savings goals disabled)
 
 	// parser rules cache — avoids a DB query on every email processed
 	ruleCache       []entity.BankParserRule
@@ -56,6 +59,14 @@ func NewEmailImportService(
 		userRepo:     userRepo,
 		aiSvc:        aiSvc,
 	}
+}
+
+// SetSavingsGoalUsecase wires the savings goal auto-tracking into the import pipeline.
+// When set, any income/transfer transaction will automatically update linked savings goals.
+func (s *EmailImportService) SetSavingsGoalUsecase(uc interface {
+	ProcessIncomingTransaction(tx entity.Transaction) error
+}) {
+	s.savingsGoalUC = uc
 }
 
 // loadRules returns active DB parser rules, using a 30-second in-process cache.
@@ -185,6 +196,16 @@ func (s *EmailImportService) ProcessMessage(ctx context.Context, msg *entity.Ema
 			return s.markSkipped(ctx, msg.ID, reason)
 		}
 		return s.markFailed(ctx, msg.ID, err.Error())
+	}
+
+	// Auto-track savings goals: if this is an income/transfer transaction linked to
+	// an account that has active savings goals with auto-tracking mode, update progress.
+	if s.savingsGoalUC != nil && (tx.Type == "income" || tx.Type == "transfer") {
+		go func() {
+			if err := s.savingsGoalUC.ProcessIncomingTransaction(*tx); err != nil {
+				logger.Worker.Printf("[SavingsGoal] auto-track error for tx %s: %v", tx.ID, err)
+			}
+		}()
 	}
 
 	// Mark the email message as imported and link to the new transaction.

@@ -23,6 +23,7 @@ import { AddTransactionModal } from '../../components/transactions/AddTransactio
 import { PaymentSlipScanModal } from '../../components/transactions/PaymentSlipScanModal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { MonthlyCalendarHeatmap } from '../../components/dashboard/MonthlyCalendarHeatmap'
+import SavingsTrackerWidget from '../../components/dashboard/SavingsTrackerWidget'
 import { PeriodModal, getPresetRange, type Preset } from '../../components/ui/PeriodModal'
 import { useTheme } from '../../src/lib/theme'
 import { useThemeStore } from '../../src/store/theme.store'
@@ -1131,6 +1132,9 @@ export default function DashboardScreen() {
               />
             )}
           </View>
+
+          {/* ── Savings Tracker Widget ── */}
+          <SavingsTrackerWidget />
 
           {/* ── Pengeluaran per Kategori ── */}
           <CategoryBreakdownSection cats={topCats} colors={CAT_COLORS} />

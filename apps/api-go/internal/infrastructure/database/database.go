@@ -75,5 +75,10 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.BankParserRule{},
 		// Subscription billing
 		&entity.UserSubscription{},
+		// Savings Goals
+		&entity.SavingsGoal{},
+		&entity.SavingsGoalSource{},
+		&entity.SavingsGoalContribution{},
+		&entity.SavingsGoalAllocation{},
 	)
 }
